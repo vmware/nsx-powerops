@@ -1,0 +1,3 @@
+[submodule "PowerNSX-Scripts"]
+	path = PowerNSX-Scripts
+	url = https://github.com/tonysangha/PowerNSX-Scripts
