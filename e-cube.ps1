@@ -8,6 +8,9 @@
 #               Version: 1.0.4                  #
 # *-------------------------------------------* #
 
+# Import PowerNSX Module
+import-module PowerNSX
+
 function printMainMenu{
     Write-Host "   1) Install PowerNSX"
     Write-Host "   2) Connect NSX Manager and vCenter"
@@ -17,38 +20,38 @@ function printMainMenu{
 }
 
 function printDocumentationMenu{
-    Write-Host "`n *********************************************************" -ForegroundColor DarkCyan
-    Write-Host " **              e-Cube Documentation Menu              **" -ForegroundColor DarkCyan
-    Write-Host " *********************************************************" -ForegroundColor DarkCyan
-    Write-Host " *                                                       *" -ForegroundColor DarkCyan
-    Write-Host " * Enviornment Documentation                             *" -ForegroundColor DarkCyan
-    Write-Host " * |_ 1) Document all NSX Components                     *" -ForegroundColor DarkCyan
-    Write-Host " * |_ 2) Document ESXi Host(s) Info                      *" -ForegroundColor DarkCyan
-    Write-Host " * |_ 3) Document NSX Enviornamnt Diagram via VISIO Tool *" -ForegroundColor DarkCyan
-    Write-Host " * |_ 4) Import vRealie Log Insight Dashboard            *" -ForegroundColor DarkCyan
-    Write-Host " *                                                       *" -ForegroundColor DarkCyan
-    Write-Host " * Networking Documentation                              *" -ForegroundColor DarkCyan
-    Write-Host " * |_ 5) Document Routing info                           *" -ForegroundColor DarkCyan
-    Write-Host " * |_ 6) Document VxLAN info                             *" -ForegroundColor DarkCyan
-    Write-Host " *                                                       *" -ForegroundColor DarkCyan
-    Write-Host " * Security Documentation                                *" -ForegroundColor DarkCyan
-    Write-Host " * |_ 7) Document NSX DFW info to Excel - DFW2Excel      *" -ForegroundColor DarkCyan
-    Write-Host " * |_ 8) Document DFW-VAT                                *" -ForegroundColor DarkCyan
-    Write-Host " *                                                       *" -ForegroundColor DarkCyan
-    Write-Host " * 0) Exit Documentation Menu                            *" -ForegroundColor DarkCyan
-    Write-Host " *********************************************************" -ForegroundColor DarkCyan
+    Write-Host "`n *********************************************************"
+    Write-Host " **              e-Cube Documentation Menu              **"
+    Write-Host " *********************************************************"
+    Write-Host " *                                                       *"
+    Write-Host " * Enviornment Documentation                             *"
+    Write-Host " * |_ 1) Document all NSX Components                     *"
+    Write-Host " * |_ 2) Document ESXi Host(s) Info                      *"
+    Write-Host " * |_ 3) Document NSX Enviornamnt Diagram via VISIO Tool *"
+    Write-Host " * |_ 4) Import vRealie Log Insight Dashboard            *"
+    Write-Host " *                                                       *"
+    Write-Host " * Networking Documentation                              *"
+    Write-Host " * |_ 5) Document Routing info                           *"
+    Write-Host " * |_ 6) Document VxLAN info                             *"
+    Write-Host " *                                                       *"
+    Write-Host " * Security Documentation                                *"
+    Write-Host " * |_ 7) Document NSX DFW info to Excel - DFW2Excel      *"
+    Write-Host " * |_ 8) Document DFW-VAT                                *"
+    Write-Host " *                                                       *"
+    Write-Host " * 0) Exit Documentation Menu                            *"
+    Write-Host " *********************************************************"
 }
 
 function printHealthCheckMenu{
-    Write-Host "`n ********************************" -ForegroundColor DarkGreen
-    Write-Host " **  e-Cube Health Check Menu  **" -ForegroundColor DarkGreen
-    Write-Host " ********************************" -ForegroundColor DarkGreen
-    Write-Host " *                              *" -ForegroundColor DarkGreen
-    Write-Host " * 1) Check VDR Instance        *" -ForegroundColor DarkGreen
-    Write-Host " * 2) Check VIB Version         *" -ForegroundColor DarkGreen
-    Write-Host " *                              *" -ForegroundColor DarkGreen
-    Write-Host " * 0) Exit Health Check Menu    *" -ForegroundColor DarkGreen
-    Write-Host " ********************************" -ForegroundColor DarkGreen
+    Write-Host "`n ********************************"
+    Write-Host " **  e-Cube Health Check Menu  **"
+    Write-Host " ********************************"
+    Write-Host " *                              *"
+    Write-Host " * 1) Check VDR Instance        *"
+    Write-Host " * 2) Check VIB Version         *"
+    Write-Host " *                              *"
+    Write-Host " * 0) Exit Health Check Menu    *"
+    Write-Host " ********************************"
 }
 
 #Install PowerNSX here
@@ -82,7 +85,7 @@ function connectNSXManager($sectionNumber){
 #---- Get Documentation Menu here ----#
 function documentationkMenu($sectionNumber){    
     if ($sectionNumber -eq 3){printDocumentationMenu}
-    Write-Host "`n>> Please select a Documentation Menu option: " -ForegroundColor DarkCyan -NoNewline 
+    Write-Host "`n>> Please select a Documentation Menu option: " -ForegroundColor DarkBlue -NoNewline 
     $documentationSectionNumber = Read-Host
 
     if ($documentationSectionNumber -eq 0 -or $documentationSectionNumber -eq "exit"){
@@ -104,7 +107,7 @@ function documentationkMenu($sectionNumber){
 #---- Get Health Check Menu here ----#
 function healthCheckMenu($sectionNumber){    
     if ($sectionNumber -eq 4){printHealthCheckMenu}
-    Write-Host "`n>> Please select a Health Check Menu option: " -ForegroundColor DarkGreen -NoNewline
+    Write-Host "`n>> Please select a Health Check Menu option: " -ForegroundColor DarkBlue -NoNewline
     $healthCheckSectionNumber = Read-Host
 
     if ($healthCheckSectionNumber -eq 0 -or $healthCheckSectionNumber -eq "exit"){
@@ -184,8 +187,6 @@ function createNewExcel($excelName, $listOfWorkBooks){
     $Excel.visible = $True
     $Excel.DisplayAlerts = $false
     $wb = $Excel.Workbooks.Add()
-
-
 
 }
 
