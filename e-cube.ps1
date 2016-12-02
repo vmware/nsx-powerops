@@ -64,13 +64,15 @@ function installPowerNSX($sectionNumber){
 #Connect to NSX Manager and vCenter. Save the credentials.
 function connectNSXManager($sectionNumber){
     Write-Host "`n You have selected # '$sectionNumber'. Now executing Connect with NSX Manager..."
+    
+    $vCenterHost = Read-Host -Prompt " Enter vCenter IP"
+    $vCenterUser = Read-Host -Prompt " Enter vCenter User"
+    $vCenterPass = Read-Host -Prompt " Enter vCenter Password"
+
     $nsxManagerHost = Read-Host -Prompt "`n Enter NSX Manager IP"
     $nsxManagerUser = Read-Host -Prompt " Enter NSX Manager User"
     $nsxManagerPass = Read-Host -Prompt " Enter NSX Manager Password"
 
-    $vCenterHost = Read-Host -Prompt " Enter vCenter IP"
-    $vCenterUser = Read-Host -Prompt " Enter vCenter User"
-    $vCenterPass = Read-Host -Prompt " Enter vCenter Password"
     if ($nsxManagerHost -eq '' -or $nsxManagerUser -eq '' -or $nsxManagerPass -eq ''){
         " NSX Manager information not provided. Can't connect to NSX Manager or vCenter!"
     }
@@ -78,7 +80,13 @@ function connectNSXManager($sectionNumber){
         " vCenter information not provided. Can't connect to NSX Manager or vCenter!"
     }
     else{
-        " Trying to connect to NSX Manager and vCenter..."
+        "Connecting with vCenter..."
+        Connect-VIServer -Server $vCenterHost -User $vCenterUser -Password $vCenterPass
+        "`nConnecting with NSX Manager..."
+        Connect-NsxServer -Server $nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPass
+        "Connecting NSX Manager to vCenter..."
+        Set-NsxManager -vCenterServer $vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
+        "Done!"
     }
 }
 
