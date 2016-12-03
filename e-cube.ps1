@@ -134,14 +134,19 @@ function healthCheckMenu($sectionNumber){
 function getNSXComponents($sectionNumber){
     Write-Host "`n You have selected # '$sectionNumber'. Now getting NSX Components info..."
     #### Call other functions to get NSX Components info here...
+
     #### Save NSX Components info on local variable here
-    
+    $nsxControllers = Get-nsxcontroller
+    $nsxManagerSummary = Get-NsxManagerSystemSummary
+    $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
+    $nsxEdges = Get-NsxEdge
+    $nsxLogicalRouters = Get-NsxLogicalRouter
     
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel
-    $listOfWorkBooks = "Summery", "Host1", "Host2"
-    createNewExcel("NSXComponents", $listOfWorkBooks)
+    $listOfWorkBooks = "Summery - NSX Components"
+    createNewExcel("NSX Components", $listOfWorkBooks)
 
-    # Loop
+    # Loop back to document Menu
     documentationkMenu(22) #Keep in Documentation Menu
 }
 
