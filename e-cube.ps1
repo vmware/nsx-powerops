@@ -10,6 +10,18 @@
 
 # Import PowerNSX Module
 import-module PowerNSX
+#Import-Module pscx
+
+function WriteXmlToScreen ([xml]$xml)
+{
+    $StringWriter = New-Object System.IO.StringWriter;
+    $XmlWriter = New-Object System.Xml.XmlTextWriter $StringWriter;
+    $XmlWriter.Formatting = "indented";
+    $xml.WriteTo($XmlWriter);
+    $XmlWriter.Flush();
+    $StringWriter.Flush();
+    Write-Output $StringWriter.ToString();
+}
 
 function printMainMenu{
     Write-Host "   1) Install PowerNSX"
@@ -99,9 +111,7 @@ function documentationkMenu($sectionNumber){
     if ($documentationSectionNumber -eq 0 -or $documentationSectionNumber -eq "exit"){
         " Exit Documentation Menu`n"
         printMainMenu}
-    elseif ($documentationSectionNumber -eq 1){
-        $allNSXComponentData = getNSXComponents($documentationSectionNumber)
-    }
+    elseif ($documentationSectionNumber -eq 1){$allNSXComponentData = getNSXComponents($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 2){getHostInformation($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 3){runNSXVISIOTool($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 7){runDFW2Excel($documentationSectionNumber)}
@@ -142,11 +152,24 @@ function getNSXComponents($sectionNumber){
     $nsxEdges = Get-NsxEdge
     $nsxLogicalRouters = Get-NsxLogicalRouter
     
-    #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel
-    $listOfWorkBooks = "Summery - NSX Components"
-    createNewExcel("NSX Components", $listOfWorkBooks)
+    #Get-nsxcontroller
+    #Write-Host Get-nsxcontroller
+    Write-Host "Controller ID is:"$nsxControllers[0].id
 
-    # Loop back to document Menu
+    $allNSXComponentExcelData = @{"NSX Controllers Info" = $nsxControllers, "objectTypeName", "revision", "clientHandle", "isUniversal", "universalRevision", "id", "ipAddress", "status", "upgradeStatus", "version", "upgradeAvailable", "virtualMachineInfo", "hostInfo", "resourcePoolInfo", "clusterInfo", "managedBy", "datastoreInfo", "controllerClusterStatus", "diskLatencyAlertDetected", "vmStatus"; 
+    "NSX Manager Info" = $nsxManagerSummary, "ipv4Address", "dnsName", "hostName", "applianceName", "versionInfo", "uptime", "cpuInfoDto", "memInfoDto", "storageInfoDto", "currentSystemDate"; 
+    "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "ipAddress", "userName", "certificateThumbprint", "assignRoleToUser", "vcInventoryLastUpdateTime", "Connected";
+    "NSX Edge Info" = $nsxEdges, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "vnics", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "hypervisorAssist", "queryDaemon", "edgeSummary";
+    "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
+    
+    #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
+    $excelName = "NSX-Components-Excel.xls"
+    $nsxComponentExcelWorkBook = createNewExcel($excelName)
+    
+    ####plotDynamicExcel one workBook at a time
+    $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "Summery - NSX Components" -listOfDataToPlot $allNSXComponentExcelData
+
+    #Loop back to document Menu
     documentationkMenu(22) #Keep in Documentation Menu
 }
 
@@ -195,16 +218,77 @@ function getVIBVersion($sectionNumber){
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 
 #Create empty excel sheet here w/ correct name 
-function createNewExcel($excelName, $listOfWorkBooks){
-    $Excel = New-Object -Com Excel.Application
-    $Excel.visible = $True
-    $Excel.DisplayAlerts = $false
-    $wb = $Excel.Workbooks.Add()
+function createNewExcel($newExcelName){
+    $xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
 
+    $newExcel = New-Object -Com Excel.Application
+    $newExcel.visible = $True
+    $newExcel.DisplayAlerts = $false
+    #$Excel.Name = "Test Excel Name"
+    $wb = $newExcel.Workbooks.Add()
+    #$sheet = $wb.ActiveSheet
+
+    # Save the excel with provided Name 
+    $newExcel.ActiveWorkbook.SaveAs($newExcelName, $xlFixedFormat)
+    return $wb
 }
 
-# Plot excel sheet here ..pass dynamic values like workbook number, 
-function plotDynamicExcel($excelName, $excelWorkBookNumber, $plotDataDict){
+# Plot excel sheet here one workBook at a time ..pass already created Excel, Worksheet Name, List of values need to be plotted.
+# Call this function seperatelly for multiple Work Sheets.
+function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfDataToPlot){
+    ##Write-Host "Excel is:" $myOpenExcelWBReturn 
+    ##Write-Host "workSheetName passed is:" $workSheetName
+    ##Write-Host "List of data is:" $listOfDataToPlot
+
+    #$sheet = $myOpenExcelWBReturn.ActiveSheet
+    $sheet = $myOpenExcelWBReturn.WorkSheets.Add()
+    $sheet.Name = $workSheetName
+ 
+    $sheet.Cells.Item(1,1) = $workSheetName
+
+    $myRow = 2
+#foreach ($h in $hash.Keys) {
+#    Write-Host "${h}: $($hash.Item($h))"
+#}
+    foreach($eachDataSet in $listOfDataToPlot.Keys){
+        Write-Host "`nData Set is:" $eachDataSet
+        $myRow++
+        $myRow++
+        $sheet.Cells.Item($myRow,1) = $eachDataSet
+        foreach ($eachDataElement in $listOfDataToPlot.Item($eachDataSet)[0]){
+            Write-Host "  Data Element is:" $eachDataElement.name
+            $myRow++
+            #$myRow++
+            #$sheet.Cells.Item($myRow,1) = $eachDataElement.name
+            $myRow++
+            if ($listOfDataToPlot.Item($eachDataSet)[1] -eq "all"){
+                Write-Host "Found All"
+            }else{
+                $tempLableNumber =0
+                foreach ($eachLabel in $listOfDataToPlot.Item($eachDataSet)){
+                    if ($tempLableNumber -ne 0){
+                        Try{
+                            $trimmedeachLable = $eachDataElement.$eachLabel
+                            ##Write-Host "    " $eachLabel "is:" $trimmedeachLable
+                            $sheet.Cells.Item($myRow,1) = $eachLabel
+                            $sheet.Cells.Item($myRow,2) = $trimmedeachLable
+                            #Write-Host "    " $eachLabel "is:" $eachDataElement.$eachLabel
+                            $myRow++
+                        }Catch{
+                            #pass
+                            Write-Host "    No value available for:" $eachLabel
+                        }
+                    }
+                    $tempLableNumber++
+                }
+            }
+        }
+        #$sheet.Cells.Item($myRow,1) = $eachDataSet
+        #$myRow++
+    }
+    
+    $usedRange = $sheet.UsedRange
+    $usedRange.EntireColumn.Autofit()
 
 #    foreach($appliedTo in $rule.appliedToList.appliedTo){
 #                $sheet.Cells.Item($appRow,18) = $appliedTo.name
