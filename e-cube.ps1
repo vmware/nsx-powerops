@@ -12,16 +12,28 @@
 import-module PowerNSX
 #Import-Module pscx
 
-function WriteXmlToScreen ([xml]$xml)
-{
-    $StringWriter = New-Object System.IO.StringWriter;
-    $XmlWriter = New-Object System.Xml.XmlTextWriter $StringWriter;
-    $XmlWriter.Formatting = "indented";
-    $xml.WriteTo($XmlWriter);
-    $XmlWriter.Flush();
-    $StringWriter.Flush();
-    Write-Output $StringWriter.ToString();
-}
+########################################################
+#    Formatting Options for Excel Spreadsheet
+########################################################
+
+    $titleFontSize = 13
+    $titleFontBold = $True
+    $titleFontColorIndex = 2
+    $titleFontName = "Calibri (Body)"
+    $titleInteriorColor = 10
+
+    $subTitleFontSize = 10.5
+    $subTitleFontBold = $True
+    $subTitleFontName = "Calibri (Body)"
+    $subTitleInteriorColor = 42
+
+    $valueFontName = "Calibri (Body)"
+    $valueFontSize = 10.5
+    $valueMissingColorIndex =
+    $valueMissingText = "<BLANK>"
+    $valueMissingHighlight = 6
+    $valueNotApplicable = "<NOT APPLICABLE>"
+    $valueNotDefined = "<NOT DEFINED>"
 
 function printMainMenu{
     Write-Host "   1) Install PowerNSX"
@@ -36,11 +48,11 @@ function printDocumentationMenu{
     Write-Host " **              e-Cube Documentation Menu              **"
     Write-Host " *********************************************************"
     Write-Host " *                                                       *"
-    Write-Host " * Enviornment Documentation                             *"
+    Write-Host " * Environment Documentation                             *"
     Write-Host " * |_ 1) Document all NSX Components                     *"
     Write-Host " * |_ 2) Document ESXi Host(s) Info                      *"
-    Write-Host " * |_ 3) Document NSX Enviornamnt Diagram via VISIO Tool *"
-    Write-Host " * |_ 4) Import vRealie Log Insight Dashboard            *"
+    Write-Host " * |_ 3) Document NSX Environment Diagram via VISIO Tool *"
+    Write-Host " * |_ 4) Import vRealize Log Insight Dashboard           *"
     Write-Host " *                                                       *"
     Write-Host " * Networking Documentation                              *"
     Write-Host " * |_ 5) Document Routing info                           *"
@@ -105,7 +117,7 @@ function connectNSXManager($sectionNumber){
 #---- Get Documentation Menu here ----#
 function documentationkMenu($sectionNumber){    
     if ($sectionNumber -eq 3){printDocumentationMenu}
-    Write-Host "`n>> Please select a Documentation Menu option: " -ForegroundColor DarkBlue -NoNewline 
+    Write-Host "`n>> Please select a Documentation Menu option: " -ForegroundColor Darkyellow -NoNewline 
     $documentationSectionNumber = Read-Host
 
     if ($documentationSectionNumber -eq 0 -or $documentationSectionNumber -eq "exit"){
@@ -114,6 +126,7 @@ function documentationkMenu($sectionNumber){
     elseif ($documentationSectionNumber -eq 1){$allNSXComponentData = getNSXComponents($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 2){getHostInformation($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 3){runNSXVISIOTool($documentationSectionNumber)}
+    elseif ($documentationSectionNumber -eq 5){getRoutingInformation($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 7){runDFW2Excel($documentationSectionNumber)}
     
     elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
@@ -125,7 +138,7 @@ function documentationkMenu($sectionNumber){
 #---- Get Health Check Menu here ----#
 function healthCheckMenu($sectionNumber){    
     if ($sectionNumber -eq 4){printHealthCheckMenu}
-    Write-Host "`n>> Please select a Health Check Menu option: " -ForegroundColor DarkBlue -NoNewline
+    Write-Host "`n>> Please select a Health Check Menu option: " -ForegroundColor Darkyellow -NoNewline
     $healthCheckSectionNumber = Read-Host
 
     if ($healthCheckSectionNumber -eq 0 -or $healthCheckSectionNumber -eq "exit"){
@@ -152,22 +165,28 @@ function getNSXComponents($sectionNumber){
     $nsxEdges = Get-NsxEdge
     $nsxLogicalRouters = Get-NsxLogicalRouter
     
-    #Get-nsxcontroller
-    #Write-Host Get-nsxcontroller
-    Write-Host "Controller ID is:"$nsxControllers[0].id
-
+    #Write-Host "Controller ID is:"$nsxControllers[0].id
+    <# 
     $allNSXComponentExcelData = @{"NSX Controllers Info" = $nsxControllers, "objectTypeName", "revision", "clientHandle", "isUniversal", "universalRevision", "id", "ipAddress", "status", "upgradeStatus", "version", "upgradeAvailable", "virtualMachineInfo", "hostInfo", "resourcePoolInfo", "clusterInfo", "managedBy", "datastoreInfo", "controllerClusterStatus", "diskLatencyAlertDetected", "vmStatus"; 
     "NSX Manager Info" = $nsxManagerSummary, "ipv4Address", "dnsName", "hostName", "applianceName", "versionInfo", "uptime", "cpuInfoDto", "memInfoDto", "storageInfoDto", "currentSystemDate"; 
     "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "ipAddress", "userName", "certificateThumbprint", "assignRoleToUser", "vcInventoryLastUpdateTime", "Connected";
     "NSX Edge Info" = $nsxEdges, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "vnics", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "hypervisorAssist", "queryDaemon", "edgeSummary";
     "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
-    
+    #>
+    $allNSXComponentExcelDataControllers = @{"NSX Controllers Info" = $nsxControllers, "all"}
+    $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"}
+    $allNSXComponentExcelDataEdge =@{"NSX Edge Info" = $nsxEdges, "all"}
+    $allNSXComponentExcelDataDLR =@{"NSX Logical Router Info" = $nsxLogicalRouters, "all"}
+
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "NSX-Components-Excel.xls"
     $nsxComponentExcelWorkBook = createNewExcel($excelName)
     
     ####plotDynamicExcel one workBook at a time
-    $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "Summery - NSX Components" -listOfDataToPlot $allNSXComponentExcelData
+    $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Manager" -listOfDataToPlot $allNSXComponentExcelDataMgr
+    $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Controllers" -listOfDataToPlot $allNSXComponentExcelDataControllers
+    $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Edge Services Gateway" -listOfDataToPlot $allNSXComponentExcelDataEdge
+    $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Logical Router" -listOfDataToPlot $allNSXComponentExcelDataDLR
 
     #Loop back to document Menu
     documentationkMenu(22) #Keep in Documentation Menu
@@ -178,13 +197,50 @@ function getHostInformation($sectionNumber){
     $userSelection = "Get List of Hosts"
     Write-Host "`n You have selected # '$sectionNumber'. Now executing '$userSelection'..."
     $vmHosts = get-vmhost
-    $vmHosts
+
+    #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
+    $excelName = "ESXi-Hosts-Excel.xls"
+    $nsxComponentExcelWorkBook = createNewExcel($excelName)
+
+    foreach ($eachVMHost in $vmHosts){
+        #$allVmHostsExcelData = @{"ESXi Host" = $eachVMHost, "Name", "ConnectionState", "PowerState", "NumCpu", "CpuUsageMhz", "CpuTotalMhz", "MemoryUsageGB", "MemoryTotalGB", "Version"}
+        $allVmHostsExcelData = @{"ESXi Host" = $eachVMHost, "all"}
+        ####plotDynamicExcel one workBook at a time
+        $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName $eachVMHost.name -listOfDataToPlot $allVmHostsExcelData
+    }
+    <#    
     $exportHostList = Read-Host -Prompt "`n Export output in a .txt file? Please enter 'y' or 'n'"
     if ($exportHostList -eq 'y'){
         $vmHosts > ListOfAllHost.txt
         " Created a list of all VM(s) and exported in ListOfAllHost.txt"
     }
+    #>
     documentationkMenu(22)
+}
+
+#Run visio
+function runNSXVISIOTool($sectionNumber){
+    Write-Host "`n You have selected # '$sectionNumber'. Now documenting NSX Network..."
+    documentationkMenu(22)
+}
+
+#Get Routing info here
+function getRoutingInformation($sectionNumber){
+    $userSelection = "Get Routing Information"
+    Write-Host "`n You have selected # '$sectionNumber'. Now executing '$userSelection'..."
+    $edgeRoutingInfo = Get-NsxEdgeRouting
+    $dlRoutingInfo =  Get-NsxLogicalRouterRouting
+
+    #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
+    $excelName = "NSX-Routing-Excel.xls"
+    $nsxComponentExcelWorkBook = createNewExcel($excelName)
+
+    $allEdgeRoutingExcelData = @{"NSX Edge Routing" = $edgeRoutingInfo, "all"} 
+    $allDLRRoutingExcelData = @{"NSX DLR Routing" = $dlRoutingInfo, "all"}
+    ####plotDynamicExcel one workBook at a time
+    $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Edge Routing Data" -listOfDataToPlot $allEdgeRoutingExcelData
+    $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX DLR Routing Data" -listOfDataToPlot $allDLRRoutingExcelData
+
 }
 
 #Run DFW2Excel
@@ -194,11 +250,7 @@ function runDFW2Excel($sectionNumber){
     documentationkMenu(22)
 }
 
-#Run visio
-function runNSXVISIOTool($sectionNumber){
-    Write-Host "`n You have selected # '$sectionNumber'. Now documenting NSX Network..."
-    documentationkMenu(22)
-}
+
 
 #Run getVDRInstance
 function getVDRInstance($sectionNumber){
@@ -246,7 +298,7 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
  
     $sheet.Cells.Item(1,1) = $workSheetName
 
-    $myRow = 2
+    $myRow = 1
 #foreach ($h in $hash.Keys) {
 #    Write-Host "${h}: $($hash.Item($h))"
 #}
@@ -255,7 +307,13 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
         $myRow++
         $myRow++
         $sheet.Cells.Item($myRow,1) = $eachDataSet
+        $sheet.Cells.Item($myRow,1).Font.Size = $titleFontSize
+        $sheet.Cells.Item($myRow,1).Font.Bold = $titleFontBold
+        $sheet.Cells.Item($myRow,1).Font.ColorIndex = $titleFontColorIndex
+        $sheet.Cells.Item($myRow,1).Font.Name = $titleFontName
+        $sheet.Cells.Item($myRow,1).Interior.ColorIndex = $titleInteriorColor
         foreach ($eachDataElement in $listOfDataToPlot.Item($eachDataSet)[0]){
+            $listOfAllAttributes = New-Object System.Collections.ArrayList
             Write-Host "  Data Element is:" $eachDataElement.name
             $myRow++
             #$myRow++
@@ -263,23 +321,37 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
             $myRow++
             if ($listOfDataToPlot.Item($eachDataSet)[1] -eq "all"){
                 Write-Host "Found All"
+                #$listOfAllAttributes = $listOfDataToPlot.Item($eachDataSet)[0] | Format-List * -force
+                $tempListOfAllAttributes = $listOfDataToPlot.Item($eachDataSet)[0] | Get-Member
+                foreach($eachAttribute in $tempListOfAllAttributes){
+                    if ($eachAttribute.MemberType -eq "Property"){$listOfAllAttributes.Add($eachAttribute.Name)}
+                }
             }else{
                 $tempLableNumber =0
-                foreach ($eachLabel in $listOfDataToPlot.Item($eachDataSet)){
-                    if ($tempLableNumber -ne 0){
-                        Try{
-                            $trimmedeachLable = $eachDataElement.$eachLabel
-                            ##Write-Host "    " $eachLabel "is:" $trimmedeachLable
-                            $sheet.Cells.Item($myRow,1) = $eachLabel
-                            $sheet.Cells.Item($myRow,2) = $trimmedeachLable
-                            #Write-Host "    " $eachLabel "is:" $eachDataElement.$eachLabel
-                            $myRow++
-                        }Catch{
-                            #pass
-                            Write-Host "    No value available for:" $eachLabel
-                        }
-                    }
+                foreach ($eachCustomLabel in $listOfDataToPlot.Item($eachDataSet)){
+                    if ($tempLableNumber -ne 0){$listOfAllAttributes.Add($eachCustomLabel)}
                     $tempLableNumber++
+                }
+            }
+            Write-Host "listOfAllAttributes is:" $listOfAllAttributes
+            foreach ($eachLabel in $listOfAllAttributes){
+                Try{
+                    $trimmedeachLable = $eachDataElement.$eachLabel
+                    ##Write-Host "    " $eachLabel "is:" $trimmedeachLable
+                    $sheet.Cells.Item($myRow,1) = $eachLabel
+                    $sheet.Cells.Item($myRow,1).Font.Size = $subTitleFontSize
+                    $sheet.Cells.Item($myRow,1).Font.Bold = $subTitleFontBold
+                    $sheet.Cells.Item($myRow,1).Font.Name = $subTitleFontName
+                    $sheet.Cells.Item($myRow,1).Interior.ColorIndex = $subTitleInteriorColor
+                    
+                    $sheet.Cells.Item($myRow,2) = $trimmedeachLable
+                    $sheet.Cells.Item($myRow,2).Font.Size = $valueFontSize
+                    $sheet.Cells.Item($myRow,2).Font.Name = $valueFontName
+                    #Write-Host "    " $eachLabel "is:" $eachDataElement.$eachLabel
+                    $myRow++
+                }Catch{
+                    #pass
+                    Write-Host "    No value available for:" $eachLabel
                 }
             }
         }
