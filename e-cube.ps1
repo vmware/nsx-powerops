@@ -171,11 +171,16 @@ function getNSXComponents($sectionNumber){
 
     #### Save NSX Components info on local variable here
     $nsxControllers = Get-nsxcontroller
+    $allNSXComponentExcelDataControllers =@{}
+
+    $nsxEdges = Get-NsxEdge
+    $allNSXComponentExcelDataEdge =@{}
+
+    $nsxLogicalRouters = Get-NsxLogicalRouter
+    $allNSXComponentExcelDataDLR =@{}
+
     $nsxManagerSummary = Get-NsxManagerSystemSummary
     $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
-    $nsxEdges = Get-NsxEdge
-    $nsxLogicalRouters = Get-NsxLogicalRouter
-    
     #Write-Host "Controller ID is:"$nsxControllers[0].id
     <# 
     $allNSXComponentExcelData = @{"NSX Controllers Info" = $nsxControllers, "objectTypeName", "revision", "clientHandle", "isUniversal", "universalRevision", "id", "ipAddress", "status", "upgradeStatus", "version", "upgradeAvailable", "virtualMachineInfo", "hostInfo", "resourcePoolInfo", "clusterInfo", "managedBy", "datastoreInfo", "controllerClusterStatus", "diskLatencyAlertDetected", "vmStatus"; 
@@ -184,10 +189,21 @@ function getNSXComponents($sectionNumber){
     "NSX Edge Info" = $nsxEdges, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "vnics", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "hypervisorAssist", "queryDaemon", "edgeSummary";
     "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
     #>
-    $allNSXComponentExcelDataControllers = @{"NSX Controllers Info" = $nsxControllers, "all"}
     $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"}
-    $allNSXComponentExcelDataEdge =@{"NSX Edge Info" = $nsxEdges, "all"}
-    $allNSXComponentExcelDataDLR =@{"NSX Logical Router Info" = $nsxLogicalRouters, "all"}
+
+    foreach ($eachNSXController in $nsxControllers){
+        $tempControllerData = $eachNSXController, "all"
+        $allNSXComponentExcelDataControllers.Add($eachNSXController.id, $tempControllerData)
+    }
+    foreach ($eachNSXEdge in $nsxEdges){
+        $tempNSXEdgeData = $eachNSXEdge, "all"
+        $allNSXComponentExcelDataEdge.Add($eachNSXEdge.id, $tempNSXEdgeData)
+    }
+    foreach ($eachNSXDLR in $nsxLogicalRouters){
+        $tempNSXDLRData = $eachNSXDLR, "all"
+        $allNSXComponentExcelDataDLR.Add($eachNSXDLR.id, $tempNSXDLRData)
+    }
+    #$allNSXComponentExcelDataDLR =@{"NSX Logical Router Info" = $nsxLogicalRouters, "all"}
 
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "NSX-Components-Excel"
@@ -215,7 +231,8 @@ function getHostInformation($sectionNumber){
     $excelName = "ESXi-Hosts-Excel"
     $nsxComponentExcelWorkBook = createNewExcel($excelName)
     foreach ($eachVMHost in $vmHosts){
-        $allVmHostsExcelData =@{}
+        $allVmHostsExcelData=@{}
+        $tempHostData=@()
         #$allVmHostsExcelData = @{"ESXi Host" = $eachVMHost, "Name", "ConnectionState", "PowerState", "NumCpu", "CpuUsageMhz", "CpuTotalMhz", "MemoryUsageGB", "MemoryTotalGB", "Version"}
         $tempHostData = $eachVMHost, "all"
         $allVmHostsExcelData.Add($eachVMHost.name, $tempHostData)
@@ -290,6 +307,18 @@ function getVIBVersion($sectionNumber){
     healthCheckMenu(22)
 }
 
+function getMemberWithProperty($tempListOfAllAttributesInFunc){
+    #$listOfAllAttributesWithCorrectProperty = New-Object System.Collections.ArrayList
+    $listOfAllAttributesWithCorrectProperty = @()
+    foreach($eachAttribute in $tempListOfAllAttributesInFunc){
+        if ($eachAttribute.MemberType -eq "Property"){
+            #$listOfAllAttributesWithCorrectProperty.Add($eachAttribute.Name)
+            $listOfAllAttributesWithCorrectProperty += $eachAttribute.Name
+        }
+    }
+    #return $listOfAllAttributesWithCorrectProperty
+    return ,$listOfAllAttributesWithCorrectProperty
+}
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 #---- ---- Excel Functions start here ---- ----#
@@ -367,22 +396,7 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
 #            }
 } # End Function plotDynamicExcelWorkBook
 
-function getMemberWithProperty($tempListOfAllAttributesInFunc){
-    #$listOfAllAttributesWithCorrectProperty = New-Object System.Collections.ArrayList
-    $listOfAllAttributesWithCorrectProperty = @()
-    foreach($eachAttribute in $tempListOfAllAttributesInFunc){
-        if ($eachAttribute.MemberType -eq "Property"){
-            #$listOfAllAttributesWithCorrectProperty.Add($eachAttribute.Name)
-            $listOfAllAttributesWithCorrectProperty += $eachAttribute.Name
-        }
-    }
-    #return $listOfAllAttributesWithCorrectProperty
-    return ,$listOfAllAttributesWithCorrectProperty
-}
 
-function writeToExcelFromAnArray ($newElementOfArrayToPrint){
-    Write-Host "Found an Array!" $newElementOfArrayToPrint
-}
 
 function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
     $newListOfXMLToPrint =@()
@@ -397,8 +411,18 @@ function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
                 #Write-Host "`nFound a xml within list." $valueOfLableToPrint.Name
                 $newListOfXMLToPrint += $valueOfLableToPrint
             }elseif($valueOfLableToPrint.gettype().BaseType.Name -eq "Array"){
+                $lengthOfLoop = 1
                 foreach($newElementOfArrayToPrint in $valueOfLableToPrint){
-                    writeToExcelFromAnArray $newElementOfArrayToPrint
+                    #Write-Host "newElementOfArrayToPrint type is:" $newElementOfArrayToPrint.gettype().BaseType.Name
+                    if ($newElementOfArrayToPrint.gettype().BaseType.Name -eq "XmlLinkedNode"){
+                        #Write-Host "Found an Array!" $newElementOfArrayToPrint.Name
+                        $listOfAllArrayAttributes = $newElementOfArrayToPrint | Get-Member
+                        $newListOfArrayAllAttributes = getMemberWithProperty($listOfAllArrayAttributes)
+                        #Write-Host $newListOfArrayAllAttributes
+                        writeToExcel $newElementOfArrayToPrint $newListOfArrayAllAttributes
+                        if($valueOfLableToPrint.count -ne $lengthOfLoop){$global:myRow++}
+                        $lengthOfLoop++
+                    }
                 }
             }else{
                 $sheet.Cells.Item($global:myRow,$global:myColumn) = $eachLabelToPrint
