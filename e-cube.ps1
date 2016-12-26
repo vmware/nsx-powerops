@@ -49,26 +49,26 @@ Write-Host " 1) Install PowerNSX
 }
 
 function printDocumentationMenu{
-Write-Host "`n *********************************************************
- **              e-Cube Documentation Menu              **
- *********************************************************
- *                                                       *
- * Environment Documentation                             *
- * |_ 1) Document all NSX Components                     *
- * |_ 2) Document ESXi Host(s) Info                      *
- * |_ 3) Document NSX Environment Diagram via VISIO Tool *
- * |_ 4) Import vRealize Log Insight Dashboard           *
- *                                                       *
- * Networking Documentation                              *
- * |_ 5) Document Routing info                           *
- * |_ 6) Document VxLAN info                             *
- *                                                       *
- * Security Documentation                                *
- * |_ 7) Document NSX DFW info to Excel - DFW2Excel      *
- * |_ 8) Document DFW-VAT                                *
- *                                                       *
- * 0) Exit Documentation Menu                            *
- *********************************************************"
+Write-Host "`n **********************************************************
+ **              e-Cube Documentation Menu               **
+ **********************************************************
+ *                                                        *
+ * Environment Documentation                              *
+ * |-> 1) Document all NSX Components                     *
+ * |-> 2) Document ESXi Host(s) Info                      *
+ * |-> 3) Document NSX Environment Diagram via VISIO Tool *
+ * |-> 4) Import vRealize Log Insight Dashboard           *
+ *                                                        *
+ * Networking Documentation                               *
+ * |-> 5) Document Routing info                           *
+ * |-> 6) Document VxLAN info                             *
+ *                                                        *
+ * Security Documentation                                 *
+ * |-> 7) Document NSX DFW info to Excel - DFW2Excel      *
+ * |-> 8) Document DFW-VAT                                *
+ *                                                        *
+ * 0) Exit Documentation Menu                             *
+ **********************************************************"
 }
 
 function printHealthCheckMenu{
@@ -261,12 +261,14 @@ function runNSXVISIOTool($sectionNumber){
 function getRoutingInformation($sectionNumber){
     $userSelection = "Get Routing Information"
     Write-Host "`n You have selected # '$sectionNumber'. Now executing '$userSelection'..."
-    $numberOfEdges = Get-NsxEdge
+    
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "NSX-Routing-Excel"
     $nsxComponentExcelWorkBook = createNewExcel($excelName)
     ##$numberOfEdges
+    # Getting Edge Routing Info here
     $allEdgeRoutingExcelData = @{}
+    $numberOfEdges = Get-NsxEdge
     foreach ($eachEdge in $numberOfEdges){
         $edgeRoutingInfo = Get-NsxEdge $eachEdge.name | Get-NsxEdgeRouting 
         ##$edgeRoutingInfo
@@ -274,14 +276,23 @@ function getRoutingInformation($sectionNumber){
         $tempEdgeRoutingValueArray = $edgeRoutingInfo, "all"
         $allEdgeRoutingExcelData.Add($eachEdge.name, $tempEdgeRoutingValueArray)
     }
-        #$allEdgeRoutingExcelData = @{"NSX Edge Routing" = $edgeRoutingInfo, "all"}
-        $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Edge Routing Config" -listOfDataToPlot $allEdgeRoutingExcelData 
-    <#
+    #$allEdgeRoutingExcelData = @{"NSX Edge Routing" = $edgeRoutingInfo, "all"}
+    $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Edge Routing Config" -listOfDataToPlot $allEdgeRoutingExcelData 
+
+    # Getting DLR routing Info here
+    $allDLRRoutingExcelData = @{}
+    $numberOfDLRs = Get-NsxLogicalRouter
+    foreach($eachDLR in $numberOfDLRs){
+        $dlrRoutinginfo = Get-NsxLogicalRouter $eachDLR.Name | Get-NsxLogicalRouterRouting
+        $tempDLRRoutingValueArray = $dlrRoutinginfo, "all"
+        $allDLRRoutingExcelData.Add($eachDLR.Name, $tempDLRRoutingValueArray)
+    }
+    
     ##$dlRoutingInfo =  Get-NsxLogicalRouterRouting
-    $allDLRRoutingExcelData = @{"NSX DLR Routing" = $dlRoutingInfo, "all"}
+    
     ####plotDynamicExcel one workBook at a time
-    $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX DLR Routing Data" -listOfDataToPlot $allDLRRoutingExcelData
-    #>
+    $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX DLR Routing Config" -listOfDataToPlot $allDLRRoutingExcelData
+    
     Write-Host "`n Done Working on the Excel Sheet."
     documentationkMenu(22)
 }
