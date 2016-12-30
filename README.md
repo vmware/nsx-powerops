@@ -3,6 +3,7 @@
 ## Prerequisite:
 * VMware PowerCLI [https://www.vmware.com/support/developer/PowerCLI/]
 * Microsoft Excel installed on the local system [https://products.office.com/en-au/excel]
+* PowerShell's Module name: Posh-SSH [https://github.com/darkoperator/Posh-SSH]
 * Access to NSX Manager API with privileges
 * Access to vSphere Web Client and Privileges (Read)
 
