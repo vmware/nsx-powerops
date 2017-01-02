@@ -40,6 +40,9 @@ import-module PowerNSX
     $global:myRow = 1
     $global:myColumn = 1
 
+    $global:vCenterSSHIndex
+    $global:nsxmanagerSSHIndex
+
 function printMainMenu{
 Write-Host " 1) Install PowerNSX
  2) Connect NSX Manager and vCenter
@@ -115,11 +118,27 @@ function connectNSXManager($sectionNumber){
         " vCenter information not provided. Can't connect to NSX Manager or vCenter!"
     }
     else{
-        "Connecting with vCenter..."
+        "`n Connecting with vCenter..."
         Connect-VIServer -Server $vCenterHost -User $vCenterUser -Password $vCenterPass
-        "`nConnecting with NSX Manager..."
+        "`n Establishing SSH connection with vCenter..."
+        $vCenterSecurePass = $vCenterPass | ConvertTo-SecureString -AsPlainText -Force
+        $myvCenterSecureCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $vCenterUser, $vCenterSecurePass
+        $vCenterSSHConnection = startSSHSession -serverToConnectTo $vCenterHost -credentialsToUse $myvCenterSecureCredential
+        $vCenterSSHConnection
+        $global:vCenterSSHIndex = $vCenterSSHConnection.SessionID
+        #$global:vCenterSSHIndex
+
+        "`n Connecting with NSX Manager..."
         Connect-NsxServer -Server $nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPass -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
-        "Connecting NSX Manager to vCenter..."
+        "`n Establishing SSH connection with vCenter..."
+        $nsxManagerSecurePass = $nsxManagerPass | ConvertTo-SecureString -AsPlainText -Force
+        $myNSXManagerSecureCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxManagerUser, $nsxManagerSecurePass
+        $nsxManagerSSHConnection = startSSHSession -serverToConnectTo $nsxManagerHost -credentialsToUse $myNSXManagerSecureCredential
+        $nsxManagerSSHConnection
+        $global:nsxmanagerSSHIndex = $nsxManagerSSHConnection.SessionID
+        #$global:nsxmanagerSSHIndex
+
+        " Connecting NSX Manager to vCenter..."
         Set-NsxManager -vCenterServer $vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
         "Done!"
     }
@@ -477,7 +496,11 @@ function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
     }
 } # End function writeToExcel
 
-
+function startSSHSession($serverToConnectTo, $credentialsToUse){
+    #$myNSXManagerCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $mySecurePass
+    $newSSHSession = New-Sshsession -computername $serverToConnectTo -Credential $credentialsToUse
+    return $newSSHSession
+}
 
 #function thirdOptionSelected($sectionNumber){
 #    $userSelection = "Get List of VMs"
@@ -521,7 +544,13 @@ while($true)
     Write-Host "`n>> Please select an e-cube option: " -ForegroundColor DarkMagenta -NoNewline
     $sectionNumber = Read-Host
 
-    if ($sectionNumber -eq 0 -or $sectionNumber -eq "exit"){break}
+    if ($sectionNumber -eq 0 -or $sectionNumber -eq "exit"){
+        " Closing vCenter SSH Session..." 
+        remove-sshsession -Index $global:vCenterSSHIndex
+        
+        " Closing NSX Manager SSH Session..."
+        remove-sshsession -Index $global:nsxmanagerSSHIndex
+        break}
     elseif ($sectionNumber -eq "help"){printMainMenu}
 
     elseif ($sectionNumber -eq 1){installPowerNSX($sectionNumber)}
