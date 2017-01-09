@@ -156,6 +156,7 @@ function documentationkMenu($sectionNumber){
     elseif ($documentationSectionNumber -eq 1){$allNSXComponentData = getNSXComponents($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 2){getHostInformation($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 3){runNSXVISIOTool($documentationSectionNumber)}
+    elseif ($documentationSectionNumber -eq 4){importLogInSightDashBoard($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 5){getRoutingInformation($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 7){runDFW2Excel($documentationSectionNumber)}
     
@@ -272,8 +273,18 @@ function getHostInformation($sectionNumber){
 
 #Run visio
 function runNSXVISIOTool($sectionNumber){
-    Write-Host "`n You have selected # '$sectionNumber'. Now documenting NSX Network..."
+    Write-Host "`n You have selected # '$sectionNumber'. Now starting VISIO tool..."
+    invoke-expression -Command .\DiagramNSX\NsxObjectCapture.ps1
+    $pathVISIO = Read-Host -Prompt " Please provide the above .zip file path to generate the VISIO file"
+    $visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -CaptureBundle " + $pathVISIO
+    invoke-expression -Command $visioDiagramCommand
     documentationkMenu(22)
+}
+
+function importLogInSightDashBoard($sectionNumber){
+    Write-Host "`n You have selected # '$sectionNumber'. Now starting VISIO tool..."
+    $lisVersion = Read-Host -Prompt " Please provide your Log Insite Version"
+    Write-Host "`n Downloading custom Dashboard for your Log Insite version..."
 }
 
 #Get Routing info here
