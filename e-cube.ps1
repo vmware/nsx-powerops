@@ -10,6 +10,7 @@
 
 # Import PowerNSX Module
 import-module PowerNSX
+import-module Posh-SSH
 #Import-Module pscx
 
 ########################################################
@@ -42,6 +43,8 @@ import-module PowerNSX
 
     $global:vCenterSSHIndex
     $global:nsxmanagerSSHIndex
+    $global:nsxMgrDefaultBuffSize
+    $global:sshOutputBuffer = @()
 
 function printMainMenu{
 Write-Host " 1) Install PowerNSX
@@ -130,15 +133,19 @@ function connectNSXManager($sectionNumber){
 
         "`n Connecting with NSX Manager..."
         Connect-NsxServer -Server $nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPass -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
-        "`n Establishing SSH connection with vCenter..."
+        "`n Establishing SSH connection with NSX Manager..."
         $nsxManagerSecurePass = $nsxManagerPass | ConvertTo-SecureString -AsPlainText -Force
         $myNSXManagerSecureCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxManagerUser, $nsxManagerSecurePass
         $nsxManagerSSHConnection = startSSHSession -serverToConnectTo $nsxManagerHost -credentialsToUse $myNSXManagerSecureCredential
         $nsxManagerSSHConnection
         $global:nsxmanagerSSHIndex = $nsxManagerSSHConnection.SessionID
         #$global:nsxmanagerSSHIndex
+        #Start-Sleep -s 2
+        Write-Host " Establishing SSH Stream with NSX Manager..."
+        getNSXMgrBuffSize
+        Write-Host "Connected. Default NSX Mgr buffer length is:" $global:nsxMgrDefaultBuffSize
 
-        " Connecting NSX Manager to vCenter..."
+        "`n Connecting NSX Manager to vCenter..."
         Set-NsxManager -vCenterServer $vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
         "Done!"
     }
@@ -158,6 +165,7 @@ function documentationkMenu($sectionNumber){
     elseif ($documentationSectionNumber -eq 3){runNSXVISIOTool($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 4){importLogInSightDashBoard($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 5){getRoutingInformation($documentationSectionNumber)}
+    elseif ($documentationSectionNumber -eq 6){getVXLANInformation($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 7){runDFW2Excel($documentationSectionNumber)}
     
     elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
@@ -246,19 +254,45 @@ function getHostInformation($sectionNumber){
     $userSelection = "Get List of Hosts"
     Write-Host "`n You have selected # '$sectionNumber'. Now executing '$userSelection'..."
     $vmHosts = get-vmhost
+    Write-Host " Number of vmHosts are:" $vmHosts.length
 
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "ESXi-Hosts-Excel"
     $nsxComponentExcelWorkBook = createNewExcel($excelName)
     foreach ($eachVMHost in $vmHosts){
+        $sshCommandOutputData = @{}
+        $sshCommandOutputLable = @()
+        # Run SSH Command on NSX Manager here...
+        $myHost = $eachVMHost.id
+        if ($myHost -match "HostSystem-"){$myNewHost = $myHost -replace "HostSystem-", ""}
+        [string]$nsxMgrCommand = "show logical-switch host "+$myNewHost+" verbose"
+        invokeNSXManagerSSH -commandToInvoke $nsxMgrCommand -fileName "test.txt"
+        #invokeNSXManagerSSH -commandToInvoke "show cluster all" -fileName "test.txt"
+        $findElements= @("Out-Of-Sync", "MTU", "VXLAN vmknic")
+        foreach ($eachElement in $findElements){
+            $indx = ''
+            $indx = Select-String $eachElement "test.txt" | ForEach-Object {$_.LineNumber}
+            if ($indx -ne '') {
+                [string]$eachElementResult = (Get-Content "test.txt")[$indx-1]
+                $sshCommandOutputData.Add($eachElement, $eachElementResult)
+                $sshCommandOutputLable += $eachElement
+            }
+        }
+        # NSX Manager SSH Command Ends here.
+
         $allVmHostsExcelData=@{}
         $tempHostData=@()
+        $tempHostData2=@()
         #$allVmHostsExcelData = @{"ESXi Host" = $eachVMHost, "Name", "ConnectionState", "PowerState", "NumCpu", "CpuUsageMhz", "CpuTotalMhz", "MemoryUsageGB", "MemoryTotalGB", "Version"}
         $tempHostData = $eachVMHost, "all"
+        $tempHostData2 = $sshCommandOutputData, "Out-Of-Sync", "MTU", "VXLAN vmknic"
         $allVmHostsExcelData.Add($eachVMHost.name, $tempHostData)
+        $allVmHostsExcelData.Add("NSX Manager Details", $tempHostData2)
         ####plotDynamicExcel one workBook at a time
         $plotHostInformationExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName $eachVMHost.name -listOfDataToPlot $allVmHostsExcelData
+        ####writeToExcel -eachDataElementToPrint $sshCommandOutputData -listOfAllAttributesToPrint $sshCommandOutputLable
     }
+    #invokeNSXManagerSSH(" show logical-switch host host-31 verbose ")
 
     <#
     $exportHostList = Read-Host -Prompt "`n Export output in a .txt file? Please enter 'y' or 'n'"
@@ -271,7 +305,7 @@ function getHostInformation($sectionNumber){
     documentationkMenu(22)
 }
 
-#Run visio
+#Run visio tool
 function runNSXVISIOTool($sectionNumber){
     Write-Host "`n You have selected # '$sectionNumber'. Now starting VISIO tool..."
     invoke-expression -Command .\DiagramNSX\NsxObjectCapture.ps1
@@ -281,6 +315,7 @@ function runNSXVISIOTool($sectionNumber){
     documentationkMenu(22)
 }
 
+#Download Log Insite's Dashboard
 function importLogInSightDashBoard($sectionNumber){
     Write-Host "`n You have selected # '$sectionNumber'. Now starting VISIO tool..."
     $lisVersion = Read-Host -Prompt " Please provide your Log Insite Version"
@@ -327,6 +362,16 @@ function getRoutingInformation($sectionNumber){
     documentationkMenu(22)
 }
 
+#get VXLAN Info
+function getVXLANInformation($sectionNumber){
+    Write-Host "`n You have selected # '$sectionNumber'. Now documenting VXLAN Info to the excel file..."
+
+    #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
+    $excelName = "NSX-VXLAN-Excel"
+    $nsxComponentExcelWorkBook = createNewExcel($excelName)
+}
+
+
 #Run DFW2Excel
 function runDFW2Excel($sectionNumber){
     Write-Host "`n You have selected # '$sectionNumber'. Now documenting DFW to excel file..."
@@ -335,18 +380,19 @@ function runDFW2Excel($sectionNumber){
 }
 
 
-
 #Run getVDRInstance
 function getVDRInstance($sectionNumber){
     Write-Host "`n You have selected # '$sectionNumber'. Now geting VDR Instance..."
     healthCheckMenu(22)
 }
 
+
 #Run getVIBVersion
 function getVIBVersion($sectionNumber){
     Write-Host "`n You have selected # '$sectionNumber'. Now geting VIB Version..."
     healthCheckMenu(22)
 }
+
 
 function getMemberWithProperty($tempListOfAllAttributesInFunc){
     #$listOfAllAttributesWithCorrectProperty = New-Object System.Collections.ArrayList
@@ -360,6 +406,7 @@ function getMemberWithProperty($tempListOfAllAttributesInFunc){
     #return $listOfAllAttributesWithCorrectProperty
     return ,$listOfAllAttributesWithCorrectProperty
 }
+
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 #---- ---- Excel Functions start here ---- ----#
@@ -385,6 +432,7 @@ function createNewExcel($newExcelName){
 # Plot excel sheet here one workBook at a time ..pass already created Excel, Worksheet Name, List of values need to be plotted.
 # Call this function seperatelly for multiple Work Sheets.
 function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfDataToPlot){
+    $listOfAllAttributes =@()
     Write-Host "`n Plotting Excel Sheet. This might take upto 30 mins..."
     $global:myRow =1
     $global:myColumn=1
@@ -393,7 +441,7 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
     $sheet.Cells.Item(1,1) = $workSheetName
 
     foreach($eachDataSetKey in $listOfDataToPlot.Keys){
-        Write-Host "`n****ListOfDataToPlot key is:" $eachDataSetKey
+        Write-Host "`n **Data to Plot key is:" $eachDataSetKey
         $global:myRow++
         $global:myRow++
         $global:myColumn = 1
@@ -414,10 +462,12 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
                 $tempListOfAllAttributes = $listOfDataToPlot.Item($eachDataSetKey)[0] | Get-Member
                 $listOfAllAttributes = getMemberWithProperty($tempListOfAllAttributes)
             }else{
-                 Write-Host "Found Specific Parameters to print"
+                 #Write-Host "Found Specific Parameters to print"
                 $tempLableNumber =0
+                #Write-Host "Length of passed array is:" $listOfDataToPlot.Item($eachDataSetKey).count
                 foreach ($eachCustomLabel in $listOfDataToPlot.Item($eachDataSetKey)){
-                    if ($tempLableNumber -ne 0){$listOfAllAttributes.Add($eachCustomLabel)}
+                    #Write-Host "Each Element passed is:" $eachCustomLabel
+                    if ($tempLableNumber -ne 0){$listOfAllAttributes+=$eachCustomLabel}
                     $tempLableNumber++
                 }
             }
@@ -436,7 +486,6 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
 #                $appRow++
 #            }
 } # End Function plotDynamicExcelWorkBook
-
 
 
 function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
@@ -484,8 +533,8 @@ function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
         }Catch{
             $ErrorMessage = $_.Exception.Message
             #pass
-            Write-Host "    No value available for:" $eachLabelToPrint
-            Write-Host "Error is:" $ErrorMessage
+            Write-Host " Warning:" $ErrorMessage
+            Write-Host "   Details: No value available for:" $eachLabelToPrint
         }
     }
 
@@ -507,11 +556,82 @@ function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
     }
 } # End function writeToExcel
 
+
 function startSSHSession($serverToConnectTo, $credentialsToUse){
     #$myNSXManagerCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $mySecurePass
     $newSSHSession = New-Sshsession -computername $serverToConnectTo -Credential $credentialsToUse
     return $newSSHSession
 }
+
+
+function getNSXMgrBuffSize(){
+    #Write-Host "`n NSX Manager Index is:" $global:nsxmanagerSSHIndex
+    #Write-Host " NSX Manager Index type is:" $global:nsxmanagerSSHIndex.gettype()
+    $NewSSHStream = New-SSHShellStream -Index $global:nsxmanagerSSHIndex
+    $NewSSHStream.WriteLine("")
+    Start-Sleep -s 2
+    $tempBuffRead1 = $NewSSHStream.read()
+    $NewSSHStream.WriteLine("")
+    Start-Sleep -s 2
+    $tempBuffRead1 = $NewSSHStream.read()
+    #Write-Host " Buffer Read is:" $tempBuffRead1
+    $global:nsxMgrDefaultBuffSize = $tempBuffRead1.Length
+}
+
+
+function getCoimpleteBufferRead($inputBuffRead){
+    #Write-Host " inputBuffRead Read is:" $inputBuffRead
+    if ($inputBuffRead.Length -eq 0){
+        Write-Host " Error: Reading SSH Command!"
+    }elseif($inputBuffRead.Length -eq $global:nsxMgrDefaultBuffSize){
+        Write-Host " Note: End of the Buffer."
+    }else{
+        Write-Host " Reding Buffer - length is:" $inputBuffRead.Length
+        $global:sshOutputBuffer += $inputBuffRead
+        $NewSSHStreamSession.WriteLine("")
+        Start-Sleep -s 4
+        $tempBuffRead = $NewSSHStreamSession.read()
+        getCoimpleteBufferRead($tempBuffRead)
+    }
+}
+
+
+function invokeNSXManagerSSH($commandToInvoke, $fileName){
+    Write-Host "`n SSH Command Invoked:" $commandToInvoke
+    getNSXMgrBuffSize
+    $global:sshOutputBuffer = @()
+    #Write-Host " BufferArray count at Start is:" $global:sshOutputBuffer.count
+    $NewSSHStreamSession = New-SSHShellStream -Index $global:nsxmanagerSSHIndex
+    $NewSSHStreamSession.WriteLine($commandToInvoke)
+    Start-Sleep -s 4
+    $tempBuffRead2 = $NewSSHStreamSession.read()
+    #Write-Host " Buffer Read is:" $tempBuffRead2
+    getCoimpleteBufferRead($tempBuffRead2)
+    #Write-Host " BufferArray count at End is:" $global:sshOutputBuffer.count
+    $tempBufferText = " "
+    foreach ($bufferRead in $global:sshOutputBuffer){
+        $tempBufferText += $bufferRead
+    }
+    $tempBufferText > $fileName
+}
+
+<#
+function testFunction(){
+    $vmHosts = get-vmhost
+    Write-Host " Number of vmHosts are:" $vmHosts.length
+    foreach ($eachHost in $vmHosts){Write-Host "Each Host is: "$eachHost.id}
+    #
+    #invokeNSXManagerSSH -commandToInvoke "show logical-switch host host-31 verbose" -fileName "test.txt"
+    ##invokeNSXManagerSSH -commandToInvoke "show cluster all" -fileName "test.txt"
+    #$findElements= @("Out-Of-Sync", "MTU", "VXLAN vmknic")
+    #foreach ($eachElement in $findElements){
+    #    $indx = ''
+    #    $indx = Select-String $eachElement "test.txt" | ForEach-Object {$_.LineNumber}
+    #    if ($indx -ne '') {Write-Host "Found Object" (Get-Content "test.txt")[$indx-1]}
+    #}
+    #
+}
+#>
 
 #function thirdOptionSelected($sectionNumber){
 #    $userSelection = "Get List of VMs"
@@ -568,6 +688,7 @@ while($true)
     elseif ($sectionNumber -eq 2){connectNSXManager($sectionNumber)}
     elseif ($sectionNumber -eq 3){documentationkMenu($sectionNumber)}
     elseif ($sectionNumber -eq 4){healthCheckMenu($sectionNumber)}
+    #elseif ($sectionNumber -eq 'test'){testFunction}
     elseif ($sectionNumber -eq ''){}
     #elseif ($sectionNumber -eq 5){runNSXVisualTool($sectionNumber)}
     else { Write-Host "`n You have made an invalid choice!"}
