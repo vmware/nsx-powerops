@@ -239,9 +239,11 @@ function getHostInformation($sectionNumber){
 #Run visio tool
 function runNSXVISIOTool($sectionNumber){
     Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now starting VISIO tool..."
-    invoke-expression -Command .\DiagramNSX\NsxObjectCapture.ps1
-    $pathVISIO = Read-Host -Prompt " Please provide the above .zip file path to generate the VISIO file"
-    $visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -CaptureBundle " + $pathVISIO
+    $capturePath = invoke-expression -Command .\DiagramNSX\NsxObjectCapture.ps1
+    Write-Host "`n"
+    #$pathVISIO = Read-Host -Prompt " Please provide the above .zip file path to generate the VISIO file"
+    #$visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -CaptureBundle " + $pathVISIO
+    $visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -CaptureBundle " + $capturePath
     invoke-expression -Command $visioDiagramCommand
     documentationkMenu(22)
 }
@@ -300,6 +302,7 @@ function getVXLANInformation($sectionNumber){
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "NSX-VXLAN-Excel"
     $nsxComponentExcelWorkBook = createNewExcel($excelName)
+    documentationkMenu(22)
 }
 
 
@@ -614,7 +617,7 @@ Write-Host "
                      ~~                A project by SA Team                   ~~ 
                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-                     ~ Note: Please run this script from VMware PowerCLI.      ~ 
+                     ~ Note: Please run this script in VMware PowerCLI.      ~ 
                      ~       To get the list of available commands type 'help' ~ 
                      ~       To exit the program type 'exit' or '0'.           ~ 
                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
