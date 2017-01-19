@@ -41,113 +41,44 @@ import-module Posh-SSH
     $global:myRow = 1
     $global:myColumn = 1
 
-    $global:vCenterSSHIndex
-    $global:nsxmanagerSSHIndex
-    $global:nsxMgrDefaultBuffSize
-    $global:sshOutputBuffer = @()
-
-function printMainMenu{
-Write-Host " 1) Install PowerNSX
- 2) Connect NSX Manager and vCenter
- 3) Show Documentation Menu
- 4) Show Health Check Menu
- 0) Exit E-Cube"
-}
-
-function printDocumentationMenu{
-Write-Host "`n **********************************************************
- **              e-Cube Documentation Menu               **
- **********************************************************
- *                                                        *
- * Environment Documentation                              *
- * |-> 1) Document all NSX Components                     *
- * |-> 2) Document ESXi Host(s) Info                      *
- * |-> 3) Document NSX Environment Diagram via VISIO Tool *
- * |-> 4) Import vRealize Log Insight Dashboard           *
- *                                                        *
- * Networking Documentation                               *
- * |-> 5) Document Routing info                           *
- * |-> 6) Document VxLAN info                             *
- *                                                        *
- * Security Documentation                                 *
- * |-> 7) Document NSX DFW info to Excel - DFW2Excel      *
- * |-> 8) Document DFW-VAT                                *
- *                                                        *
- * 0) Exit Documentation Menu                             *
- **********************************************************"
-}
-
-function printHealthCheckMenu{
-Write-Host "`n ********************************
- **  e-Cube Health Check Menu  **
- ********************************
- *                              *
- * 1) Check VDR Instance        *
- * 2) Check VIB Version         *
- *                              *
- * 0) Exit Health Check Menu    *
- ********************************"
-}
-
 #Install PowerNSX here
 function installPowerNSX($sectionNumber){
     $userSelection = "Install PowerNSX"
-    Write-Host "`n You have selected # '$sectionNumber'. Now executing '$userSelection'..."\
+    Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now executing '$userSelection'..."\
     $Branch="v2";$url="https://raw.githubusercontent.com/vmware/powernsx/$Branch/PowerNSXInstaller.ps1"; try { $wc = new-object Net.WebClient;$scr = try { $wc.DownloadString($url)} catch { if ( $_.exception.innerexception -match "(407)") { $wc.proxy.credentials = Get-Credential -Message "Proxy Authentication Required"; $wc.DownloadString($url) } else { throw $_ }}; $scr | iex } catch { throw $_ }
 }
 
 #Connect to NSX Manager and vCenter. Save the credentials.
 function connectNSXManager($sectionNumber){
-    Write-Host "`n You have selected # '$sectionNumber'. Now executing Connect with NSX Manager..."
+    Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now executing Connect with Hosts..."
     
-    $vCenterHost = Read-Host -Prompt " Enter vCenter IP"
+    $global:vCenterHost = Read-Host -Prompt " Enter vCenter IP"
     $vCenterUser = Read-Host -Prompt " Enter vCenter User"
     $vCenterPass = Read-Host -Prompt " Enter vCenter Password" 
 
-    $nsxManagerHost = Read-Host -Prompt "`n Enter NSX Manager IP"
+    $global:nsxManagerHost = Read-Host -Prompt "`n Enter NSX Manager IP"
     $nsxManagerUser = Read-Host -Prompt " Enter NSX Manager User"
-    $nsxManagerPass = Read-Host -Prompt " Enter NSX Manager Password" 
+    $nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password" 
+    $global:nsxManagerAuthorization = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($nsxManagerUser + ":" + $nsxManagerPasswd))
+    $nsxManagerSecurepasswd = ConvertTo-SecureString $nsxManagerPasswd -AsPlainText -Force
+    $global:nsxManagerPSCredential = New-Object System.Management.Automation.PSCredential ($nsxManagerUser, $nsxManagerSecurepasswd)
 
-    #$SecureStringAsPlainText1 = $vCenterPass | ConvertFrom-SecureString
-    #$SecureStringAsPlainText2 = $nsxManagerPass | ConvertFrom-SecureString
-
-    #$SecureStringAsPlainText1
-    #$SecureStringAsPlainText2
-
-    if ($nsxManagerHost -eq '' -or $nsxManagerUser -eq '' -or $nsxManagerPass -eq ''){
+    if ($global:nsxManagerHost -eq '' -or $nsxManagerUser -eq '' -or $nsxManagerPasswd -eq ''){
         " NSX Manager information not provided. Can't connect to NSX Manager or vCenter!"
     }
-    elseif ($vCenterHost -eq '' -or $vCenterUser -eq '' -or $vCenterPass -eq ''){
+    elseif ($global:vCenterHost -eq '' -or $vCenterUser -eq '' -or $vCenterPass -eq ''){
         " vCenter information not provided. Can't connect to NSX Manager or vCenter!"
     }
     else{
-        "`n Connecting with vCenter..."
-        Connect-VIServer -Server $vCenterHost -User $vCenterUser -Password $vCenterPass
-        "`n Establishing SSH connection with vCenter..."
-        $vCenterSecurePass = $vCenterPass | ConvertTo-SecureString -AsPlainText -Force
-        $myvCenterSecureCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $vCenterUser, $vCenterSecurePass
-        $vCenterSSHConnection = startSSHSession -serverToConnectTo $vCenterHost -credentialsToUse $myvCenterSecureCredential
-        $vCenterSSHConnection
-        $global:vCenterSSHIndex = $vCenterSSHConnection.SessionID
-        #$global:vCenterSSHIndex
+        Write-Host -ForegroundColor Yellow "`n Connecting with vCenter..."
+        Connect-VIServer -Server $global:vCenterHost -User $vCenterUser -Password $vCenterPass
 
-        "`n Connecting with NSX Manager..."
-        Connect-NsxServer -Server $nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPass -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
-        "`n Establishing SSH connection with NSX Manager..."
-        $nsxManagerSecurePass = $nsxManagerPass | ConvertTo-SecureString -AsPlainText -Force
-        $myNSXManagerSecureCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxManagerUser, $nsxManagerSecurePass
-        $nsxManagerSSHConnection = startSSHSession -serverToConnectTo $nsxManagerHost -credentialsToUse $myNSXManagerSecureCredential
-        $nsxManagerSSHConnection
-        $global:nsxmanagerSSHIndex = $nsxManagerSSHConnection.SessionID
-        #$global:nsxmanagerSSHIndex
-        #Start-Sleep -s 2
-        Write-Host " Establishing SSH Stream with NSX Manager..."
-        getNSXMgrBuffSize
-        Write-Host "Connected. Default NSX Mgr buffer length is:" $global:nsxMgrDefaultBuffSize
+        Write-Host -ForegroundColor Yellow "`n Connecting with NSX Manager..."
+        Connect-NsxServer -Server $global:nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPasswd -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
 
-        "`n Connecting NSX Manager to vCenter..."
-        Set-NsxManager -vCenterServer $vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
-        "Done!"
+        Write-Host -ForegroundColor Yellow "`n Connecting NSX Manager to vCenter..."
+        Set-NsxManager -vCenterServer $global:vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
+        Write-Host -ForegroundColor Green "Done!"
     }
 }
 
@@ -158,7 +89,7 @@ function documentationkMenu($sectionNumber){
     $documentationSectionNumber = Read-Host
 
     if ($documentationSectionNumber -eq 0 -or $documentationSectionNumber -eq "exit"){
-        " Exit Documentation Menu`n"
+        Write-Host -ForeGroundColor Darkyellow "Exit Documentation Menu`n"
         printMainMenu}
     elseif ($documentationSectionNumber -eq 1){$allNSXComponentData = getNSXComponents($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 2){getHostInformation($documentationSectionNumber)}
@@ -170,7 +101,7 @@ function documentationkMenu($sectionNumber){
     
     elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
     elseif ($documentationSectionNumber -eq ''){documentationkMenu(22)}
-    else { Write-Host "`n You have made an invalid choice!"
+    else { Write-Host -ForegroundColor DarkRed"`n You have made an invalid choice!"
     documentationkMenu(22)}
 }
 
@@ -181,20 +112,20 @@ function healthCheckMenu($sectionNumber){
     $healthCheckSectionNumber = Read-Host
 
     if ($healthCheckSectionNumber -eq 0 -or $healthCheckSectionNumber -eq "exit"){
-        " Exit NSX Health Check Menu`n"
+        Write-Host -ForeGroundColor Darkyellow "Exit Health Check Menu`n"
         printMainMenu}
     elseif ($healthCheckSectionNumber -eq 1){getVDRInstance($healthCheckSectionNumber)}
     elseif ($healthCheckSectionNumber -eq 2){getVIBVersion($healthCheckSectionNumber)}
 
     elseif ($healthCheckSectionNumber -eq "help"){healthCheckMenu(4)}
     elseif ($healthCheckSectionNumber -eq ''){healthCheckMenu(22)}
-    else { Write-Host "`n You have made an invalid choice!"
+    else { Write-Host -ForegroundColor DarkRed "`n You have made an invalid choice!"
     healthCheckMenu(22)}
 }
 
 #Get NSX Component info here
 function getNSXComponents($sectionNumber){
-    Write-Host "`n You have selected # '$sectionNumber'. Now getting NSX Components info..."
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now getting NSX Components info..."
     #### Call other functions to get NSX Components info here...
 
     #### Save NSX Components info on local variable here
@@ -244,7 +175,7 @@ function getNSXComponents($sectionNumber){
     $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Edge Services Gateway" -listOfDataToPlot $allNSXComponentExcelDataEdge
     $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Logical Router" -listOfDataToPlot $allNSXComponentExcelDataDLR
 
-    Write-Host "`n Done Working on the Excel Sheet."
+    Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     #Loop back to document Menu
     documentationkMenu(22) #Keep in Documentation Menu
 }
@@ -252,7 +183,7 @@ function getNSXComponents($sectionNumber){
 #Get Host info here
 function getHostInformation($sectionNumber){
     $userSelection = "Get List of Hosts"
-    Write-Host "`n You have selected # '$sectionNumber'. Now executing '$userSelection'..."
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now executing '$userSelection'..."
     $vmHosts = get-vmhost
     Write-Host " Number of vmHosts are:" $vmHosts.length
 
@@ -266,14 +197,14 @@ function getHostInformation($sectionNumber){
         $myHost = $eachVMHost.id
         if ($myHost -match "HostSystem-"){$myNewHost = $myHost -replace "HostSystem-", ""}
         [string]$nsxMgrCommand = "show logical-switch host "+$myNewHost+" verbose"
-        invokeNSXManagerSSH -commandToInvoke $nsxMgrCommand -fileName "test.txt"
-        #invokeNSXManagerSSH -commandToInvoke "show cluster all" -fileName "test.txt"
-        $findElements= @("Out-Of-Sync", "MTU", "VXLAN vmknic")
+        invokeNSXManagerSSH -commandToInvoke $nsxMgrCommand -fileName "temp-logical-switch-info.txt"
+        #invokeNSXManagerSSH -commandToInvoke "show cluster all" -fileName "temp-logical-switch-info.txt"
+        $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
         foreach ($eachElement in $findElements){
             $indx = ''
-            $indx = Select-String $eachElement "test.txt" | ForEach-Object {$_.LineNumber}
+            $indx = Select-String $eachElement "temp-logical-switch-info.txt" | ForEach-Object {$_.LineNumber}
             if ($indx -ne '') {
-                [string]$eachElementResult = (Get-Content "test.txt")[$indx-1]
+                [string]$eachElementResult = (Get-Content "temp-logical-switch-info.txt")[$indx-1]
                 $sshCommandOutputData.Add($eachElement, $eachElementResult)
                 $sshCommandOutputLable += $eachElement
             }
@@ -285,7 +216,7 @@ function getHostInformation($sectionNumber){
         $tempHostData2=@()
         #$allVmHostsExcelData = @{"ESXi Host" = $eachVMHost, "Name", "ConnectionState", "PowerState", "NumCpu", "CpuUsageMhz", "CpuTotalMhz", "MemoryUsageGB", "MemoryTotalGB", "Version"}
         $tempHostData = $eachVMHost, "all"
-        $tempHostData2 = $sshCommandOutputData, "Out-Of-Sync", "MTU", "VXLAN vmknic"
+        $tempHostData2 = $sshCommandOutputData, "Control plane Out-Of-Sync", "MTU", "VXLAN vmknic"
         $allVmHostsExcelData.Add($eachVMHost.name, $tempHostData)
         $allVmHostsExcelData.Add("NSX Manager Details", $tempHostData2)
         ####plotDynamicExcel one workBook at a time
@@ -301,13 +232,13 @@ function getHostInformation($sectionNumber){
         " Created a list of all VM(s) and exported in ListOfAllHost.txt"
     }
     #>
-    Write-Host "`n Done Working on the Excel Sheet."
+    Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     documentationkMenu(22)
 }
 
 #Run visio tool
 function runNSXVISIOTool($sectionNumber){
-    Write-Host "`n You have selected # '$sectionNumber'. Now starting VISIO tool..."
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now starting VISIO tool..."
     invoke-expression -Command .\DiagramNSX\NsxObjectCapture.ps1
     $pathVISIO = Read-Host -Prompt " Please provide the above .zip file path to generate the VISIO file"
     $visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -CaptureBundle " + $pathVISIO
@@ -317,7 +248,7 @@ function runNSXVISIOTool($sectionNumber){
 
 #Download Log Insite's Dashboard
 function importLogInSightDashBoard($sectionNumber){
-    Write-Host "`n You have selected # '$sectionNumber'. Now starting VISIO tool..."
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now starting VISIO tool..."
     $lisVersion = Read-Host -Prompt " Please provide your Log Insite Version"
     Write-Host "`n Downloading custom Dashboard for your Log Insite version..."
 }
@@ -325,7 +256,7 @@ function importLogInSightDashBoard($sectionNumber){
 #Get Routing info here
 function getRoutingInformation($sectionNumber){
     $userSelection = "Get Routing Information"
-    Write-Host "`n You have selected # '$sectionNumber'. Now executing '$userSelection'..."
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now executing '$userSelection'..."
     
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "NSX-Routing-Excel"
@@ -358,13 +289,13 @@ function getRoutingInformation($sectionNumber){
     ####plotDynamicExcel one workBook at a time
     $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX DLR Routing Config" -listOfDataToPlot $allDLRRoutingExcelData
     
-    Write-Host "`n Done Working on the Excel Sheet."
+    Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     documentationkMenu(22)
 }
 
 #get VXLAN Info
 function getVXLANInformation($sectionNumber){
-    Write-Host "`n You have selected # '$sectionNumber'. Now documenting VXLAN Info to the excel file..."
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now documenting VXLAN Info to the excel file..."
 
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "NSX-VXLAN-Excel"
@@ -374,7 +305,7 @@ function getVXLANInformation($sectionNumber){
 
 #Run DFW2Excel
 function runDFW2Excel($sectionNumber){
-    Write-Host "`n You have selected # '$sectionNumber'. Now documenting DFW to excel file..."
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now documenting DFW to excel file..."
     invoke-expression -Command .\PowerNSX-Scripts\DFW2Excel.ps1
     documentationkMenu(22)
 }
@@ -382,14 +313,14 @@ function runDFW2Excel($sectionNumber){
 
 #Run getVDRInstance
 function getVDRInstance($sectionNumber){
-    Write-Host "`n You have selected # '$sectionNumber'. Now geting VDR Instance..."
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now geting VDR Instance..."
     healthCheckMenu(22)
 }
 
 
 #Run getVIBVersion
 function getVIBVersion($sectionNumber){
-    Write-Host "`n You have selected # '$sectionNumber'. Now geting VIB Version..."
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now geting VIB Version..."
     healthCheckMenu(22)
 }
 
@@ -408,24 +339,45 @@ function getMemberWithProperty($tempListOfAllAttributesInFunc){
 }
 
 
+function invokeNSXManagerSSH($commandToInvoke, $fileName){
+    Write-Host -ForeGroundColor Yellow "`n Note: SSH Command Invoked" $commandToInvoke
+    
+    $nsxMgrCliApiURL = $global:nsxManagerHost+"/api/1.0/nsx/cli?action=execute"
+    if ($nsxMgrCliApiURL.StartsWith("http://")){$nsxMgrCliApiURL -replace "http://", "https://"}
+    elseif($nsxMgrCliApiURL.StartsWith("https://")){}
+    else{$nsxMgrCliApiURL = "https://"+$nsxMgrCliApiURL}
+
+    $xmlBody = "<nsxcli>
+     <command> $commandToInvoke </command>
+     </nsxcli>"
+    $curlHead = @{"Accept"="text/plain"; "Content-type"="Application/xml"; "Authorization"="Basic $global:nsxManagerAuthorization"}
+
+    $nsxCLIResponceweb = Invoke-WebRequest -uri $nsxMgrCliApiURL -Body $xmlBody -Headers $curlHead -Method Post
+    $nsxCLIResponceweb.content > $fileName
+}
+
+
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 #---- ---- Excel Functions start here ---- ----#
-# ---- ---- ---- ---- ---- ---- ---- ---- ---- #
+# ---- ---- ---- ---- ---- ---- ---- ---- ---- # 
 
 #Create empty excel sheet here w/ correct name 
 function createNewExcel($newExcelName){
-    Write-Host "`n Creating Excel Sheet..."
-    $xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
+    $startTime = Get-Date
+    $newExcelNameWithDate = $newExcelName + $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xlsx"
+    Write-Host -ForeGroundColor Green "`n Creating Excel File:" $newExcelNameWithDate
+    
+    #$xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
     $newExcel = New-Object -Com Excel.Application
     $newExcel.visible = $True
     $newExcel.DisplayAlerts = $false
     #$Excel.Name = "Test Excel Name"
     $wb = $newExcel.Workbooks.Add()
     #$sheet = $wb.ActiveSheet
-    $startTime = Get-Date
-    $newExcelNameWithDate = $newExcelName + $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xlsx"
+    
     # Save the excel with provided Name
-    $newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate, $xlFixedFormat)
+    #$newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate, $xlFixedFormat)
+    $newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate)
     return $wb
 } # End of function createNewExcel
 
@@ -433,7 +385,7 @@ function createNewExcel($newExcelName){
 # Call this function seperatelly for multiple Work Sheets.
 function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfDataToPlot){
     $listOfAllAttributes =@()
-    Write-Host "`n Plotting Excel Sheet. This might take upto 30 mins..."
+    Write-Host -ForeGroundColor Green "`n Creating WorkSheet: $workSheetName. This can take upto 30 mins..."
     $global:myRow =1
     $global:myColumn=1
     $sheet = $myOpenExcelWBReturn.WorkSheets.Add()
@@ -441,7 +393,7 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
     $sheet.Cells.Item(1,1) = $workSheetName
 
     foreach($eachDataSetKey in $listOfDataToPlot.Keys){
-        Write-Host "`n **Data to Plot key is:" $eachDataSetKey
+        Write-Host " =>Plotting data for:" $eachDataSetKey
         $global:myRow++
         $global:myRow++
         $global:myColumn = 1
@@ -533,8 +485,8 @@ function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
         }Catch{
             $ErrorMessage = $_.Exception.Message
             #pass
-            Write-Host " Warning:" $ErrorMessage
-            Write-Host "   Details: No value available for:" $eachLabelToPrint
+            ##Write-Host " Warning:" $ErrorMessage
+            ##Write-Host "   Details: No value available for:" $eachLabelToPrint
         }
     }
 
@@ -557,63 +509,9 @@ function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
 } # End function writeToExcel
 
 
-function startSSHSession($serverToConnectTo, $credentialsToUse){
-    #$myNSXManagerCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $mySecurePass
-    $newSSHSession = New-Sshsession -computername $serverToConnectTo -Credential $credentialsToUse
-    return $newSSHSession
-}
-
-
-function getNSXMgrBuffSize(){
-    #Write-Host "`n NSX Manager Index is:" $global:nsxmanagerSSHIndex
-    #Write-Host " NSX Manager Index type is:" $global:nsxmanagerSSHIndex.gettype()
-    $NewSSHStream = New-SSHShellStream -Index $global:nsxmanagerSSHIndex
-    $NewSSHStream.WriteLine("")
-    Start-Sleep -s 2
-    $tempBuffRead1 = $NewSSHStream.read()
-    $NewSSHStream.WriteLine("")
-    Start-Sleep -s 2
-    $tempBuffRead1 = $NewSSHStream.read()
-    #Write-Host " Buffer Read is:" $tempBuffRead1
-    $global:nsxMgrDefaultBuffSize = $tempBuffRead1.Length
-}
-
-
-function getCoimpleteBufferRead($inputBuffRead){
-    #Write-Host " inputBuffRead Read is:" $inputBuffRead
-    if ($inputBuffRead.Length -eq 0){
-        Write-Host " Error: Reading SSH Command!"
-    }elseif($inputBuffRead.Length -eq $global:nsxMgrDefaultBuffSize){
-        Write-Host " Note: End of the Buffer."
-    }else{
-        Write-Host " Reding Buffer - length is:" $inputBuffRead.Length
-        $global:sshOutputBuffer += $inputBuffRead
-        $NewSSHStreamSession.WriteLine("")
-        Start-Sleep -s 4
-        $tempBuffRead = $NewSSHStreamSession.read()
-        getCoimpleteBufferRead($tempBuffRead)
-    }
-}
-
-
-function invokeNSXManagerSSH($commandToInvoke, $fileName){
-    Write-Host "`n SSH Command Invoked:" $commandToInvoke
-    getNSXMgrBuffSize
-    $global:sshOutputBuffer = @()
-    #Write-Host " BufferArray count at Start is:" $global:sshOutputBuffer.count
-    $NewSSHStreamSession = New-SSHShellStream -Index $global:nsxmanagerSSHIndex
-    $NewSSHStreamSession.WriteLine($commandToInvoke)
-    Start-Sleep -s 4
-    $tempBuffRead2 = $NewSSHStreamSession.read()
-    #Write-Host " Buffer Read is:" $tempBuffRead2
-    getCoimpleteBufferRead($tempBuffRead2)
-    #Write-Host " BufferArray count at End is:" $global:sshOutputBuffer.count
-    $tempBufferText = " "
-    foreach ($bufferRead in $global:sshOutputBuffer){
-        $tempBufferText += $bufferRead
-    }
-    $tempBufferText > $fileName
-}
+# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- #
+#---- ---- Test Function for development use only ---- ----#
+# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 
 <#
 function testFunction(){
@@ -633,54 +531,108 @@ function testFunction(){
 }
 #>
 
-#function thirdOptionSelected($sectionNumber){
-#    $userSelection = "Get List of VMs"
-#    Write-Host "`n You have selected # '$sectionNumber'. Now executing '$userSelection'..."
-#    $listOfVMs = get-vm
-#    $listOfVMs
-#    $exportVMsList = Read-Host -Prompt "`n Export VMs list in a .txt file? Please enter 'y' or 'n'"
-#    if ($exportVMsList -eq 'y'){
-#        $listOfVMs > ListOfAllVMs.txt
-#        " Created a list of all VM(s) and exported in ListOfAllVMs.txt"
-#    }
-#}
 
-"`n"
-" __/\\\\\\\\\\\\\\\______________________/\\\\\\\\\________________/\\\_______________________        "
-"  _\/\\\///////////____________________/\\\////////________________\/\\\_______________________       "
-"   _\/\\\_____________________________/\\\/_________________________\/\\\_______________________      "
-"    _\/\\\\\\\\\\\______/\\\\\\\\\\\__/\\\______________/\\\____/\\\_\/\\\____________/\\\\\\\\\_     "
-"     _\/\\\///////______\///////////__\/\\\_____________\/\\\___\/\\\_\/\\\\\\\\\____/\\\//    /__    "
-"      _\/\\\___________________________\//\\\____________\/\\\___\/\\\_\/\\\////\\\__/\\\\\\\\\____   "
-"       _\/\\\____________________________\///\\\__________\/\\\___\/\\\_\/\\\__\/\\\_\//\\/  //_____  "
-"        _\/\\\\\\\\\\\\\\\__________________\////\\\\\\\\\_\//\\\\\\\\\__\/\\\\\\\\\___\//\\\\\\\\\__ "
-"         _\///////////////______________________\/////////___\/////////___\/////////_____\/////////___`n`n"
+# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- #
+#---- ---- Welcome Logo & Menus start here ---- ----#
+# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- # 
+
+#Function to show Main Menu
+function printMainMenu{
+    Write-Host "`n
+                                 *****************|******************
+                                 **        e-Cube Main Menu        **
+                                 ************************************
+                                 *                                  *
+                                 * 1) Install PowerNSX              *
+                                 * 2) Connect NSX Manager & vCenter *
+                                 * 3) Show Documentation Menu       *
+                                 * 4) Show Health Check Menu        *
+                                 *                                  *
+                                 * 0) Exit E-Cube                   *
+                                 ************************************"
+
+}
 
 
-" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
-" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
-" ~~                  Welcome to E-Cube                    ~~" 
-" ~~                A project by SA Team                   ~~" 
-" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
-" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
-" ~ Note: Please run this script from PowerCLI.             ~" 
-" ~       To get the list of available commands type 'help' ~" 
-" ~       To exit type 'exit' or '0'.                       ~" 
-" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
-" What would you like to do today?" 
+#Function to show Documentation Menu
+function printDocumentationMenu{
+    Write-Host "`n
+                      ****************************|*****************************
+                      **              e-Cube Documentation Menu               **
+                      **********************************************************
+                      *                                                        *
+                      * Environment Documentation                              *
+                      * |-> 1) Document all NSX Components                     *
+                      * |-> 2) Document ESXi Host(s) Info                      *
+                      * |-> 3) Document NSX Environment Diagram via VISIO Tool *
+                      * |-> 4) Import vRealize Log Insight Dashboard           *
+                      *                                                        *
+                      * Networking Documentation                               *
+                      * |-> 5) Document Routing info                           *
+                      * |-> 6) Document VxLAN info                             *
+                      *                                                        *
+                      * Security Documentation                                 *
+                      * |-> 7) Document NSX DFW info to Excel - DFW2Excel      *
+                      * |-> 8) Document DFW-VAT                                *
+                      *                                                        *
+                      * 0) Exit Documentation Menu                             *
+                      **********************************************************"
+}
+
+
+#Function to show Health Check Menu
+function printHealthCheckMenu{
+    Write-Host "`n
+                                   ***************|****************
+                                   **  e-Cube Health Check Menu  **
+                                   ********************************
+                                   *                              *
+                                   * 1) Check VDR Instance        *
+                                   * 2) Check VIB Version         *
+                                   *                              *
+                                   * 0) Exit Health Check Menu    *
+                                   ********************************"
+}
+
+
+Write-Host "
+ __/\\\\\\\\\\\\\\\______________________/\\\\\\\\\________________/\\\_______________________        
+  _\/\\\///////////____________________/\\\////////________________\/\\\_______________________       
+   _\/\\\_____________________________/\\\/_________________________\/\\\_______________________      
+    _\/\\\\\\\\\\\______/\\\\\\\\\\\__/\\\______________/\\\____/\\\_\/\\\____________/\\\\\\\\\_     
+     _\/\\\///////______\///////////__\/\\\_____________\/\\\___\/\\\_\/\\\\\\\\\____/\\\//    /__    
+      _\/\\\___________________________\//\\\____________\/\\\___\/\\\_\/\\\////\\\__/\\\\\\\\\____   
+       _\/\\\____________________________\///\\\__________\/\\\___\/\\\_\/\\\__\/\\\_\//\\/  //_____  
+        _\/\\\\\\\\\\\\\\\__________________\////\\\\\\\\\_\//\\\\\\\\\__\/\\\\\\\\\___\//\\\\\\\\\__ 
+         _\///////////////______________________\/|///////___\/////////___\/////////_____\/////////___
+102
+" -BackgroundColor Black -ForegroundColor Blue
+Write-Host "
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+                     ~~                  Welcome to E-Cube                    ~~ 
+                     ~~                A project by SA Team                   ~~ 
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+                     ~ Note: Please run this script from VMware PowerCLI.      ~ 
+                     ~       To get the list of available commands type 'help' ~ 
+                     ~       To exit the program type 'exit' or '0'.           ~ 
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
+
+#"`n                    What would you like to do today?" 
 printMainMenu
 
 while($true)
 {
-    Write-Host "`n>> Please select an e-cube option: " -ForegroundColor DarkMagenta -NoNewline
+    Write-Host "`n>> Please select an e-cube option: " -ForegroundColor DarkGreen -NoNewline
     $sectionNumber = Read-Host
 
     if ($sectionNumber -eq 0 -or $sectionNumber -eq "exit"){
-        " Closing vCenter SSH Session..." 
-        remove-sshsession -Index $global:vCenterSSHIndex
+        if ($global:nsxManagerHost){Write-Host -ForegroundColor Yellow "Disconnecting NSX Server..."
+        Disconnect-NsxServer}
+        if ($global:vCenterHost){Write-Host -ForegroundColor Yellow "Disconnecting VIServer..."
+        Disconnect-VIServer -Server * -Force}
         
-        " Closing NSX Manager SSH Session..."
-        remove-sshsession -Index $global:nsxmanagerSSHIndex
         break}
     elseif ($sectionNumber -eq "help"){printMainMenu}
 
@@ -691,7 +643,7 @@ while($true)
     #elseif ($sectionNumber -eq 'test'){testFunction}
     elseif ($sectionNumber -eq ''){}
     #elseif ($sectionNumber -eq 5){runNSXVisualTool($sectionNumber)}
-    else { Write-Host "`n You have made an invalid choice!"}
+    else { Write-Host --ForegroundColor DarkRed"`n You have made an invalid choice!"}
 
-}# Infinite while loop ends here
+}# Infinite while loop ends here 
 ####start-sleep -s 1
