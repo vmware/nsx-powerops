@@ -11,6 +11,7 @@
 # Import PowerNSX Module
 import-module PowerNSX
 import-module Posh-SSH
+Import-Module Pester
 #Import-Module pscx
 
 ########################################################
@@ -74,7 +75,7 @@ function connectNSXManager($sectionNumber){
         Connect-VIServer -Server $global:vCenterHost -User $vCenterUser -Password $vCenterPass
 
         Write-Host -ForegroundColor Yellow "`n Connecting with NSX Manager..."
-        Connect-NsxServer -Server $global:nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPasswd -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
+        $global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPasswd -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
 
         Write-Host -ForegroundColor Yellow "`n Connecting NSX Manager to vCenter..."
         Set-NsxManager -vCenterServer $global:vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
@@ -101,7 +102,7 @@ function documentationkMenu($sectionNumber){
     
     elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
     elseif ($documentationSectionNumber -eq ''){documentationkMenu(22)}
-    else { Write-Host -ForegroundColor DarkRed"`n You have made an invalid choice!"
+    else { Write-Host -ForegroundColor DarkRed"You have made an invalid choice!"
     documentationkMenu(22)}
 }
 
@@ -114,12 +115,15 @@ function healthCheckMenu($sectionNumber){
     if ($healthCheckSectionNumber -eq 0 -or $healthCheckSectionNumber -eq "exit"){
         Write-Host -ForeGroundColor Darkyellow "Exit Health Check Menu`n"
         printMainMenu}
-    elseif ($healthCheckSectionNumber -eq 1){getVDRInstance($healthCheckSectionNumber)}
-    elseif ($healthCheckSectionNumber -eq 2){getVIBVersion($healthCheckSectionNumber)}
+    elseif ($healthCheckSectionNumber -eq 1){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXConnections"}
+    elseif ($healthCheckSectionNumber -eq 2){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXManager"}
+    elseif ($healthCheckSectionNumber -eq 3){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXControllers"}
+    elseif ($healthCheckSectionNumber -eq 4){getVIBVersion($healthCheckSectionNumber)}
+    elseif ($healthCheckSectionNumber -eq 5){getVIBVersion($healthCheckSectionNumber)}
 
     elseif ($healthCheckSectionNumber -eq "help"){healthCheckMenu(4)}
     elseif ($healthCheckSectionNumber -eq ''){healthCheckMenu(22)}
-    else { Write-Host -ForegroundColor DarkRed "`n You have made an invalid choice!"
+    else { Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
     healthCheckMenu(22)}
 }
 
@@ -197,8 +201,8 @@ function getHostInformation($sectionNumber){
         $myHost = $eachVMHost.id
         if ($myHost -match "HostSystem-"){$myNewHost = $myHost -replace "HostSystem-", ""}
         [string]$nsxMgrCommand = "show logical-switch host "+$myNewHost+" verbose"
-        invokeNSXManagerSSH -commandToInvoke $nsxMgrCommand -fileName "temp-logical-switch-info.txt"
-        #invokeNSXManagerSSH -commandToInvoke "show cluster all" -fileName "temp-logical-switch-info.txt"
+        invokeNSXCLICmd -commandToInvoke $nsxMgrCommand -fileName "temp-logical-switch-info.txt"
+        #invokeNSXCLICmd -commandToInvoke "show cluster all" -fileName "temp-logical-switch-info.txt"
         $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
         foreach ($eachElement in $findElements){
             $indx = ''
@@ -223,7 +227,7 @@ function getHostInformation($sectionNumber){
         $plotHostInformationExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName $eachVMHost.name -listOfDataToPlot $allVmHostsExcelData
         ####writeToExcel -eachDataElementToPrint $sshCommandOutputData -listOfAllAttributesToPrint $sshCommandOutputLable
     }
-    #invokeNSXManagerSSH(" show logical-switch host host-31 verbose ")
+    #invokeNSXCLICmd(" show logical-switch host host-31 verbose ")
 
     <#
     $exportHostList = Read-Host -Prompt "`n Export output in a .txt file? Please enter 'y' or 'n'"
@@ -314,20 +318,6 @@ function runDFW2Excel($sectionNumber){
 }
 
 
-#Run getVDRInstance
-function getVDRInstance($sectionNumber){
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now geting VDR Instance..."
-    healthCheckMenu(22)
-}
-
-
-#Run getVIBVersion
-function getVIBVersion($sectionNumber){
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now geting VIB Version..."
-    healthCheckMenu(22)
-}
-
-
 function getMemberWithProperty($tempListOfAllAttributesInFunc){
     #$listOfAllAttributesWithCorrectProperty = New-Object System.Collections.ArrayList
     $listOfAllAttributesWithCorrectProperty = @()
@@ -342,8 +332,8 @@ function getMemberWithProperty($tempListOfAllAttributesInFunc){
 }
 
 
-function invokeNSXManagerSSH($commandToInvoke, $fileName){
-    Write-Host -ForeGroundColor Yellow "`n Note: SSH Command Invoked" $commandToInvoke
+function invokeNSXCLICmd($commandToInvoke, $fileName){
+    Write-Host -ForeGroundColor Yellow "`n Note: CLI Command Invoked" $commandToInvoke
     
     $nsxMgrCliApiURL = $global:nsxManagerHost+"/api/1.0/nsx/cli?action=execute"
     if ($nsxMgrCliApiURL.StartsWith("http://")){$nsxMgrCliApiURL -replace "http://", "https://"}
@@ -357,6 +347,35 @@ function invokeNSXManagerSSH($commandToInvoke, $fileName){
 
     $nsxCLIResponceweb = Invoke-WebRequest -uri $nsxMgrCliApiURL -Body $xmlBody -Headers $curlHead -Method Post
     $nsxCLIResponceweb.content > $fileName
+}
+
+
+# ---- ---- ---- ---- ---- ---- ---- ---- ---- #
+#---- ---- Test Functions start here ---- ----#
+# ---- ---- ---- ---- ---- ---- ---- ---- ---- # 
+
+
+function runNSXTest ($sectionNumber, $testModule){
+  Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Testing $testModule..."
+  $result = Invoke-Pester -Script @{ Path = './HealthCheck/'+$testModule+'.Tests.ps1'; Parameters = @{ testModule = $testModule} } -OutputFile ./HealthCheck/testResult-$testModule.xml
+  Write-Host "`nSave the result in an XML file? Y or N [default Y]: " -ForegroundColor Darkyellow -NoNewline
+  $saveHCResult = Read-Host
+  if ($saveHCResult -eq 'n'-or $saveHCResult -eq "N") {Remove-Item ./HealthCheck/testResult-$testModule.xml}else{
+      Write-Host "Saved XML file at:" ./HealthCheck/testResult-$testModule.xml -ForegroundColor Green}
+  healthCheckMenu(22)
+}
+
+
+#Run getVDRInstance
+function getVDRInstance($sectionNumber){
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now geting VDR Instance..."
+    healthCheckMenu(22)
+}
+
+#Run getVIBVersion
+function getVIBVersion($sectionNumber){
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now geting VIB Version..."
+    healthCheckMenu(22)
 }
 
 
@@ -516,14 +535,17 @@ function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
 #---- ---- Test Function for development use only ---- ----#
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 
+function testFunction(){
+    runNSXTest -sectionNumber 22 -testModule "get-helloworld"
+}
 <#
 function testFunction(){
     $vmHosts = get-vmhost
     Write-Host " Number of vmHosts are:" $vmHosts.length
     foreach ($eachHost in $vmHosts){Write-Host "Each Host is: "$eachHost.id}
     #
-    #invokeNSXManagerSSH -commandToInvoke "show logical-switch host host-31 verbose" -fileName "test.txt"
-    ##invokeNSXManagerSSH -commandToInvoke "show cluster all" -fileName "test.txt"
+    #invokeNSXCLICmd -commandToInvoke "show logical-switch host host-31 verbose" -fileName "test.txt"
+    ##invokeNSXCLICmd -commandToInvoke "show cluster all" -fileName "test.txt"
     #$findElements= @("Out-Of-Sync", "MTU", "VXLAN vmknic")
     #foreach ($eachElement in $findElements){
     #    $indx = ''
@@ -590,8 +612,12 @@ function printHealthCheckMenu{
                                    **  e-Cube Health Check Menu  **
                                    ********************************
                                    *                              *
-                                   * 1) Check VDR Instance        *
-                                   * 2) Check VIB Version         *
+                                   * 1) NSX Connectivity Test     *
+                                   * 2) NSX Manager Test          *
+                                   * 3) NSX Controllers Test      *
+                                   *                              *
+                                   * 4) Check VDR Instance        *
+                                   * 5) Check VIB Version         *
                                    *                              *
                                    * 0) Exit Health Check Menu    *
                                    ********************************"
@@ -635,6 +661,8 @@ while($true)
         Disconnect-NsxServer}
         if ($global:vCenterHost){Write-Host -ForegroundColor Yellow "Disconnecting VIServer..."
         Disconnect-VIServer -Server * -Force}
+        remove-variable -scope global myRow
+        remove-variable -scope global myColumn
         
         break}
     elseif ($sectionNumber -eq "help"){printMainMenu}
@@ -646,7 +674,7 @@ while($true)
     #elseif ($sectionNumber -eq 'test'){testFunction}
     elseif ($sectionNumber -eq ''){}
     #elseif ($sectionNumber -eq 5){runNSXVisualTool($sectionNumber)}
-    else { Write-Host --ForegroundColor DarkRed"`n You have made an invalid choice!"}
+    else { Write-Host --ForegroundColor DarkRed"You have made an invalid choice!"}
 
 }# Infinite while loop ends here 
 ####start-sleep -s 1
