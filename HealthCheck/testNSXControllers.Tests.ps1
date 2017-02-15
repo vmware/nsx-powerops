@@ -25,34 +25,23 @@ has its own license that is located in the source code of the respective compone
 #I need... 
 # $NsxConnection in global scope
 # $NsxControllerCredential in global scope
-
-
+# $vCenterSSHConnection = startSSHSession -serverToConnectTo $vCenterHost -credentialsToUse $myvCenterSecureCredential
+$NsxControllerCredential = Get-Credential -Message "NSX Controller's Credentails" -UserName "admin"
 
 Describe "NSX Controllers" {
-
-    Giveneach "the NSX controller cluster" {
-
-         [array]$NSXControllers = get-nsxcontroller -connection $NSXConnection
-
-        if ( -not $NSXcontrollers ) {
-
-            It "has no controller cluster, skipping controller tests" {}
-
-        }
+    Giveneach "the NSX controller cluster"{
+        [array]$NSXControllers = get-nsxcontroller -connection $NSXConnection
+        if ( -not $NSXcontrollers ) {It "has no controller cluster, skipping controller tests" {}}
         else {
-
             #Setup... 
             #Get the cluster uuid from controller 0
-            try { 
-                $sesh = New-SshSession -ErrorAction Ignore -credential $NsxControllerCredential $nsxcontrollers[0].ipaddress
+            try {
+                $sesh = New-SshSession -ErrorAction Ignore -Credential $NsxControllerCredential -computername $nsxcontrollers[0].ipaddress
                 $lines = (Invoke-SSHCommand -SSHSession $sesh "show control-cluster status").output
                 $lines | ? { $_ -match "^Cluster ID:\s+(\S+)$" } | out-null
                 $clusteruuid = $matches[1]
                 Remove-SshSession -SshSession $sesh | out-null
-            }
-            catch {
-
-            }
+            }catch {}
 
             It "has the supported number of controller nodes" { 
                 $NsxControllers.Count | Should be 3
@@ -62,7 +51,7 @@ Describe "NSX Controllers" {
                 Giveneach "Controller $($Controller.id)" { 
 
                     try { 
-                        $sesh = New-SshSession -ErrorAction Ignore -credential $NsxControllerCredential $controller.ipaddress
+                        $sesh = New-SshSession -ErrorAction Ignore -credential $NsxControllerCredential -computername $controller.ipaddress
                     }
                     catch {
 
@@ -93,7 +82,8 @@ Describe "NSX Controllers" {
                         $ipsectunnels = (Invoke-SSHCommand -SSHSession $sesh "show control-cluster network ipsec tunnels").output | ? { $_ -match 'Security Associations' }
                         it "has $($nsxcontrollers.count - 1) IPSec SAs up, and 0 connecting" {    
                             #Test that we have SAs up with other controllers.    
-                            $ipsectunnels | should equal "Security Associations ($($nsxcontrollers.count - 1) up, 0 connecting):"
+                            $ipsectunnels | Should BeExactly "Security Associations ($($nsxcontrollers.count - 1) up, 0 connecting):"
+                            #Security Associations (2 up, 0 connecting):
                         }
                         Write-Verbose $ipsectunnels
 
@@ -114,7 +104,7 @@ Describe "NSX Controllers" {
                         #Check that the ip addresses of all the controllers from the API match that listed in the startup nodes for the given controller...    
                         $startupnodes = (Invoke-SSHCommand -SSHSession $sesh "show control-cluster startup-nodes").output[0].Split(",").trim() | sort-object
                         it "should contain all cluster members in the startup nodes list" {
-                            $startupnodes | should equal ($NSXControllers.ipaddress | sort-object)
+                            $startupnodes | Should BeExactly ($NSXControllers.ipaddress | sort-object)
                         }
                         Write-Verbose "Startup nodes from ctrl : $startupnodes.  List of Controllers : $($NSXControllers.ipaddress | sort-object)"
 
@@ -132,8 +122,6 @@ Describe "NSX Controllers" {
                                 Write-Verbose "$mount consumed space : $consumed"
                             }
                         }
-
-
                         #Tear down
                         Remove-SshSession -SshSession $sesh | out-null
                     }

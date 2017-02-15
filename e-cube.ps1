@@ -11,7 +11,8 @@
 # Import PowerNSX Module
 import-module PowerNSX
 import-module Posh-SSH
-Import-Module Pester
+import-module Pester
+##Import-Module PesterNew-SSHSession
 #Import-Module pscx
 
 ########################################################
@@ -41,6 +42,8 @@ Import-Module Pester
 
     $global:myRow = 1
     $global:myColumn = 1
+
+    $global:ConsoleWidth = (Get-host).ui.RawUI.windowsize.width
 
 #Install PowerNSX here
 function installPowerNSX($sectionNumber){
@@ -76,6 +79,12 @@ function connectNSXManager($sectionNumber){
 
         Write-Host -ForegroundColor Yellow "`n Connecting with NSX Manager..."
         $global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPasswd -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
+
+        ##"`n Establishing SSH connection with NSX Manager..."
+        #$nsxManagerSecurePass = $nsxManagerPass | ConvertTo-SecureString -AsPlainText -Force
+        #$myNSXManagerSecureCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxManagerUser, $nsxManagerSecurePass
+        ##$global:NsxConnection = startSSHSession -serverToConnectTo $nsxManagerHost -credentialsToUse $nsxManagerPSCredential
+        ##$global:NsxConnection
 
         Write-Host -ForegroundColor Yellow "`n Connecting NSX Manager to vCenter..."
         Set-NsxManager -vCenterServer $global:vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
@@ -118,8 +127,10 @@ function healthCheckMenu($sectionNumber){
     elseif ($healthCheckSectionNumber -eq 1){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXConnections"}
     elseif ($healthCheckSectionNumber -eq 2){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXManager"}
     elseif ($healthCheckSectionNumber -eq 3){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXControllers"}
-    elseif ($healthCheckSectionNumber -eq 4){getVIBVersion($healthCheckSectionNumber)}
-    elseif ($healthCheckSectionNumber -eq 5){getVIBVersion($healthCheckSectionNumber)}
+    elseif ($healthCheckSectionNumber -eq 4){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXLogicalSwitch"}
+    elseif ($healthCheckSectionNumber -eq 5){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXDistributedFirewallHeap"}
+    elseif ($healthCheckSectionNumber -eq 6){getVIBVersion($healthCheckSectionNumber)}
+    elseif ($healthCheckSectionNumber -eq 7){getVIBVersion($healthCheckSectionNumber)}
 
     elseif ($healthCheckSectionNumber -eq "help"){healthCheckMenu(4)}
     elseif ($healthCheckSectionNumber -eq ''){healthCheckMenu(22)}
@@ -350,6 +361,13 @@ function invokeNSXCLICmd($commandToInvoke, $fileName){
 }
 
 
+function startSSHSession($serverToConnectTo, $credentialsToUse){
+    #$myNSXManagerCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $mySecurePass
+    $newSSHSession = New-Sshsession -computername $serverToConnectTo -Credential $credentialsToUse
+    return $newSSHSession
+}
+
+
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 #---- ---- Test Functions start here ---- ----#
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- # 
@@ -563,90 +581,95 @@ function testFunction(){
 
 #Function to show Main Menu
 function printMainMenu{
-    Write-Host "`n
-                                 *****************|******************
-                                 **        e-Cube Main Menu        **
-                                 ************************************
-                                 *                                  *
-                                 * 1) Install PowerNSX              *
-                                 * 2) Connect NSX Manager & vCenter *
-                                 * 3) Show Documentation Menu       *
-                                 * 4) Show Health Check Menu        *
-                                 *                                  *
-                                 * 0) Exit E-Cube                   *
-                                 ************************************"
-
+    $ScreenSize = [math]::Round($ConsoleWidth-38)/2
+    Write-Host "`n"
+    Write-Host (" " * $ScreenSize) "******************||******************"
+    Write-Host (" " * $ScreenSize) "**         e-Cube Main Menu         **"
+    Write-Host (" " * $ScreenSize) "**************************************"
+    Write-Host (" " * $ScreenSize) "*                                    *"
+    Write-Host (" " * $ScreenSize) "* 1) Install PowerNSX                *"
+    Write-Host (" " * $ScreenSize) "* 2) Connect NSX Manager & vCenter   *"
+    Write-Host (" " * $ScreenSize) "* 3) Show Documentation Menu         *"
+    Write-Host (" " * $ScreenSize) "* 4) Show Health Check Menu          *"
+    Write-Host (" " * $ScreenSize) "* 5) Check NSX Upgrade Prerequisites *"
+    Write-Host (" " * $ScreenSize) "*                                    *"
+    Write-Host (" " * $ScreenSize) "* 0) Exit E-Cube                     *"
+    Write-Host (" " * $ScreenSize) "**************************************"
 }
 
 
 #Function to show Documentation Menu
 function printDocumentationMenu{
-    Write-Host "`n
-                      ****************************|*****************************
-                      **              e-Cube Documentation Menu               **
-                      **********************************************************
-                      *                                                        *
-                      * Environment Documentation                              *
-                      * |-> 1) Document all NSX Components                     *
-                      * |-> 2) Document ESXi Host(s) Info                      *
-                      * |-> 3) Document NSX Environment Diagram via VISIO Tool *
-                      * |-> 4) Import vRealize Log Insight Dashboard           *
-                      *                                                        *
-                      * Networking Documentation                               *
-                      * |-> 5) Document Routing info                           *
-                      * |-> 6) Document VxLAN info                             *
-                      *                                                        *
-                      * Security Documentation                                 *
-                      * |-> 7) Document NSX DFW info to Excel - DFW2Excel      *
-                      * |-> 8) Document DFW-VAT                                *
-                      *                                                        *
-                      * 0) Exit Documentation Menu                             *
-                      **********************************************************"
+    $ScreenSize = [math]::Round($ConsoleWidth-58)/2
+    Write-Host "`n"
+    Write-Host (" " * $ScreenSize) "****************************|*****************************"
+    Write-Host (" " * $ScreenSize) "**              e-Cube Documentation Menu               **"
+    Write-Host (" " * $ScreenSize) "**********************************************************"
+    Write-Host (" " * $ScreenSize) "*                                                        *"
+    Write-Host (" " * $ScreenSize) "* Environment Documentation                              *"
+    Write-Host (" " * $ScreenSize) "* |-> 1) Document all NSX Components                     *"
+    Write-Host (" " * $ScreenSize) "* |-> 2) Document ESXi Host(s) Info                      *"
+    Write-Host (" " * $ScreenSize) "* |-> 3) Document NSX Environment Diagram via VISIO Tool *"
+    Write-Host (" " * $ScreenSize) "* |-> 4) Import vRealize Log Insight Dashboard           *"
+    Write-Host (" " * $ScreenSize) "*                                                        *"
+    Write-Host (" " * $ScreenSize) "* Networking Documentation                               *"
+    Write-Host (" " * $ScreenSize) "* |-> 5) Document Routing info                           *"
+    Write-Host (" " * $ScreenSize) "* |-> 6) Document VxLAN info                             *"
+    Write-Host (" " * $ScreenSize) "*                                                        *"
+    Write-Host (" " * $ScreenSize) "* Security Documentation                                 *"
+    Write-Host (" " * $ScreenSize) "* |-> 7) Document NSX DFW info to Excel - DFW2Excel      *"
+    Write-Host (" " * $ScreenSize) "* |-> 8) Document DFW-VAT                                *"
+    Write-Host (" " * $ScreenSize) "*                                                        *"
+    Write-Host (" " * $ScreenSize) "* 0) Exit Documentation Menu                             *"
+    Write-Host (" " * $ScreenSize) "**********************************************************"
 }
 
 
 #Function to show Health Check Menu
 function printHealthCheckMenu{
-    Write-Host "`n
-                                   ***************|****************
-                                   **  e-Cube Health Check Menu  **
-                                   ********************************
-                                   *                              *
-                                   * 1) NSX Connectivity Test     *
-                                   * 2) NSX Manager Test          *
-                                   * 3) NSX Controllers Test      *
-                                   *                              *
-                                   * 4) Check VDR Instance        *
-                                   * 5) Check VIB Version         *
-                                   *                              *
-                                   * 0) Exit Health Check Menu    *
-                                   ********************************"
+    $ScreenSize = [math]::Round($ConsoleWidth-41)/2
+    Write-Host "`n"
+    Write-Host (" " * $ScreenSize) "********************|********************"
+    Write-Host (" " * $ScreenSize) "**       e-Cube Health Check Menu      **"
+    Write-Host (" " * $ScreenSize) "*****************************************"
+    Write-Host (" " * $ScreenSize) "*                                       *"
+    Write-Host (" " * $ScreenSize) "* 1) NSX Connectivity Test              *"
+    Write-Host (" " * $ScreenSize) "* 2) NSX Manager Test                   *"
+    Write-Host (" " * $ScreenSize) "* 3) NSX Controllers Test               *"
+    Write-Host (" " * $ScreenSize) "* 4) NSX Logical Switch Test            *"
+    Write-Host (" " * $ScreenSize) "* 5) NSX Distributed Firewall Heap Test *"
+    Write-Host (" " * $ScreenSize) "*                                       *"
+    Write-Host (" " * $ScreenSize) "* 6) Check VDR Instance                 *"
+    Write-Host (" " * $ScreenSize) "* 7) Check VIB Version                  *"
+    Write-Host (" " * $ScreenSize) "*                                       *"
+    Write-Host (" " * $ScreenSize) "* 0) Exit Health Check Menu             *"
+    Write-Host (" " * $ScreenSize) "*****************************************"
 }
 
+$ScreenSize = [math]::Round($ConsoleWidth-99)/2
+Write-Host "`n"
+Write-Host (" " * $ScreenSize) "__/\\\\\\\\\\\\\\\______________________/\\\\\\\\\________________/\\\_______________________       " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "__\/\\\///////////____________________/\\\////////________________\/\\\_______________________      " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) " _\/\\\_____________________________/\\\/_________________________\/\\\________________________     " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "  _\/\\\\\\\\\\\______/\\\\\\\\\\\__/\\\______________/\\\____/\\\_\/\\\____________/\\\\\\\\\__    " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "   _\/\\\///////______\///////////__\/\\\_____________\/\\\___\/\\\_\/\\\\\\\\\____/\\\//    /___   " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "    _\/\\\___________________________\//\\\____________\/\\\___\/\\\_\/\\\////\\\__/\\\\\\\\\_____  " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "     _\/\\\____________________________\///\\\__________\/\\\___\/\\\_\/\\\__\/\\\_\//\\/  //______ " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "      _\/\\\\\\\\\\\\\\\__________________\////\\\\\\\\\_\//\\\\\\\\\__\/\\\\\\\\\___\//\\\\\\\\\___" -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "       _\///////////////______________________\//|//////___\/////////___\/////////_____\/////////____" -BackgroundColor Black -ForegroundColor Blue
 
-Write-Host "
- __/\\\\\\\\\\\\\\\______________________/\\\\\\\\\________________/\\\_______________________        
-  _\/\\\///////////____________________/\\\////////________________\/\\\_______________________       
-   _\/\\\_____________________________/\\\/_________________________\/\\\_______________________      
-    _\/\\\\\\\\\\\______/\\\\\\\\\\\__/\\\______________/\\\____/\\\_\/\\\____________/\\\\\\\\\_     
-     _\/\\\///////______\///////////__\/\\\_____________\/\\\___\/\\\_\/\\\\\\\\\____/\\\//    /__    
-      _\/\\\___________________________\//\\\____________\/\\\___\/\\\_\/\\\////\\\__/\\\\\\\\\____   
-       _\/\\\____________________________\///\\\__________\/\\\___\/\\\_\/\\\__\/\\\_\//\\/  //_____  
-        _\/\\\\\\\\\\\\\\\__________________\////\\\\\\\\\_\//\\\\\\\\\__\/\\\\\\\\\___\//\\\\\\\\\__ 
-         _\///////////////______________________\/|///////___\/////////___\/////////_____\/////////___
-102
-" -BackgroundColor Black -ForegroundColor Blue
-Write-Host "
-                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-                     ~~                  Welcome to E-Cube                    ~~ 
-                     ~~                A project by SA Team                   ~~ 
-                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-                     ~ Note: Please run this script in VMware PowerCLI.      ~ 
-                     ~       To get the list of available commands type 'help' ~ 
-                     ~       To exit the program type 'exit' or '0'.           ~ 
-                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
+$ScreenSize = [math]::Round($ConsoleWidth-59)/2
+Write-Host "`n"
+Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+Write-Host (" " * $ScreenSize) "~~                  Welcome to E-Cube                    ~~"
+Write-Host (" " * $ScreenSize) "~~                A project by SA Team                   ~~"
+Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+Write-Host (" " * $ScreenSize) "~ Note: Please run this script in VMware PowerCLI.        ~"
+Write-Host (" " * $ScreenSize) "~       To get the list of available commands type 'help' ~"
+Write-Host (" " * $ScreenSize) "~       To exit the program type 'exit' or '0'.           ~"
+Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
 
 #"`n                    What would you like to do today?" 
 printMainMenu

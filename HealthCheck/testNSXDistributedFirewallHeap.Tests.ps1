@@ -20,11 +20,11 @@ Some files may be comprised of various open source software components, each of 
 has its own license that is located in the source code of the respective component.
 #>
 
-
 ## Initiate Test sequence
 $dfwheaplimit = 20
+[pscustomobject]$HostCredentialHash=@{}
 
-DescribingEach "Distributed Firewall Memory heaps"{
+Describe "Distributed Firewall Memory heaps"{
     
     #Filter vSphere clusters for DFW enabled ones.
     $DfwClusters = get-cluster -Server $NSXConnection.ViConnection | % {
@@ -38,14 +38,14 @@ DescribingEach "Distributed Firewall Memory heaps"{
     #Iterate the dfw enabled hosts.
     foreach ( $hv in $vSphereHosts ) {
         GivenEach "vSphere Host $($hv.name)" {
-
             #Test setup
             #If host has specific credentials, then use them, otherwise, use the default.
             if ( $HostCredentialHash.Contains($hv) ) {
                 $esxicred = $HostCredentialHash.$hv.Credential
             }
             else {
-                $esxicred = $DefaultHostCredential
+                ##$esxicred = $DefaultHostCredential
+                $esxicred = Get-Credential -Message "ESXi Host $hv.name Credentails" -UserName "root"
             }
 
             #Connect
@@ -72,10 +72,9 @@ DescribingEach "Distributed Firewall Memory heaps"{
                         
                         # Based on the regex output, use matches and PShould to determine remaining memory is more than limit (ex:80 is more than 20)
                         It "has not exceeded the $(100-$dfwheaplimit)% memory threshold on memory heap $heap for $hv" {
-                            $matches[2] | should be -gt $dfwheaplimit
+                            $matches[2] | Should BeGreaterThan $dfwheaplimit
                         }
-                        write-testverbose "Heap $heap : $line"
-
+                        Write-Verbose "Heap $heap : $line"
                     }
                     Remove-SshSession -SshSession $esxi_SSH_Session | out-null
                 }

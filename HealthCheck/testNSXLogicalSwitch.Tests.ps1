@@ -25,9 +25,9 @@ has its own license that is located in the source code of the respective compone
 #I need... 
 # $NsxConnection in global scope
 # $NsxControllerCredential in global scope
+$NsxControllerCredential = Get-Credential -Message "NSX Controller's Credentails" -UserName "admin"
 
-
-DescribingEach "Logical Switches" {
+Describe "Logical Switches" {
 
     #Setup - controller connection to all controllers
     
@@ -106,14 +106,14 @@ DescribingEach "Logical Switches" {
 
                     it "is found on all controllers" {
 
-                        "VNI found on $($CurrLsVniResults.count) controllers" | should equal "VNI found on $($ControllerSshConnection.Count) controllers"
+                        "VNI found on $($CurrLsVniResults.count) controllers" | Should BeExactly "VNI found on $($ControllerSshConnection.Count) controllers"
                     }
-                    write-testverbose "VNI $($ls.vdnid) found on $($CurrLsVniResults.count) controllers"
+                   Write-Verbose "VNI $($ls.vdnid) found on $($CurrLsVniResults.count) controllers"
 
                     it "has the same owning controller on all controllers" { 
                         "Number of unique owning controllers for VNI : $(($CurrLsVniResults.Values.LsOwningController | sort-object -unique).count)" | should match "Number of unique owning controllers for VNI : 1" 
                     }
-                    write-testverbose "Number of unique owning controllers for VNI : $(($CurrLsVniResults.Values.LsOwningController | sort-object -unique).count)" 
+                    Write-Verbose "Number of unique owning controllers for VNI : $(($CurrLsVniResults.Values.LsOwningController | sort-object -unique).count)" 
 
 
                     foreach ( $controller in $CurrLsVniResults.keys) { 
@@ -125,7 +125,7 @@ DescribingEach "Logical Switches" {
                                 "BUM-Replication : $($CurrLsVniResults.$controller.LsBumRep), ARP-Proxy : $($CurrLsVniResults.$controller.LsArpProxy)" | should match "BUM-Replication : Enabled, ARP-Proxy : Enabled"
                             }
 
-                            write-testverbose "VNI : $($ls.vdnid), BUM-Replication : $($CurrLsVniResults.$controller.LsBumRep), ARP-Proxy : $($CurrLsVniResults.$controller.LsArpProxy)"
+                            Write-Verbose "VNI : $($ls.vdnid), BUM-Replication : $($CurrLsVniResults.$controller.LsBumRep), ARP-Proxy : $($CurrLsVniResults.$controller.LsArpProxy)"
 
                             # #Using the first controller returned by the API as the source of truth to ask for the 'correct' owning controller for any VNI. 
                             # if ( $controllerip -eq $CurrLsVniResults.($nsxcontrollers[0].id).LsOwningController ) { 

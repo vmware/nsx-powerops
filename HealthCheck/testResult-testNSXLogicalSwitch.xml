@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="5" errors="0" failures="0" not-run="0" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2017-02-11" time="01:05:36">
+  <environment user="Administrator" machine-name="CONTROLCENTER" cwd="C:\temp\e-Cube" user-domain="CORP" platform="Microsoft Windows Server 2012 R2 Standard|C:\Windows|\Device\Harddisk0\Partition2" nunit-version="2.5.8.0" os-version="6.3.9600" clr-version="4.0.30319.42000" />
+  <culture-info current-culture="en-US" current-uiculture="en-US" />
+  <test-suite type="PowerShell" name="Pester" executed="True" result="Success" success="True" time="14.075" asserts="0">
+    <results>
+      <test-suite type="TestFixture" name="Logical Switches" executed="True" result="Success" success="True" time="14.075" asserts="0" description="Logical Switches">
+        <results>
+          <test-case description="is found on all controllers" name="Logical Switches.is found on all controllers" time="13.9236" asserts="0" success="True" result="Success" executed="True" />
+          <test-case description="has the same owning controller on all controllers" name="Logical Switches.has the same owning controller on all controllers" time="0.0301" asserts="0" success="True" result="Success" executed="True" />
+          <test-case description="has BUM replication and Proxy ARP enabled" name="Logical Switches.has BUM replication and Proxy ARP enabled" time="0.0364" asserts="0" success="True" result="Success" executed="True" />
+          <test-case description="has BUM replication and Proxy ARP enabled" name="Logical Switches.has BUM replication and Proxy ARP enabled" time="0.044" asserts="0" success="True" result="Success" executed="True" />
+          <test-case description="has BUM replication and Proxy ARP enabled" name="Logical Switches.has BUM replication and Proxy ARP enabled" time="0.0409" asserts="0" success="True" result="Success" executed="True" />
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>
