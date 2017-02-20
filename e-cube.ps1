@@ -94,13 +94,13 @@ function connectNSXManager($sectionNumber){
 
 #---- Get Documentation Menu here ----#
 function documentationkMenu($sectionNumber){    
-    if ($sectionNumber -eq 3){printDocumentationMenu}
+    if ($sectionNumber -eq 3){clx | printDocumentationMenu}
     Write-Host "`n>> Please select a Documentation Menu option: " -ForegroundColor Darkyellow -NoNewline 
     $documentationSectionNumber = Read-Host
 
     if ($documentationSectionNumber -eq 0 -or $documentationSectionNumber -eq "exit"){
         Write-Host -ForeGroundColor Darkyellow "Exit Documentation Menu`n"
-        printMainMenu}
+        clx | printMainMenu}
     elseif ($documentationSectionNumber -eq 1){$allNSXComponentData = getNSXComponents($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 2){getHostInformation($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 3){runNSXVISIOTool($documentationSectionNumber)}
@@ -110,20 +110,21 @@ function documentationkMenu($sectionNumber){
     elseif ($documentationSectionNumber -eq 7){runDFW2Excel($documentationSectionNumber)}
     
     elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
+    elseif ($documentationSectionNumber -eq "clear"){documentationkMenu(3)}
     elseif ($documentationSectionNumber -eq ''){documentationkMenu(22)}
-    else { Write-Host -ForegroundColor DarkRed"You have made an invalid choice!"
+    else { Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
     documentationkMenu(22)}
 }
 
 #---- Get Health Check Menu here ----#
 function healthCheckMenu($sectionNumber){    
-    if ($sectionNumber -eq 4){printHealthCheckMenu}
+    if ($sectionNumber -eq 4){clx | printHealthCheckMenu}
     Write-Host "`n>> Please select a Health Check Menu option: " -ForegroundColor Darkyellow -NoNewline
     $healthCheckSectionNumber = Read-Host
 
     if ($healthCheckSectionNumber -eq 0 -or $healthCheckSectionNumber -eq "exit"){
         Write-Host -ForeGroundColor Darkyellow "Exit Health Check Menu`n"
-        printMainMenu}
+        clx | printMainMenu}
     elseif ($healthCheckSectionNumber -eq 1){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXConnections"}
     elseif ($healthCheckSectionNumber -eq 2){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXManager"}
     elseif ($healthCheckSectionNumber -eq 3){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXControllers"}
@@ -133,9 +134,17 @@ function healthCheckMenu($sectionNumber){
     elseif ($healthCheckSectionNumber -eq 7){getVIBVersion($healthCheckSectionNumber)}
 
     elseif ($healthCheckSectionNumber -eq "help"){healthCheckMenu(4)}
+    elseif ($healthCheckSectionNumber -eq "clear"){healthCheckMenu(4)}
     elseif ($healthCheckSectionNumber -eq ''){healthCheckMenu(22)}
     else { Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
     healthCheckMenu(22)}
+}
+
+#---- Get Health Check Menu here ----#
+function nsxUpdateCheckReport($sectionNumber){
+    Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now collecting NSX upgrade info..."
+
+
 }
 
 #Get NSX Component info here
@@ -397,6 +406,10 @@ function getVIBVersion($sectionNumber){
 }
 
 
+function clx {
+    [System.Console]::SetWindowPosition(0,[System.Console]::CursorTop)
+}
+
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 #---- ---- Excel Functions start here ---- ----#
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- # 
@@ -581,20 +594,20 @@ function testFunction(){
 
 #Function to show Main Menu
 function printMainMenu{
-    $ScreenSize = [math]::Round($ConsoleWidth-38)/2
+    $ScreenSize = [math]::Round($ConsoleWidth-39)/2
     Write-Host "`n"
-    Write-Host (" " * $ScreenSize) "******************||******************"
-    Write-Host (" " * $ScreenSize) "**         e-Cube Main Menu         **"
-    Write-Host (" " * $ScreenSize) "**************************************"
-    Write-Host (" " * $ScreenSize) "*                                    *"
-    Write-Host (" " * $ScreenSize) "* 1) Install PowerNSX                *"
-    Write-Host (" " * $ScreenSize) "* 2) Connect NSX Manager & vCenter   *"
-    Write-Host (" " * $ScreenSize) "* 3) Show Documentation Menu         *"
-    Write-Host (" " * $ScreenSize) "* 4) Show Health Check Menu          *"
-    Write-Host (" " * $ScreenSize) "* 5) Check NSX Upgrade Prerequisites *"
-    Write-Host (" " * $ScreenSize) "*                                    *"
-    Write-Host (" " * $ScreenSize) "* 0) Exit E-Cube                     *"
-    Write-Host (" " * $ScreenSize) "**************************************"
+    Write-Host (" " * $ScreenSize) "*******************|*******************"
+    Write-Host (" " * $ScreenSize) "**         E-Cube Main Menu          **"
+    Write-Host (" " * $ScreenSize) "***************************************"
+    Write-Host (" " * $ScreenSize) "*                                     *"
+    Write-Host (" " * $ScreenSize) "* 1) Install PowerNSX                 *"
+    Write-Host (" " * $ScreenSize) "* 2) Connect NSX Manager & vCenter    *"
+    Write-Host (" " * $ScreenSize) "* 3) Show Documentation Menu          *"
+    Write-Host (" " * $ScreenSize) "* 4) Show Health Check Menu           *"
+    Write-Host (" " * $ScreenSize) "* 5) Check NSX Upgrade Prerequisites  *"
+    Write-Host (" " * $ScreenSize) "*                                     *"
+    Write-Host (" " * $ScreenSize) "* 0) Exit E-Cube                      *"
+    Write-Host (" " * $ScreenSize) "***************************************"
 }
 
 
@@ -603,7 +616,7 @@ function printDocumentationMenu{
     $ScreenSize = [math]::Round($ConsoleWidth-58)/2
     Write-Host "`n"
     Write-Host (" " * $ScreenSize) "****************************|*****************************"
-    Write-Host (" " * $ScreenSize) "**              e-Cube Documentation Menu               **"
+    Write-Host (" " * $ScreenSize) "**              E-Cube Documentation Menu               **"
     Write-Host (" " * $ScreenSize) "**********************************************************"
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* Environment Documentation                              *"
@@ -630,7 +643,7 @@ function printHealthCheckMenu{
     $ScreenSize = [math]::Round($ConsoleWidth-41)/2
     Write-Host "`n"
     Write-Host (" " * $ScreenSize) "********************|********************"
-    Write-Host (" " * $ScreenSize) "**       e-Cube Health Check Menu      **"
+    Write-Host (" " * $ScreenSize) "**       E-Cube Health Check Menu      **"
     Write-Host (" " * $ScreenSize) "*****************************************"
     Write-Host (" " * $ScreenSize) "*                                       *"
     Write-Host (" " * $ScreenSize) "* 1) NSX Connectivity Test              *"
@@ -646,16 +659,17 @@ function printHealthCheckMenu{
     Write-Host (" " * $ScreenSize) "*****************************************"
 }
 
+clx
 $ScreenSize = [math]::Round($ConsoleWidth-99)/2
 Write-Host "`n"
-Write-Host (" " * $ScreenSize) "__/\\\\\\\\\\\\\\\______________________/\\\\\\\\\________________/\\\_______________________       " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "__\/\\\///////////____________________/\\\////////________________\/\\\_______________________      " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) " _\/\\\_____________________________/\\\/_________________________\/\\\________________________     " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "  _\/\\\\\\\\\\\______/\\\\\\\\\\\__/\\\______________/\\\____/\\\_\/\\\____________/\\\\\\\\\__    " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "   _\/\\\///////______\///////////__\/\\\_____________\/\\\___\/\\\_\/\\\\\\\\\____/\\\//    /___   " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "    _\/\\\___________________________\//\\\____________\/\\\___\/\\\_\/\\\////\\\__/\\\\\\\\\_____  " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "     _\/\\\____________________________\///\\\__________\/\\\___\/\\\_\/\\\__\/\\\_\//\\/  //______ " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "      _\/\\\\\\\\\\\\\\\__________________\////\\\\\\\\\_\//\\\\\\\\\__\/\\\\\\\\\___\//\\\\\\\\\___" -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "__/\\\\\\\\\\\\\\\______________________/\\\\\\\\\________________/\\\_______________________        " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "__\/\\\///////////____________________/\\\////////________________\/\\\_______________________       " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) " _\/\\\_____________________________/\\\/_________________________\/\\\________________________      " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "  _\/\\\\\\\\\\\______/\\\\\\\\\\\__/\\\______________/\\\____/\\\_\/\\\____________/\\\\\\\\\__     " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "   _\/\\\///////______\///////////__\/\\\_____________\/\\\___\/\\\_\/\\\\\\\\\____/\\\//    /___    " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "    _\/\\\___________________________\//\\\____________\/\\\___\/\\\_\/\\\////\\\__/\\\\\\\\\_____   " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "     _\/\\\____________________________\///\\\__________\/\\\___\/\\\_\/\\\__\/\\\_\//\\/  //______  " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "      _\/\\\\\\\\\\\\\\\__________________\////\\\\\\\\\_\//\\\\\\\\\__\/\\\\\\\\\___\//\\\\\\\\\___ " -BackgroundColor Black -ForegroundColor Blue
 Write-Host (" " * $ScreenSize) "       _\///////////////______________________\//|//////___\/////////___\/////////_____\/////////____" -BackgroundColor Black -ForegroundColor Blue
 
 $ScreenSize = [math]::Round($ConsoleWidth-59)/2
@@ -689,15 +703,18 @@ while($true)
         
         break}
     elseif ($sectionNumber -eq "help"){printMainMenu}
+    #elseif ($sectionNumber -eq "clear"){clear-host | printMainMenu}
+    elseif ($sectionNumber -eq "clear"){clx | printMainMenu}
 
     elseif ($sectionNumber -eq 1){installPowerNSX($sectionNumber)}
     elseif ($sectionNumber -eq 2){connectNSXManager($sectionNumber)}
     elseif ($sectionNumber -eq 3){documentationkMenu($sectionNumber)}
     elseif ($sectionNumber -eq 4){healthCheckMenu($sectionNumber)}
+    elseif ($sectionNumber -eq 5){nsxUpdateCheckReport($sectionNumber)}
     #elseif ($sectionNumber -eq 'test'){testFunction}
     elseif ($sectionNumber -eq ''){}
     #elseif ($sectionNumber -eq 5){runNSXVisualTool($sectionNumber)}
-    else { Write-Host --ForegroundColor DarkRed"You have made an invalid choice!"}
+    else { Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"}
 
 }# Infinite while loop ends here 
 ####start-sleep -s 1
