@@ -6,6 +6,7 @@
 * GIT (optional) [https://git-scm.com/]
 * MS VISIO (optional - some feature wont work if not installed) [https://www.microsoft.com/en-us/evalcenter/evaluate-visio-professional-2016]
 * PowerShell's Testing Framework Module name: Pester [http://www.powershellmagazine.com/2014/03/12/get-started-with-pester-powershell-unit-testing-framework/]
+  (Unzip pester folder at C:\Users\****\Documents\WindowsPowerShell\Modules)
 * PowerShell's SSH Module name: Posh-SSH [https://github.com/darkoperator/Posh-SSH]
 * Access to NSX Manager API with privileges
 * Access to vSphere Web Client and Privileges (Read)
