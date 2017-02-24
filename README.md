@@ -3,6 +3,8 @@
 ## Prerequisite:
 * VMware PowerCLI [https://www.vmware.com/support/developer/PowerCLI/]
 * Microsoft Excel installed on the local system [https://products.office.com/en-au/excel]
+* GIT (optional) [https://git-scm.com/]
+* MS VISIO (optional - some feature wont work if not installed) [https://www.microsoft.com/en-us/evalcenter/evaluate-visio-professional-2016]
 * PowerShell's Testing Framework Module name: Pester [http://www.powershellmagazine.com/2014/03/12/get-started-with-pester-powershell-unit-testing-framework/]
 * PowerShell's SSH Module name: Posh-SSH [https://github.com/darkoperator/Posh-SSH]
 * Access to NSX Manager API with privileges
