@@ -1,5 +1,5 @@
 #VMware NSX Healthcheck test
-#NSX Core tests
+#NSX VDR Port tests
 #Puneet Chawla
 #cpuneet@vmware.com
 
@@ -21,17 +21,35 @@ Some files may be comprised of various open source software components, each of 
 has its own license that is located in the source code of the respective component.
 #>
 
+Write-Host "Please provide the Compute Cluster name [example: Compute Cluster A1]: " -ForegroundColor Darkyellow -NoNewline
+$vdrTestClusterName = Read-Host
 
-#I need... 
-# $NsxConnection in global scope
-# Use this test to confirm connectivity / readiness of system to run test suite.
+Write-Host "Please provide Cluster's VDS name [example: Compute_VDS]: " -ForegroundColor Darkyellow -NoNewline
+$vdrTestVDSName = Read-Host
 
-Describe "Basic System Time Tests" {
-    Write-Host "NSX Manager $($NsxConnection.Server)"
-    $router = Get-NsxLogicalRouter -connection $NsxConnection
-    $routerStatus = $router.status
-    it "is got VDR deployed" { 
-        $routerStatus | Should BeExactly "deployed"
+Write-Host "Please provide VDN ID [example: 10000]: " -ForegroundColor Darkyellow -NoNewline
+$vdrTestVDSID = Read-Host
+
+$result = $false
+Write-Host "`n"
+Describe "NSX VDR Port Tests" {
+    Write-Host "Cluster $vdrTestClusterName"
+
+	Get-Cluster -Name $vdrTestClusterName | Get-VMHost | %{
+		$esxcli = Get-EsxCli -VMHost $_
+		$_.toString()
+		$esxcli.network.vswitch.dvs.vmware.vxlan.network.port.list($vdrTestVDSName,"vdrPort",$vdrTestVDSID) | Measure-Object | %{
+			#Write-Host "Count in main test file is:" $_.Count
+			if ($_.Count -eq 1) {
+				#$_.Count.toString()+" vdrPort was found"
+				$result = $true}else{
+				#Write-Host -foregroundcolor "Red" "No vdrPort found"
+				$result = $false
+			}
+		}
+	}
+
+    it "got VDR deployed" { 
+        $result | Should BeExactly $true
     }
-    Write-Verbose "Status of VDR is : $routerStatus"
 }
