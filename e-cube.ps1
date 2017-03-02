@@ -393,11 +393,13 @@ function startSSHSession($serverToConnectTo, $credentialsToUse){
 
 function runNSXTest ($sectionNumber, $testModule){
   Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Testing $testModule..."
-  $result = Invoke-Pester -Script @{ Path = './HealthCheck/'+$testModule+'.Tests.ps1'; Parameters = @{ testModule = $testModule} } -OutputFile ./HealthCheck/testResult-$testModule.xml
+  $startTime = Get-Date
+  $outputFileName = $testModule +"-"+ $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xml"
+  $result = Invoke-Pester -Script @{ Path = './HealthCheck/'+$testModule+'.Tests.ps1'; Parameters = @{ testModule = $testModule} } -OutputFile ./HealthCheck/testResult-$outputFileName
   Write-Host "`nSave the result in an XML file? Y or N [default Y]: " -ForegroundColor Darkyellow -NoNewline
   $saveHCResult = Read-Host
-  if ($saveHCResult -eq 'n'-or $saveHCResult -eq "N") {Remove-Item ./HealthCheck/testResult-$testModule.xml}else{
-      Write-Host "Saved XML file at:" ./HealthCheck/testResult-$testModule.xml -ForegroundColor Green}
+  if ($saveHCResult -eq 'n'-or $saveHCResult -eq "N") {Remove-Item ./HealthCheck/testResult-$outputFileName}else{
+      Write-Host "Saved XML file at:" ./HealthCheck/testResult-$outputFileName -ForegroundColor Green}
   healthCheckMenu(22)
 }
 
@@ -413,7 +415,7 @@ function clx {
 #Create empty excel sheet here w/ correct name 
 function createNewExcel($newExcelName){
     $startTime = Get-Date
-    $newExcelNameWithDate = $newExcelName + $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xlsx"
+    $newExcelNameWithDate = $newExcelName +"-"+ $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xlsx"
     Write-Host -ForeGroundColor Green "`n Creating Excel File:" $newExcelNameWithDate
     
     #$xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
