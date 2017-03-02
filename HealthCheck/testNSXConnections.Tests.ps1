@@ -26,14 +26,22 @@ has its own license that is located in the source code of the respective compone
 # $NsxConnection in global scope
 # Use this test to confirm connectivity / readiness of system to run test suite.
 
-Describe "Basic System Time Tests" {
-    Given "NSX Manager $($NsxConnection.Server)" {
-        $nsxTime = Get-NsxManagerTimeSettings -connection $NsxConnection
-        $MaxDriftMinutes = 5
-        $totalAbsMinsDrift = [math]::abs(([datetime]($nsxTime).datetime - (get-date)).totalminutes)
-        it "is within 5 minutes of the local system time (Note:  Local system and NSX Manager must be in same TimeZone)" { 
-            $totalAbsMinsDrift | Should BeLessThan $MaxDriftMinutes  
-        }
-        Write-Verbose "Total absolute minutes drift between local host and NSX Manager : $totalAbsMinsDrift"
+Describe "Basic System Connectivity and Time Tests" {
+    Write-host "NSX Manager: $($NsxConnection.Server)"
+    $vCenterStatus = Get-NsxManagervCenterConfig -connection $global:NsxConnection
+
+    #vCenter Connected Check
+    It "is connected to vCenter" { 
+        $vCenterStatus | should be $true
     }
+    Write-Verbose "vCenter Server : $($vCenterStatus.IpAddress), Connected : $($vCenterStatus.Connected)"
+
+    $nsxTime = Get-NsxManagerTimeSettings -connection $NsxConnection
+    $MaxDriftMinutes = 5
+    $totalAbsMinsDrift = [math]::abs(([datetime]($nsxTime).datetime - (get-date)).totalminutes)
+    #Timezone sync test
+    it "is within 5 minutes of the local system time (Note:  Local system and NSX Manager must be in same TimeZone)" { 
+        $totalAbsMinsDrift | Should BeLessThan $MaxDriftMinutes  
+    }
+    Write-Verbose "Total absolute minutes drift between local host and NSX Manager : $totalAbsMinsDrift"
 }

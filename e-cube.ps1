@@ -83,8 +83,8 @@ function connectNSXManager($sectionNumber){
         ##"`n Establishing SSH connection with NSX Manager..."
         #$nsxManagerSecurePass = $nsxManagerPass | ConvertTo-SecureString -AsPlainText -Force
         #$myNSXManagerSecureCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxManagerUser, $nsxManagerSecurePass
-        ##$global:NsxConnection = startSSHSession -serverToConnectTo $nsxManagerHost -credentialsToUse $nsxManagerPSCredential
-        ##$global:NsxConnection
+        ##$global:NsxSSHConnection = startSSHSession -serverToConnectTo $nsxManagerHost -credentialsToUse $nsxManagerPSCredential
+        ##$global:NsxSSHConnection
 
         Write-Host -ForegroundColor Yellow "`n Connecting NSX Manager to vCenter..."
         Set-NsxManager -vCenterServer $global:vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
@@ -130,8 +130,8 @@ function healthCheckMenu($sectionNumber){
     elseif ($healthCheckSectionNumber -eq 3){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXControllers"}
     elseif ($healthCheckSectionNumber -eq 4){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXLogicalSwitch"}
     elseif ($healthCheckSectionNumber -eq 5){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXDistributedFirewallHeap"}
-    elseif ($healthCheckSectionNumber -eq 6){getVIBVersion($healthCheckSectionNumber)}
-    elseif ($healthCheckSectionNumber -eq 7){getVIBVersion($healthCheckSectionNumber)}
+    elseif ($healthCheckSectionNumber -eq 6){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXVDR"}
+    elseif ($healthCheckSectionNumber -eq 7){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXVIBVersion"}
 
     elseif ($healthCheckSectionNumber -eq "help"){healthCheckMenu(4)}
     elseif ($healthCheckSectionNumber -eq "clear"){healthCheckMenu(4)}
@@ -140,12 +140,12 @@ function healthCheckMenu($sectionNumber){
     healthCheckMenu(22)}
 }
 
+
 #---- Get Health Check Menu here ----#
 function nsxUpdateCheckReport($sectionNumber){
     Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now collecting NSX upgrade info..."
-
-
 }
+
 
 #Get NSX Component info here
 function getNSXComponents($sectionNumber){
@@ -325,7 +325,15 @@ function getVXLANInformation($sectionNumber){
 
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "NSX-VXLAN-Excel"
-    $nsxComponentExcelWorkBook = createNewExcel($excelName)
+    $nsxVXLANExcelWorkBook = createNewExcel($excelName)
+    $numberOfEdges = Get-NsxEdge
+    foreach ($eachEdge in $numberOfEdges){
+        $allVXLANExcelData = @{}
+        $edgeInterfaceInfo = Get-NsxEdge $eachEdge.name | Get-NsxEdgeInterface
+        $tempEdgeInterfaceValueArray = $edgeInterfaceInfo, "all"
+        $allVXLANExcelData.Add($eachEdge.name, $tempEdgeInterfaceValueArray)
+        $plotNSXInterfaceExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxVXLANExcelWorkBook -workSheetName $eachEdge.name -listOfDataToPlot $allVXLANExcelData     
+    }
     documentationkMenu(22)
 }
 
@@ -378,7 +386,7 @@ function startSSHSession($serverToConnectTo, $credentialsToUse){
 
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
-#---- ---- Test Functions start here ---- ----#
+#---- ---- HealthCheck Functions start here ---- ----#
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- # 
 
 
@@ -390,19 +398,6 @@ function runNSXTest ($sectionNumber, $testModule){
   if ($saveHCResult -eq 'n'-or $saveHCResult -eq "N") {Remove-Item ./HealthCheck/testResult-$testModule.xml}else{
       Write-Host "Saved XML file at:" ./HealthCheck/testResult-$testModule.xml -ForegroundColor Green}
   healthCheckMenu(22)
-}
-
-
-#Run getVDRInstance
-function getVDRInstance($sectionNumber){
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now geting VDR Instance..."
-    healthCheckMenu(22)
-}
-
-#Run getVIBVersion
-function getVIBVersion($sectionNumber){
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now geting VIB Version..."
-    healthCheckMenu(22)
 }
 
 
@@ -648,7 +643,7 @@ function printHealthCheckMenu{
     Write-Host (" " * $ScreenSize) "*                                       *"
     Write-Host (" " * $ScreenSize) "* 1) NSX Connectivity Test              *"
     Write-Host (" " * $ScreenSize) "* 2) NSX Manager Test                   *"
-    Write-Host (" " * $ScreenSize) "* 3) NSX Controllers Test               *"
+    Write-Host (" " * $ScreenSize) "* 3) NSX Controllers Appliance Test     *"
     Write-Host (" " * $ScreenSize) "* 4) NSX Logical Switch Test            *"
     Write-Host (" " * $ScreenSize) "* 5) NSX Distributed Firewall Heap Test *"
     Write-Host (" " * $ScreenSize) "*                                       *"

@@ -29,7 +29,7 @@ has its own license that is located in the source code of the respective compone
 $ESXi_VIBVersionArray=@()
 $global:env_VIBVersionArray=@()
 [pscustomobject]$HostCredentialHash=@{}
-Write-Host "`nPlease Enter the desired VIB version:" -ForegroundColor Darkyellow -NoNewline
+Write-Host "`nPlease Enter the desired VIB version (eg: 6.0.0-0.0.4249023):" -ForegroundColor Darkyellow -NoNewline
 $desiredVIBVersion = Read-Host
 
 Write-Host "`nProvide one password for all hosts? Y or N [default Y]: " -ForegroundColor Darkyellow -NoNewline

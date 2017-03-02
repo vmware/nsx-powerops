@@ -23,9 +23,16 @@ has its own license that is located in the source code of the respective compone
 ## Initiate Test sequence
 $dfwheaplimit = 20
 [pscustomobject]$HostCredentialHash=@{}
+Write-Host "`nProvide one password for all hosts? Y or N [default Y]: " -ForegroundColor Darkyellow -NoNewline
+$singlrHostsPass = Read-Host
+Write-Host "You have Entered: $singlrHostsPass"
 
-Describe "Distributed Firewall Memory heaps"{
-    
+if ($singlrHostsPass -eq 'Y' -or $singlrHostsPass -eq 'y' -or $singlrHostsPass -eq ''){
+    $esxicred = Get-Credential -Message "All ESXi Host(s) Credentail" -UserName "root"
+    $HostCredentialHash["ALL"] = $esxicred
+}
+
+Describe "Distributed Firewall Memory heaps"{    
     #Filter vSphere clusters for DFW enabled ones.
     $DfwClusters = get-cluster -Server $NSXConnection.ViConnection | % {
         $currclus = $_
@@ -42,7 +49,7 @@ Describe "Distributed Firewall Memory heaps"{
             #If host has specific credentials, then use them, otherwise, use the default.
             if ( $HostCredentialHash.Contains($hv) ) {
                 $esxicred = $HostCredentialHash.$hv.Credential
-            }
+            }elseif ($HostCredentialHash.Contains("ALL") ) {}
             else {
                 ##$esxicred = $DefaultHostCredential
                 $esxicred = Get-Credential -Message "ESXi Host $hv.name Credentails" -UserName "root"
