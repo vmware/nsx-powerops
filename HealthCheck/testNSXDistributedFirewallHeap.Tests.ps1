@@ -39,52 +39,51 @@ Describe "Distributed Firewall Memory heaps"{
         if (($currclus | get-nsxclusterstatus -connection $NSXConnection| ? { $_.featureId -eq 'com.vmware.vshield.firewall' }).Installed -eq 'true') {
             $currclus
         }
-    } 
+    }
 
     $vSphereHosts = $DfwClusters | get-vmhost -Server $NSXConnection.ViConnection
     #Iterate the dfw enabled hosts.
     foreach ( $hv in $vSphereHosts ) {
-        GivenEach "vSphere Host $($hv.name)" {
-            #Test setup
-            #If host has specific credentials, then use them, otherwise, use the default.
-            if ( $HostCredentialHash.Contains($hv) ) {
-                $esxicred = $HostCredentialHash.$hv.Credential
-            }elseif ($HostCredentialHash.Contains("ALL") ) {}
-            else {
-                ##$esxicred = $DefaultHostCredential
-                $esxicred = Get-Credential -Message "ESXi Host $hv.name Credentails" -UserName "root"
+        Write-Host "vSphere Host $($hv.name)"
+        #Test setup
+        #If host has specific credentials, then use them, otherwise, use the default.
+        if ( $HostCredentialHash.Contains($hv) ) {
+            $esxicred = $HostCredentialHash.$hv.Credential
+        }elseif ($HostCredentialHash.Contains("ALL") ) {}
+        else {
+            ##$esxicred = $DefaultHostCredential
+            $esxicred = Get-Credential -Message "ESXi Host $hv.name Credentails" -UserName "root"
+        }
+
+        #Connect
+        $esxi_SSH_Session = New-SSHSession -ComputerName $hv -Credential $esxicred -AcceptKey -ErrorAction Ignore
+
+        it "is reachable via ssh" {
+            $esxi_SSH_Session.Connected | should be $true
+        }
+        
+        if ( $esxi_SSH_Session.Connected -eq $true ) {
+
+            #Get system heaps.
+            $vsish_object_1 = Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "vsish -e ls /system/heaps|grep vsip" -EnsureConnection -ErrorAction Ignore
+
+            it "returns system heaps" { 
+                $vsish_object_1 | should not be blank
             }
 
-            #Connect
-            $esxi_SSH_Session = New-SSHSession -ComputerName $hv -Credential $esxicred -AcceptKey -ErrorAction Ignore
+            if ( $vsish_object_1 ) { 
+                foreach ($heap in $vsish_object_1.output) {
 
-            it "is reachable via ssh" {
-                $esxi_SSH_Session.Connected | should be $true
-            }
-            
-            if ( $esxi_SSH_Session.Connected -eq $true ) {
-
-                #Get system heaps.
-                $vsish_object_1 = Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "vsish -e ls /system/heaps|grep vsip" -EnsureConnection -ErrorAction Ignore
-
-                it "returns system heaps" { 
-                    $vsish_object_1 | should not be blank
-                }
-
-                if ( $vsish_object_1 ) { 
-                    foreach ($heap in $vsish_object_1.output) {
-
-                        #For each heap listed, to check heap memory remaining.
-                        $line = (Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "vsish -e get /system/heaps/$heap'stats'" -EnsureConnection).output | ? { $_ -match "(percent free of max size):(\d{1,3})" }
-                        
-                        # Based on the regex output, use matches and PShould to determine remaining memory is more than limit (ex:80 is more than 20)
-                        It "has not exceeded the $(100-$dfwheaplimit)% memory threshold on memory heap $heap for $hv" {
-                            $matches[2] | Should BeGreaterThan $dfwheaplimit
-                        }
-                        Write-Verbose "Heap $heap : $line"
+                    #For each heap listed, to check heap memory remaining.
+                    $line = (Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "vsish -e get /system/heaps/$heap'stats'" -EnsureConnection).output | ? { $_ -match "(percent free of max size):(\d{1,3})" }
+                    
+                    # Based on the regex output, use matches and PShould to determine remaining memory is more than limit (ex:80 is more than 20)
+                    It "has not exceeded the $(100-$dfwheaplimit)% memory threshold on memory heap $heap for $hv" {
+                        $matches[2] | Should BeGreaterThan $dfwheaplimit
                     }
-                    Remove-SshSession -SshSession $esxi_SSH_Session | out-null
+                    Write-Verbose "Heap $heap : $line"
                 }
+                Remove-SshSession -SshSession $esxi_SSH_Session | out-null
             }
         }
     }

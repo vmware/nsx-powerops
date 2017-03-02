@@ -27,12 +27,11 @@ has its own license that is located in the source code of the respective compone
 # Use this test to confirm connectivity / readiness of system to run test suite.
 
 Describe "Basic System Time Tests" {
-    Given "NSX Manager $($NsxConnection.Server)" {
-        $router = Get-NsxLogicalRouter -connection $NsxConnection
-        $routerStatus = $router.status
-        it "is got VDR deployed" { 
-            $routerStatus | Should BeExactly "deployed"
-        }
-        Write-Verbose "Status of VDR is : $routerStatus"
+    Write-Host "NSX Manager $($NsxConnection.Server)"
+    $router = Get-NsxLogicalRouter -connection $NsxConnection
+    $routerStatus = $router.status
+    it "is got VDR deployed" { 
+        $routerStatus | Should BeExactly "deployed"
     }
+    Write-Verbose "Status of VDR is : $routerStatus"
 }

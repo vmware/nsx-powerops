@@ -118,30 +118,29 @@ Describe "Logical Switches" {
 
             foreach ( $controller in $CurrLsVniResults.keys) { 
 
-                Given "VNI state on controller $controller" {
-                    $controllerip = ($NsxControllers | ? { $_.id -eq $controller } ).ipaddress
+                Write-Host "VNI state on controller $controller" 
+                $controllerip = ($NsxControllers | ? { $_.id -eq $controller } ).ipaddress
 
-                    it "has BUM replication and Proxy ARP enabled" {
-                        "BUM-Replication : $($CurrLsVniResults.$controller.LsBumRep), ARP-Proxy : $($CurrLsVniResults.$controller.LsArpProxy)" | should match "BUM-Replication : Enabled, ARP-Proxy : Enabled"
-                    }
-
-                    Write-Verbose "VNI : $($ls.vdnid), BUM-Replication : $($CurrLsVniResults.$controller.LsBumRep), ARP-Proxy : $($CurrLsVniResults.$controller.LsArpProxy)"
-
-                    # #Using the first controller returned by the API as the source of truth to ask for the 'correct' owning controller for any VNI. 
-                    # if ( $controllerip -eq $CurrLsVniResults.($nsxcontrollers[0].id).LsOwningController ) { 
-
-                    #     it "is the owning controller and has the correct number of connections on the owning controller" {
-                    #         #Bs test to ensure failure.... Need more testing to determine correct val here.
-                    #         $CurrLsVniResults.$controller.Connections | should equal 100
-                    #     }
-                    # }
-                    # else { 
-
-                    #     it "is not the owning controller and has zero connections" {
-                    #         $CurrLsVniResults.$controller.Connections | should equal 0
-                    #     }
-                    # }
+                it "has BUM replication and Proxy ARP enabled" {
+                    "BUM-Replication : $($CurrLsVniResults.$controller.LsBumRep), ARP-Proxy : $($CurrLsVniResults.$controller.LsArpProxy)" | should match "BUM-Replication : Enabled, ARP-Proxy : Enabled"
                 }
+
+                Write-Verbose "VNI : $($ls.vdnid), BUM-Replication : $($CurrLsVniResults.$controller.LsBumRep), ARP-Proxy : $($CurrLsVniResults.$controller.LsArpProxy)"
+
+                # #Using the first controller returned by the API as the source of truth to ask for the 'correct' owning controller for any VNI. 
+                # if ( $controllerip -eq $CurrLsVniResults.($nsxcontrollers[0].id).LsOwningController ) { 
+
+                #     it "is the owning controller and has the correct number of connections on the owning controller" {
+                #         #Bs test to ensure failure.... Need more testing to determine correct val here.
+                #         $CurrLsVniResults.$controller.Connections | should equal 100
+                #     }
+                # }
+                # else { 
+
+                #     it "is not the owning controller and has zero connections" {
+                #         $CurrLsVniResults.$controller.Connections | should equal 0
+                #     }
+                # }
             }
         }
     }

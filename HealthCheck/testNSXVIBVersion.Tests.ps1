@@ -46,53 +46,51 @@ Describe "NSX VIB Versions"{
     #Getting all hosts.
     foreach ( $hv in $vSphereHosts ) {
         $ESXi_VIBVersionArray=@()
-        GivenEach "vSphere Host $($hv.name)" {
-            #Test setup
-            #If host has specific credentials, then use them, otherwise, use the default.
-            if ( $HostCredentialHash.Contains($hv) ) {
-                $esxicred = $HostCredentialHash.$hv.Credential
-            }elseif ($HostCredentialHash.Contains("ALL") ) {}
-            else {$esxicred = Get-Credential -Message "ESXi Host $hv.name Credentails" -UserName "root"}
+        Write-Host "vSphere Host $($hv.name)"
+        #Test setup
+        #If host has specific credentials, then use them, otherwise, use the default.
+        if ( $HostCredentialHash.Contains($hv) ) {
+            $esxicred = $HostCredentialHash.$hv.Credential
+        }elseif ($HostCredentialHash.Contains("ALL") ) {}
+        else {$esxicred = Get-Credential -Message "ESXi Host $hv.name Credentails" -UserName "root"}
 
-            #Connect
-            $esxi_SSH_Session = New-SSHSession -ComputerName $hv -Credential $esxicred -AcceptKey -ErrorAction Ignore
+        #Connect
+        $esxi_SSH_Session = New-SSHSession -ComputerName $hv -Credential $esxicred -AcceptKey -ErrorAction Ignore
 
-            it "ESXi is reachable via ssh" {
-                $esxi_SSH_Session.Connected | should be $true
+        it "ESXi is reachable via ssh" {
+            $esxi_SSH_Session.Connected | should be $true
+        }
+        
+        if ( $esxi_SSH_Session.Connected -eq $true ) {
+
+            #Get VIB info.
+            #$ESXi_VIBInfo = Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "esxcli software vib get --vibname esx-vxlan" -EnsureConnection -ErrorAction Ignore
+            $ESXi_VIBInfo = Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "esxcli software vib list | grep esx-v" -EnsureConnection -ErrorAction Ignore
+
+            it "SSH returned VIBs info" { 
+                $ESXi_VIBInfo | should not be blank
             }
-            
-            if ( $esxi_SSH_Session.Connected -eq $true ) {
 
-                #Get VIB info.
-                #$ESXi_VIBInfo = Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "esxcli software vib get --vibname esx-vxlan" -EnsureConnection -ErrorAction Ignore
-                $ESXi_VIBInfo = Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "esxcli software vib list | grep esx-v" -EnsureConnection -ErrorAction Ignore
-
-                it "SSH returned VIBs info" { 
-                    $ESXi_VIBInfo | should not be blank
-                }
-
-                if ( $ESXi_VIBInfo ) {
-                    foreach ($vib in $ESXi_VIBInfo.output) {
-                        $cleanvib = $vib -replace '\s+', ' '
-                        $a,$b,$c = $cleanvib.split(' ')
-                        $ESXi_VIBVersion =  $b
-                        $ESXi_VIBVersionArray = $ESXi_VIBVersionArray+$ESXi_VIBVersion
-                        $global:env_VIBVersionArray = $global:env_VIBVersionArray+$ESXi_VIBVersion
-                        it "$a VIB Version same as desired VIB version" { 
-                           $ESXi_VIBVersion | Should BeExactly $desiredVIBVersion
-                        }
+            if ( $ESXi_VIBInfo ) {
+                foreach ($vib in $ESXi_VIBInfo.output) {
+                    $cleanvib = $vib -replace '\s+', ' '
+                    $a,$b,$c = $cleanvib.split(' ')
+                    $ESXi_VIBVersion =  $b
+                    $ESXi_VIBVersionArray = $ESXi_VIBVersionArray+$ESXi_VIBVersion
+                    $global:env_VIBVersionArray = $global:env_VIBVersionArray+$ESXi_VIBVersion
+                    it "$a VIB Version same as desired VIB version" { 
+                        $ESXi_VIBVersion | Should BeExactly $desiredVIBVersion
                     }
-                    $uniqueVIBVersionArray=$ESXi_VIBVersionArray | select -unique
-                    it "All VIB Versions are same accross the host $hv.name" {$uniqueVIBVersionArray.count -eq 1 | Should Be $true}
                 }
-                    Remove-SshSession -SshSession $esxi_SSH_Session | out-null
+                $uniqueVIBVersionArray=$ESXi_VIBVersionArray | select -unique
+                it "All VIB Versions are same accross the host $hv.name" {$uniqueVIBVersionArray.count -eq 1 | Should Be $true}
             }
+                Remove-SshSession -SshSession $esxi_SSH_Session | out-null
         }
     }
-    GivenEach "NSX Environment - All Hosts" {
-        if ( $global:env_VIBVersionArray.count -gt 1 ) {
-            $uniqueEnvVIBVersionObj=$env_VIBVersionArray | select -unique
-            it "All VIB Versions are same accross the Environment" {$uniqueEnvVIBVersionObj.count -eq 1 | Should Be $true}
-        }
+    Write-Host "NSX Environment - All Hosts"
+    if ( $global:env_VIBVersionArray.count -gt 1 ) {
+        $uniqueEnvVIBVersionObj=$env_VIBVersionArray | select -unique
+        it "All VIB Versions are same accross the Environment" {$uniqueEnvVIBVersionObj.count -eq 1 | Should Be $true}
     }
 }

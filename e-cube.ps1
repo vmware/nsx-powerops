@@ -50,6 +50,7 @@ function installPowerNSX($sectionNumber){
     $userSelection = "Install PowerNSX"
     Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now executing '$userSelection'..."\
     $Branch="v2";$url="https://raw.githubusercontent.com/vmware/powernsx/$Branch/PowerNSXInstaller.ps1"; try { $wc = new-object Net.WebClient;$scr = try { $wc.DownloadString($url)} catch { if ( $_.exception.innerexception -match "(407)") { $wc.proxy.credentials = Get-Credential -Message "Proxy Authentication Required"; $wc.DownloadString($url) } else { throw $_ }}; $scr | iex } catch { throw $_ }
+    printMainMenu
 }
 
 #Connect to NSX Manager and vCenter. Save the credentials.
@@ -599,7 +600,7 @@ function printMainMenu{
     Write-Host (" " * $ScreenSize) "* 2) Connect NSX Manager & vCenter    *"
     Write-Host (" " * $ScreenSize) "* 3) Show Documentation Menu          *"
     Write-Host (" " * $ScreenSize) "* 4) Show Health Check Menu           *"
-    Write-Host (" " * $ScreenSize) "* 5) Check NSX Upgrade Prerequisites  *"
+#    Write-Host (" " * $ScreenSize) "* 5) Check NSX Upgrade Prerequisites  *"
     Write-Host (" " * $ScreenSize) "*                                     *"
     Write-Host (" " * $ScreenSize) "* 0) Exit E-Cube                      *"
     Write-Host (" " * $ScreenSize) "***************************************"
