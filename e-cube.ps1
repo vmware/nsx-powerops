@@ -142,7 +142,7 @@ function healthCheckMenu($sectionNumber){
 }
 
 
-#---- Get Health Check Menu here ----#
+#---- Get Health Check Menu here - currently not using this function ----#
 function nsxUpdateCheckReport($sectionNumber){
     Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now collecting NSX upgrade info..."
 }
@@ -174,31 +174,35 @@ function getNSXComponents($sectionNumber){
     "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
     #>
     $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"}
-
-    foreach ($eachNSXController in $nsxControllers){
-        $tempControllerData = $eachNSXController, "all"
-        $allNSXComponentExcelDataControllers.Add($eachNSXController.id, $tempControllerData)
-    }
-    foreach ($eachNSXEdge in $nsxEdges){
-        $tempNSXEdgeData = $eachNSXEdge, "all"
-        $allNSXComponentExcelDataEdge.Add($eachNSXEdge.id, $tempNSXEdgeData)
-    }
-    foreach ($eachNSXDLR in $nsxLogicalRouters){
-        $tempNSXDLRData = $eachNSXDLR, "all"
-        $allNSXComponentExcelDataDLR.Add($eachNSXDLR.id, $tempNSXDLRData)
-    }
-    #$allNSXComponentExcelDataDLR =@{"NSX Logical Router Info" = $nsxLogicalRouters, "all"}
-
+    
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "NSX-Components-Excel"
     $nsxComponentExcelWorkBook = createNewExcel($excelName)
     
     ####plotDynamicExcel one workBook at a time
-
     $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Manager" -listOfDataToPlot $allNSXComponentExcelDataMgr
-    $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Controllers" -listOfDataToPlot $allNSXComponentExcelDataControllers
-    $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Edge Services Gateway" -listOfDataToPlot $allNSXComponentExcelDataEdge
-    $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Logical Router" -listOfDataToPlot $allNSXComponentExcelDataDLR
+    # Creating seperate worksheet for each controller, edge, and dlr 
+    foreach ($eachNSXController in $nsxControllers){
+        $nsxComponentExcelDataControllers =@{}
+        $controllerID = $eachNSXController.id
+        $tempControllerData = $eachNSXController, "all"
+        $nsxComponentExcelDataControllers.Add($eachNSXController.id, $tempControllerData)
+        $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Controller-$controllerID" -listOfDataToPlot $nsxComponentExcelDataControllers
+    }
+    foreach ($eachNSXEdge in $nsxEdges){
+        $nsxComponentExcelDataEdge =@{}
+        $edgeID = $eachNSXEdge.id
+        $tempNSXEdgeData = $eachNSXEdge, "all"
+        $nsxComponentExcelDataEdge.Add($eachNSXEdge.id, $tempNSXEdgeData)
+        $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Edge-$edgeID" -listOfDataToPlot $nsxComponentExcelDataEdge
+    }
+    foreach ($eachNSXDLR in $nsxLogicalRouters){
+        $nsxComponentExcelDataDLR =@{}
+        $dlrID = $eachNSXDLR.id
+        $tempNSXDLRData = $eachNSXDLR, "all"
+        $nsxComponentExcelDataDLR.Add($eachNSXDLR.id, $tempNSXDLRData)
+        $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX DLR-$dlrID" -listOfDataToPlot $nsxComponentExcelDataDLR
+    }
 
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     #Loop back to document Menu
@@ -249,14 +253,6 @@ function getHostInformation($sectionNumber){
         ####writeToExcel -eachDataElementToPrint $sshCommandOutputData -listOfAllAttributesToPrint $sshCommandOutputLable
     }
     #invokeNSXCLICmd(" show logical-switch host host-31 verbose ")
-
-    <#
-    $exportHostList = Read-Host -Prompt "`n Export output in a .txt file? Please enter 'y' or 'n'"
-    if ($exportHostList -eq 'y'){
-        $vmHosts > ListOfAllHost.txt
-        " Created a list of all VM(s) and exported in ListOfAllHost.txt"
-    }
-    #>
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     documentationkMenu(22)
 }
@@ -308,10 +304,31 @@ function getRoutingInformation($sectionNumber){
     foreach($eachDLR in $numberOfDLRs){
         $dlrRoutinginfo = Get-NsxLogicalRouter $eachDLR.Name | Get-NsxLogicalRouterRouting
         $tempDLRRoutingValueArray = $dlrRoutinginfo, "all"
+        $tempDLRData2 = $sshCommandOutputData, "all"
+        $allVmHostsExcelData.Add("DLR Route Details", $tempDLRData2)
         $allDLRRoutingExcelData.Add($eachDLR.Name, $tempDLRRoutingValueArray)
+}
+    <#
+    #Target command: show logical-router host host-31 dlr edge-2 route
+    # Run SSH Command on NSX Manager here...
+    $myHost = $eachVMHost.id
+    if ($myHost -match "HostSystem-"){$myNewHost = $myHost -replace "HostSystem-", ""}
+    [string]$nsxMgrCommand = "show logical-switch host "+$myNewHost+" verbose"
+    invokeNSXCLICmd -commandToInvoke $nsxMgrCommand -fileName "temp-logical-switch-info.txt"
+    #invokeNSXCLICmd -commandToInvoke "show cluster all" -fileName "temp-logical-switch-info.txt"
+    $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
+    foreach ($eachElement in $findElements){
+        $indx = ''
+        $indx = Select-String $eachElement "temp-logical-switch-info.txt" | ForEach-Object {$_.LineNumber}
+        if ($indx -ne '') {
+            [string]$eachElementResult = (Get-Content "temp-logical-switch-info.txt")[$indx-1]
+            $sshCommandOutputData.Add($eachElement, $eachElementResult)
+            $sshCommandOutputLable += $eachElement
+        }
     }
+    # NSX Manager SSH Command Ends here.
+    #>
     
-    ##$dlRoutingInfo =  Get-NsxLogicalRouterRouting
     
     ####plotDynamicExcel one workBook at a time
     $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX DLR Routing Config" -listOfDataToPlot $allDLRRoutingExcelData
@@ -386,6 +403,11 @@ function startSSHSession($serverToConnectTo, $credentialsToUse){
 }
 
 
+function clx {
+    [System.Console]::SetWindowPosition(0,[System.Console]::CursorTop)
+}
+
+
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 #---- ---- HealthCheck Functions start here ---- ----#
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- # 
@@ -403,10 +425,6 @@ function runNSXTest ($sectionNumber, $testModule){
   healthCheckMenu(22)
 }
 
-
-function clx {
-    [System.Console]::SetWindowPosition(0,[System.Console]::CursorTop)
-}
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 #---- ---- Excel Functions start here ---- ----#
