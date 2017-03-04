@@ -44,6 +44,7 @@ import-module Pester
     $global:myColumn = 1
 
     $global:ConsoleWidth = (Get-host).ui.RawUI.windowsize.width
+    $Global:listOfNSXPrepHosts=@()
 
 #Install PowerNSX here
 function installPowerNSX($sectionNumber){
@@ -166,7 +167,7 @@ function getNSXComponents($sectionNumber){
     $nsxManagerSummary = Get-NsxManagerSystemSummary
     $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
     #Write-Host "Controller ID is:"$nsxControllers[0].id
-    <# 
+    <# Example of the code to cherrypick dic elements to plot on documentation excel.
     $allNSXComponentExcelData = @{"NSX Controllers Info" = $nsxControllers, "objectTypeName", "revision", "clientHandle", "isUniversal", "universalRevision", "id", "ipAddress", "status", "upgradeStatus", "version", "upgradeAvailable", "virtualMachineInfo", "hostInfo", "resourcePoolInfo", "clusterInfo", "managedBy", "datastoreInfo", "controllerClusterStatus", "diskLatencyAlertDetected", "vmStatus"; 
     "NSX Manager Info" = $nsxManagerSummary, "ipv4Address", "dnsName", "hostName", "applianceName", "versionInfo", "uptime", "cpuInfoDto", "memInfoDto", "storageInfoDto", "currentSystemDate"; 
     "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "ipAddress", "userName", "certificateThumbprint", "assignRoleToUser", "vcInventoryLastUpdateTime", "Connected";
@@ -213,8 +214,10 @@ function getNSXComponents($sectionNumber){
 function getHostInformation($sectionNumber){
     $userSelection = "Get List of Hosts"
     Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now executing '$userSelection'..."
-    $vmHosts = get-vmhost
-    Write-Host " Number of vmHosts are:" $vmHosts.length
+    #$vmHosts = get-vmhost
+    getNSXPrepairedHosts
+    $vmHosts = $Global:listOfNSXPrepHosts
+    Write-Host " Number of NSX Prepaired vmHosts are:" $vmHosts.length
 
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "ESXi-Hosts-Excel"
@@ -402,6 +405,14 @@ function startSSHSession($serverToConnectTo, $credentialsToUse){
     return $newSSHSession
 }
 
+
+function getNSXPrepairedHosts() {
+    $allEnvClusters = get-cluster -Server $NSXConnection.ViConnection | %{
+        $nsxCluster = $_
+        get-cluster $_ | Get-NsxClusterStatus | %{
+            if($_.featureId -eq "com.vmware.vshield.vsm.nwfabric.hostPrep"){$listOfNSXPrepHosts += $nsxCluster | get-vmhost}}
+    }
+}
 
 function clx {
     [System.Console]::SetWindowPosition(0,[System.Console]::CursorTop)
@@ -716,6 +727,7 @@ while($true)
         Disconnect-VIServer -Server * -Force}
         remove-variable -scope global myRow
         remove-variable -scope global myColumn
+        remove-variable -scope global listOfNSXClusterName
         
         break}
     elseif ($sectionNumber -eq "help"){printMainMenu}

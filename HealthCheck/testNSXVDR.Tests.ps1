@@ -40,16 +40,9 @@ Describe "NSX VDR Port Tests" {
 		$_.toString()
 		$esxcli.network.vswitch.dvs.vmware.vxlan.network.port.list($vdrTestVDSName,"vdrPort",$vdrTestVDSID) | Measure-Object | %{
 			#Write-Host "Count in main test file is:" $_.Count
-			if ($_.Count -eq 1) {
-				#$_.Count.toString()+" vdrPort was found"
-				$result = $true}else{
-				#Write-Host -foregroundcolor "Red" "No vdrPort found"
-				$result = $false
-			}
+			if ($_.Count -eq 1) {$result = $true}
 		}
 	}
 
-    it "got VDR deployed" { 
-        $result | Should BeExactly $true
-    }
+    it "got VDR deployed" {$result | Should BeExactly $true}
 }
