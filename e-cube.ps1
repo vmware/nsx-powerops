@@ -44,7 +44,7 @@ import-module Pester
     $global:myColumn = 1
 
     $global:ConsoleWidth = (Get-host).ui.RawUI.windowsize.width
-    $Global:listOfNSXPrepHosts=@()
+    $global:listOfNSXPrepHosts=@()
 
 #Install PowerNSX here
 function installPowerNSX($sectionNumber){
@@ -216,7 +216,7 @@ function getHostInformation($sectionNumber){
     Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now executing '$userSelection'..."
     #$vmHosts = get-vmhost
     getNSXPrepairedHosts
-    $vmHosts = $Global:listOfNSXPrepHosts
+    $vmHosts = $global:listOfNSXPrepHosts
     Write-Host " Number of NSX Prepaired vmHosts are:" $vmHosts.length
 
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
@@ -410,7 +410,7 @@ function getNSXPrepairedHosts() {
     $allEnvClusters = get-cluster -Server $NSXConnection.ViConnection | %{
         $nsxCluster = $_
         get-cluster $_ | Get-NsxClusterStatus | %{
-            if($_.featureId -eq "com.vmware.vshield.vsm.nwfabric.hostPrep"){$listOfNSXPrepHosts += $nsxCluster | get-vmhost}}
+            if($_.featureId -eq "com.vmware.vshield.vsm.nwfabric.hostPrep"){$global:listOfNSXPrepHosts += $nsxCluster | get-vmhost}}
     }
 }
 
