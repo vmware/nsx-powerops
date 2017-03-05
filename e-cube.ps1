@@ -188,21 +188,24 @@ function getNSXComponents($sectionNumber){
         $controllerID = $eachNSXController.id
         $tempControllerData = $eachNSXController, "all"
         $nsxComponentExcelDataControllers.Add($eachNSXController.id, $tempControllerData)
-        $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Controller-$controllerID" -listOfDataToPlot $nsxComponentExcelDataControllers
+        if ($controllerID.length -gt 16){ $nsxComponentWorkSheetName = "NSX Controller-$($controllerID.substring(0,15))" }else{$nsxComponentWorkSheetName = "NSX Controller-$controllerID"}
+        $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName $nsxComponentWorkSheetName -listOfDataToPlot $nsxComponentExcelDataControllers
     }
     foreach ($eachNSXEdge in $nsxEdges){
         $nsxComponentExcelDataEdge =@{}
         $edgeID = $eachNSXEdge.id
         $tempNSXEdgeData = $eachNSXEdge, "all"
         $nsxComponentExcelDataEdge.Add($eachNSXEdge.id, $tempNSXEdgeData)
-        $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Edge-$edgeID" -listOfDataToPlot $nsxComponentExcelDataEdge
+        if ($edgeID.length -gt 22){ $nsxComponentWorkSheetName = "NSX Edge-$($edgeID.substring(0,21))" }else{$nsxComponentWorkSheetName = "NSX Edge-$edgeID"}
+        $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName $nsxComponentWorkSheetName -listOfDataToPlot $nsxComponentExcelDataEdge
     }
     foreach ($eachNSXDLR in $nsxLogicalRouters){
         $nsxComponentExcelDataDLR =@{}
         $dlrID = $eachNSXDLR.id
         $tempNSXDLRData = $eachNSXDLR, "all"
         $nsxComponentExcelDataDLR.Add($eachNSXDLR.id, $tempNSXDLRData)
-        $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX DLR-$dlrID" -listOfDataToPlot $nsxComponentExcelDataDLR
+        if ($dlrID.length -gt 22){ $nsxComponentWorkSheetName = "NSX DLR-$($dlrID.substring(0,21))" }else{$nsxComponentWorkSheetName = "NSX DLR-$dlrID"}
+        $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName $nsxComponentWorkSheetName -listOfDataToPlot $nsxComponentExcelDataDLR
     }
 
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
@@ -251,8 +254,10 @@ function getHostInformation($sectionNumber){
         $tempHostData2 = $sshCommandOutputData, "Control plane Out-Of-Sync", "MTU", "VXLAN vmknic"
         $allVmHostsExcelData.Add($eachVMHost.name, $tempHostData)
         $allVmHostsExcelData.Add("NSX Manager Details", $tempHostData2)
+        if ($eachVMHost.name.length -gt 31){ $hostWorkSheetName = $eachVMHost.name.substring(0,30) }else{$hostWorkSheetName = $eachVMHost.name}
+
         ####plotDynamicExcel one workBook at a time
-        $plotHostInformationExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName $eachVMHost.name -listOfDataToPlot $allVmHostsExcelData
+        $plotHostInformationExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName $hostWorkSheetName -listOfDataToPlot $allVmHostsExcelData
         ####writeToExcel -eachDataElementToPrint $sshCommandOutputData -listOfAllAttributesToPrint $sshCommandOutputLable
     }
     #invokeNSXCLICmd(" show logical-switch host host-31 verbose ")
@@ -410,8 +415,10 @@ function getNSXPrepairedHosts() {
     $allEnvClusters = get-cluster -Server $NSXConnection.ViConnection | %{
         $nsxCluster = $_
         get-cluster $_ | Get-NsxClusterStatus | %{
-            if($_.featureId -eq "com.vmware.vshield.vsm.nwfabric.hostPrep"){$global:listOfNSXPrepHosts += $nsxCluster | get-vmhost}}
+            if($_.featureId -eq "com.vmware.vshield.vsm.nwfabric.hostPrep" -And $_.installed -eq "true"){
+                $global:listOfNSXPrepHosts += $nsxCluster | get-vmhost}}
     }
+    $global:listOfNSXPrepHosts = $global:listOfNSXPrepHosts | Sort-Object -unique
 }
 
 function clx {
