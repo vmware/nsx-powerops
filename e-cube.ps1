@@ -8,6 +8,9 @@
 #               Version: 1.0.4                  #
 # *-------------------------------------------* #
 
+#Setting up max window size with max buffer size
+invoke-expression -Command .\maxWindowSize.ps1
+
 # Import PowerNSX Module
 import-module PowerNSX
 import-module Posh-SSH
@@ -695,8 +698,6 @@ function printHealthCheckMenu{
     Write-Host (" " * $ScreenSize) "*****************************************"
 }
 
-#Setting up max window size with max buffer size
-invoke-expression -Command .\maxWindowSize.ps1
 clx
 $ScreenSize = [math]::Round($ConsoleWidth-99)/2
 Write-Host "`n"
