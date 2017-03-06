@@ -207,7 +207,8 @@ function getNSXComponents($sectionNumber){
         if ($dlrID.length -gt 22){ $nsxComponentWorkSheetName = "NSX DLR-$($dlrID.substring(0,21))" }else{$nsxComponentWorkSheetName = "NSX DLR-$dlrID"}
         $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName $nsxComponentWorkSheetName -listOfDataToPlot $nsxComponentExcelDataDLR
     }
-
+    
+    $nsxComponentExcelWorkBook.SaveAs()
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     #Loop back to document Menu
     documentationkMenu(22) #Keep in Documentation Menu
@@ -261,6 +262,7 @@ function getHostInformation($sectionNumber){
         ####writeToExcel -eachDataElementToPrint $sshCommandOutputData -listOfAllAttributesToPrint $sshCommandOutputLable
     }
     #invokeNSXCLICmd(" show logical-switch host host-31 verbose ")
+    $nsxComponentExcelWorkBook.SaveAs()
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     documentationkMenu(22)
 }
@@ -693,6 +695,8 @@ function printHealthCheckMenu{
     Write-Host (" " * $ScreenSize) "*****************************************"
 }
 
+#Setting up max window size with max buffer size
+invoke-expression -Command .\maxWindowSize.ps1
 clx
 $ScreenSize = [math]::Round($ConsoleWidth-99)/2
 Write-Host "`n"
