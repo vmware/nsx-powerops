@@ -439,8 +439,14 @@ function parseSSHOutput ($fileToParse, $findElements, $direction) {
         $indx = Select-String $_ $fileToParse | ForEach-Object {$_.LineNumber}
         $totalLines = get-content $fileToParse | Measure-Object -Line
         if ($indx -ne '' -and $direction -eq "Row"){
-            [string]$eachElementResult = (Get-Content $fileToParse)[$indx-1]
-            $sshCommandOutputParsedDic.Add($_, $eachElementResult)
+            if($indx.gettype().BaseType.Name -eq "Array"){
+                $tempelementResultArray = @()
+                $indx | %{ [string]$eachElementResult = (Get-Content $fileToParse)[$_ -1]
+                $tempelementResultArray += $eachElementResult}
+            $sshCommandOutputParsedDic.Add($_, $tempelementResultArray)
+            }else{
+            [string]$eachElementResult = (Get-Content $fileToParse)[$indx -1]
+            $sshCommandOutputParsedDic.Add($_, $eachElementResult)}
         }elseif($indx -ne '' -and $direction -eq "Column"){
             [string]$eachElementResult = ""
             $startLineNumberRT = $indx -1
@@ -584,6 +590,19 @@ function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
                         writeToExcel $newElementOfArrayToPrint $newListOfArrayAllAttributes
                         if($valueOfLableToPrint.count -ne $lengthOfLoop){$global:myRow++}
                         $lengthOfLoop++
+                    }else{
+                        $sheet.Cells.Item($global:myRow,$global:myColumn) = $eachLabelToPrint
+                        $sheet.Cells.Item($global:myRow,$global:myColumn).Font.Size = $subTitleFontSize
+                        $sheet.Cells.Item($global:myRow,$global:myColumn).Font.Bold = $subTitleFontBold
+                        $sheet.Cells.Item($global:myRow,$global:myColumn).Font.Name = $subTitleFontName
+                        $sheet.Cells.Item($global:myRow,$global:myColumn).Interior.ColorIndex = $subTitleInteriorColor
+                        
+                        $sheet.Cells.Item($global:myRow,$global:myColumn+1) = $newElementOfArrayToPrint
+                        $sheet.Cells.Item($global:myRow,$global:myColumn+1).Font.Size = $valueFontSize
+                        $sheet.Cells.Item($global:myRow,$global:myColumn+1).Font.Name = $valueFontName
+                        $sheet.Cells.Item($global:myRow,$global:myColumn+1).HorizontalAlignment = -4131
+                        #Write-Host "    " $eachLabelToPrint "is:" $eachDataElementToPrint.$eachLabelToPrint
+                        $global:myRow++
                     }
                 }
             }else{
