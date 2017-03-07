@@ -264,7 +264,7 @@ function getHostInformation($sectionNumber){
 
         $allVmHostsExcelData.Add($myNewHostID, $tempHostData)
         $allVmHostsExcelData.Add("NSX Manager Details", $tempHostData2)
-        $allVmHostsExcelData.Add("Rought Table", $tempHostData3)
+        $allVmHostsExcelData.Add("Route Table", $tempHostData3)
         if ($myHostName.length -gt 31){ $hostWorkSheetName = $myHostName.substring(0,30) }else{$hostWorkSheetName = $myHostName}
 
         ####plotDynamicExcel one workBook at a time
@@ -309,11 +309,12 @@ function getRoutingInformation($sectionNumber){
     $numberOfEdges = Get-NsxEdge
     foreach ($eachEdge in $numberOfEdges){
         $allEdgeRoutingExcelData = @{}
-        $edgeName = $eachEdge.id
+        $edgeName = $eachEdge.Name
+        $edgeID = $eachEdge.id
         $edgeRoutingInfo = Get-NsxEdge $edgeName | Get-NsxEdgeRouting        
         $tempEdgeRoutingValueArray = $edgeRoutingInfo, "all"
-        $allEdgeRoutingExcelData.Add($eachEdge.Name, $tempEdgeRoutingValueArray)
-        if ($edgeName.length -gt 13){ $nsxEdgeWorkSheetName = "NSX Edge Routing-$($edgeName.substring(0,13))" }else{$nsxEdgeWorkSheetName = "NSX Edge Routing-$edgeName"}
+        $allEdgeRoutingExcelData.Add($edgeName, $tempEdgeRoutingValueArray)
+        if ($edgeID.length -gt 13){ $nsxEdgeWorkSheetName = "NSX Edge Routing-$($edgeID.substring(0,13))" }else{$nsxEdgeWorkSheetName = "NSX Edge Routing-$edgeID"}
         $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxEdgeWorkSheetName -listOfDataToPlot $allEdgeRoutingExcelData
     }
 
@@ -321,39 +322,35 @@ function getRoutingInformation($sectionNumber){
     $numberOfDLRs = Get-NsxLogicalRouter
     foreach($eachDLR in $numberOfDLRs){
         $allDLRRoutingExcelData = @{}
-        $dlrName = $eachDLR.id
+        $dlrID = $eachDLR.id
+        $dlrName = $eachDLR.Name
         $dlrRoutinginfo = Get-NsxLogicalRouter $dlrName | Get-NsxLogicalRouterRouting
         $tempDLRRoutingValueArray = $dlrRoutinginfo, "all"
-        #$tempDLRData2 = $sshCommandOutputDataLogicalSwitch, "all"
-        #$allVmHostsExcelData.Add("DLR Route Details", $tempDLRData2)
-        $allDLRRoutingExcelData.Add($eachDLR.Name, $tempDLRRoutingValueArray)
-        if ($dlrName.length -gt 14){ $nsxDLRWorkSheetName = "NSX DLR Routing-$($dlrName.substring(0,13))" }else{$nsxDLRWorkSheetName = "NSX DLR Routing-$dlrName"}
-        $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxDLRWorkSheetName -listOfDataToPlot $allDLRRoutingExcelData
-}
-    <#
-    #Target command: show logical-router host host-31 dlr edge-2 route
-    # Run SSH Command on NSX Manager here...
-    $myHostID = $eachVMHost.id
-    if ($myHostID -match "HostSystem-"){$myNewHost = $myHostID -replace "HostSystem-", ""}
-    [string]$nsxMgrCommand = "show logical-switch host "+$myNewHost+" verbose"
-    invokeNSXCLICmd -commandToInvoke $nsxMgrCommand -fileName "logical-switch-info.txt"
-    #invokeNSXCLICmd -commandToInvoke "show cluster all" -fileName "logical-switch-info.txt"
-    $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
-    foreach ($eachElement in $findElements){
-        $indx = ''
-        $indx = Select-String $eachElement "logical-switch-info.txt" | ForEach-Object {$_.LineNumber}
-        if ($indx -ne '') {
-            [string]$eachElementResult = (Get-Content "logical-switch-info.txt")[$indx-1]
-            $sshCommandOutputDataLogicalSwitch.Add($eachElement, $eachElementResult)
-        }
-    }
-    # NSX Manager SSH Command Ends here.
-    #>
+        $allDLRRoutingExcelData.Add($dlrName, $tempDLRRoutingValueArray)
+
+        #get host id here
+        $nsxLogicalRouter = Get-NsxLogicalRouter $dlrName
+        $nsxLogicalRouterHostID = $nsxLogicalRouter.appliances.appliance.hostId
+        #Run SSH Command to get Route Table
+        [string]$nsxMgrCommandRouteTable = "show logical-router host "+$nsxLogicalRouterHostID+" dlr "+$dlrID+" route"
+        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName "route-table-info.txt"
+        #Parse SSH Output here
+        $findLogicalSwitchElements= @("Destination")
+        $sshCommandOutputDataRouteTable = parseSSHOutput -fileToParse "route-table-info.txt" -findElements $findLogicalSwitchElements -direction "Column"
+        #Add parsed output to the allDLRRoutingExcelData dictionary
+        $tempDLRRoutingValueArray2 = $sshCommandOutputDataRouteTable, "route-table-info.txt"
+        $allDLRRoutingExcelData.Add("Route Table", $tempDLRRoutingValueArray2)
         
+        #Make sure workbook name wont exceed 31 letters
+        if ($dlrID.length -gt 14){ $nsxDLRWorkSheetName = "NSX DLR Routing-$($dlrID.substring(0,13))" }else{$nsxDLRWorkSheetName = "NSX DLR Routing-$dlrID"}
+        #Plot the NSX Route final
+        $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxDLRWorkSheetName -listOfDataToPlot $allDLRRoutingExcelData
+    }
     $nsxRoutingExcelWorkBook.SaveAs()
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     documentationkMenu(22)
 }
+
 
 #get VXLAN Info
 function getVXLANInformation($sectionNumber){
