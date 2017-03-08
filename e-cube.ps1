@@ -233,6 +233,8 @@ function getHostInformation($sectionNumber){
         $sshCommandOutputDataLogicalSwitch = @{}
         $sshCommandOutputDataRouteTable = @{}
         $sshCommandOutputLable = @()
+        $allHostVIBList = @()
+        $nsxVIBList = @()
 
         $myHostID = $eachVMHost.id
         $myHostName = $eachVMHost.Name
@@ -244,6 +246,7 @@ function getHostInformation($sectionNumber){
         $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
         $sshCommandOutputDataLogicalSwitch = parseSSHOutput -fileToParse "logical-switch-info.txt" -findElements $findElements -direction "Row"
 
+        # Run SSH Command to get Route Table Info from NSX Manager here...
         $getDLRs = Get-NsxLogicalRouter
         if($getDLRs.gettype().BaseType.Name -eq "Array"){
             [string]$nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$($getDLRs[0].id)+" route"
@@ -253,18 +256,27 @@ function getHostInformation($sectionNumber){
         $sshCommandOutputDataRouteTable = parseSSHOutput -fileToParse "route-table-info.txt" -findElements $findLogicalSwitchElements -direction "Column"
         # NSX Manager SSH Command Ends here.
 
+        # Run ESXCLI Command to get VIB List Info from ESXi Host here...
+        $esxcli = $eachVMHost | Get-EsxCli -v2
+        $allHostVIBList += $esxcli.software.vib.list.invoke() | Select-Object @{N="VMHostName"; E={$VMHostName}}, *
+        #Filter out VIB with starting name 'esx-v'
+        $allHostVIBList | %{if ($_.name.StartsWith("esx-v")){$nsxVIBList += $_}}
+        # End ESXCLI Command here.
+
         $allVmHostsExcelData=@{}
         $tempHostData=@()
-        $tempHostData2=@()
-        $tempHostData3=@()
+        $tempHostDataMgrDetails=@()
+        $tempHostDataRouteTable=@()
         #$allVmHostsExcelData = @{"ESXi Host" = $eachVMHost, "Name", "ConnectionState", "PowerState", "NumCpu", "CpuUsageMhz", "CpuTotalMhz", "MemoryUsageGB", "MemoryTotalGB", "Version"}
         $tempHostData = $eachVMHost, "all"
-        $tempHostData2 = $sshCommandOutputDataLogicalSwitch, "Control plane Out-Of-Sync", "MTU", "VXLAN vmknic"
-        $tempHostData3 = $sshCommandOutputDataRouteTable, "route-table-info.txt"
+        $tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "Control plane Out-Of-Sync", "MTU", "VXLAN vmknic"
+        $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, "route-table-info.txt"
+        $tempHostDataNSXVIBList = $nsxVIBList, "all"
 
         $allVmHostsExcelData.Add($myNewHostID, $tempHostData)
-        $allVmHostsExcelData.Add("NSX Manager Details", $tempHostData2)
-        $allVmHostsExcelData.Add("Route Table", $tempHostData3)
+        $allVmHostsExcelData.Add("NSX Manager Details", $tempHostDataMgrDetails)
+        $allVmHostsExcelData.Add("Route Table", $tempHostDataRouteTable)
+        $allVmHostsExcelData.Add("NSX VIB List", $tempHostDataNSXVIBList)
         if ($myHostName.length -gt 31){ $hostWorkSheetName = $myHostName.substring(0,30) }else{$hostWorkSheetName = $myHostName}
 
         ####plotDynamicExcel one workBook at a time
@@ -385,12 +397,10 @@ function getMemberWithProperty($tempListOfAllAttributesInFunc){
     #$listOfAllAttributesWithCorrectProperty = New-Object System.Collections.ArrayList
     $listOfAllAttributesWithCorrectProperty = @()
     foreach($eachAttribute in $tempListOfAllAttributesInFunc){
-        if ($eachAttribute.MemberType -eq "Property"){
-            #$listOfAllAttributesWithCorrectProperty.Add($eachAttribute.Name)
-            $listOfAllAttributesWithCorrectProperty += $eachAttribute.Name
-        }
+        if ($eachAttribute.MemberType -eq "Property" -or $eachAttribute.MemberType -eq "NoteProperty"){
+            $listOfAllAttributesWithCorrectProperty += $eachAttribute.Name}
     }
-    #return $listOfAllAttributesWithCorrectProperty
+    #write-Host "List of properties to print are: $listOfAllAttributesWithCorrectProperty"
     return ,$listOfAllAttributesWithCorrectProperty
 }
 
