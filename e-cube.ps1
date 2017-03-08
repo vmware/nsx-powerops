@@ -271,7 +271,7 @@ function getHostInformation($sectionNumber){
         $tempHostData = $eachVMHost, "all"
         $tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "Control plane Out-Of-Sync", "MTU", "VXLAN vmknic"
         $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, "route-table-info.txt"
-        $tempHostDataNSXVIBList = $nsxVIBList, "all"
+        $tempHostDataNSXVIBList = $nsxVIBList, "AcceptanceLevel", "CreationDate", "InstallDate", "Name", "Version" 
 
         $allVmHostsExcelData.Add($myNewHostID, $tempHostData)
         $allVmHostsExcelData.Add("NSX Manager Details", $tempHostDataMgrDetails)
@@ -540,6 +540,7 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
         $sheet.Cells.Item($global:myRow,$global:myColumn).Interior.ColorIndex = $titleInteriorColor
         $sheet.Cells.Item($global:myRow,$global:myColumn).HorizontalAlignment = -4108
         foreach ($eachDataElement in $listOfDataToPlot.Item($eachDataSetKey)[0]){
+            $listOfAllAttributes = @()
             #Write-Host "  listOfDataToPlot[0] eachDataElement is:" $eachDataElement.name
             $global:myRow++
             $global:myRow++
