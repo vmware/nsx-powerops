@@ -331,15 +331,17 @@ function getRoutingInformation($sectionNumber){
         #get host id here
         $nsxLogicalRouter = Get-NsxLogicalRouter $dlrName
         $nsxLogicalRouterHostID = $nsxLogicalRouter.appliances.appliance.hostId
+        if($nsxLogicalRouterHostID.gettype().BaseType.Name -eq "Array"){[String]$hostID = $nsxLogicalRouterHostID[0]
+        }else{[String]$hostID = $nsxLogicalRouterHostID}
         #Run SSH Command to get Route Table
-        [string]$nsxMgrCommandRouteTable = "show logical-router host "+$nsxLogicalRouterHostID+" dlr "+$dlrID+" route"
+        [string]$nsxMgrCommandRouteTable = "show logical-router host "+$hostID+" dlr "+$dlrID+" route"
         invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName "route-table-info.txt"
         #Parse SSH Output here
         $findLogicalSwitchElements= @("Destination")
         $sshCommandOutputDataRouteTable = parseSSHOutput -fileToParse "route-table-info.txt" -findElements $findLogicalSwitchElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $tempDLRRoutingValueArray2 = $sshCommandOutputDataRouteTable, "route-table-info.txt"
-        $allDLRRoutingExcelData.Add("Route Table", $tempDLRRoutingValueArray2)
+        $allDLRRoutingExcelData.Add("Route Table", $tempDLRRoutingValueArray2)        
         
         #Make sure workbook name wont exceed 31 letters
         if ($dlrID.length -gt 14){ $nsxDLRWorkSheetName = "NSX DLR Routing-$($dlrID.substring(0,13))" }else{$nsxDLRWorkSheetName = "NSX DLR Routing-$dlrID"}
