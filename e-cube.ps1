@@ -263,20 +263,26 @@ function getHostInformation($sectionNumber){
         $allHostVIBList | %{if ($_.name.StartsWith("esx-v")){$nsxVIBList += $_}}
         # End ESXCLI Command here.
 
+        $allHostNICList += $esxcli.network.nic.list.Invoke() | Select-Object @{N="VMHostName"; E={$VMHostName}}, *
+
         $allVmHostsExcelData=@{}
         $tempHostData=@()
         $tempHostDataMgrDetails=@()
         $tempHostDataRouteTable=@()
+        $tempHostDataNSXVIBList=@()
+        $tempHostDataNSXNICList=@()
         #$allVmHostsExcelData = @{"ESXi Host" = $eachVMHost, "Name", "ConnectionState", "PowerState", "NumCpu", "CpuUsageMhz", "CpuTotalMhz", "MemoryUsageGB", "MemoryTotalGB", "Version"}
         $tempHostData = $eachVMHost, "all"
         $tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "Control plane Out-Of-Sync", "MTU", "VXLAN vmknic"
         $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, "route-table-info.txt"
         $tempHostDataNSXVIBList = $nsxVIBList, "AcceptanceLevel", "CreationDate", "InstallDate", "Name", "Version" 
+        $tempHostDataNSXNICList = $allHostNICList, "all"
 
         $allVmHostsExcelData.Add($myNewHostID, $tempHostData)
         $allVmHostsExcelData.Add("NSX Manager Details", $tempHostDataMgrDetails)
         $allVmHostsExcelData.Add("Route Table", $tempHostDataRouteTable)
         $allVmHostsExcelData.Add("NSX VIB List", $tempHostDataNSXVIBList)
+        $allVmHostsExcelData.Add("NSX VM NIC List", $tempHostDataNSXNICList)
         if ($myHostName.length -gt 31){ $hostWorkSheetName = $myHostName.substring(0,30) }else{$hostWorkSheetName = $myHostName}
 
         ####plotDynamicExcel one workBook at a time
