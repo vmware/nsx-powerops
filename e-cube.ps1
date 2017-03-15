@@ -279,7 +279,7 @@ function getHostInformation($sectionNumber){
         $tempHostDataNSXNICList = $allHostNICList, "all"
 
         $allVmHostsExcelData.Add($myNewHostID, $tempHostData)
-        $allVmHostsExcelData.Add("NSX Manager Details", $tempHostDataMgrDetails)
+        $allVmHostsExcelData.Add("Host Switch Details", $tempHostDataMgrDetails)
         $allVmHostsExcelData.Add("Route Table", $tempHostDataRouteTable)
         $allVmHostsExcelData.Add("NSX VIB List", $tempHostDataNSXVIBList)
         $allVmHostsExcelData.Add("NSX VM NIC List", $tempHostDataNSXNICList)

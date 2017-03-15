@@ -6,3 +6,4 @@ ListOfAllHost.txt
 execute-Request.ps1
 old-HealthCheck-old/
 vdrPort_check-original.ps1
+esxcli-powerShell.ps1
