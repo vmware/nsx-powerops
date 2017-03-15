@@ -8,6 +8,7 @@
 * PowerShell's Testing Framework Module name: Pester [http://www.powershellmagazine.com/2014/03/12/get-started-with-pester-powershell-unit-testing-framework/]
   (Unzip pester folder at C:\Users\****\Documents\WindowsPowerShell\Modules)
 * PowerShell's SSH Module name: Posh-SSH [https://github.com/darkoperator/Posh-SSH]
+  Note: By running this command: iex (New-Object Net.WebClient).DownloadString("https://gist.github.com/darkoperator/6152630/raw/c67de4f7cd780ba367cccbc2593f38d18ce6df89/instposhsshdev")
 * Access to NSX Manager API with privileges
 * Access to vSphere Web Client and Privileges (Read)
 
