@@ -1,4 +1,4 @@
-# e-Cube an NSX-v Operationalization project
+# NSX PowerOps an NSX-v Operationalization project
 
 ## Prerequisite:
 * VMware PowerCLI [https://www.vmware.com/support/developer/PowerCLI/]
