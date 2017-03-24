@@ -1,3 +1,3 @@
-[submodule "PowerNSX-Scripts"]
-	path = PowerNSX-Scripts
-	url = https://github.com/tonysangha/PowerNSX-Scripts
+[submodule "PowerNSX-DFW2Excel"]
+	path = PowerNSX-DFW2Excel
+	url = https://github.com/tonysangha/PowerNSX-DFW2Excel.git
