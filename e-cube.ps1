@@ -5,7 +5,7 @@
 # and help build the env networking documents   #
 # ********************************************* #
 # *-------------------------------------------* #
-#               Version: 1.0.4                  #
+#                Version: GA 1.0                #
 # *-------------------------------------------* #
 
 #Setting up max window size and max buffer size
@@ -111,8 +111,8 @@ function documentationkMenu($sectionNumber){
     elseif ($documentationSectionNumber -eq 3){runNSXVISIOTool($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 4){importLogInSightDashBoard($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 5){getRoutingInformation($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 6){getVXLANInformation($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 7){runDFW2Excel($documentationSectionNumber)}
+    elseif ($documentationSectionNumber -eq 6){runDFW2Excel($documentationSectionNumber)}
+    elseif ($documentationSectionNumber -eq 7){runDFWVAT($documentationSectionNumber)}
     
     elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
     elseif ($documentationSectionNumber -eq "clear"){documentationkMenu(3)}
@@ -230,21 +230,49 @@ function getHostInformation($sectionNumber){
     $excelName = "ESXi-Hosts-Excel"
     $nsxHosttExcelWorkBook = createNewExcel($excelName)
     foreach ($eachVMHost in $vmHosts){
+        $esxcli = $eachVMHost | Get-EsxCli -v2
         $sshCommandOutputDataLogicalSwitch = @{}
+        $sshCommandOutputDataVMKNIC = @{}
         $sshCommandOutputDataRouteTable = @{}
         $sshCommandOutputLable = @()
         $allHostVIBList = @()
         $nsxVIBList = @()
+        $gotVXLAN = $false
 
         $myHostID = $eachVMHost.id
         $myHostName = $eachVMHost.Name
+        $myClusterID = $eachVMHost.ParentId
         if ($myHostID -match "HostSystem-"){$myNewHostID = $myHostID -replace "HostSystem-", ""}else{$myNewHostID = $myHostID}
 
+        <#
         # Run SSH Command to get Logical Switch Info from NSX Manager here...
         [string]$nsxMgrCommandLogicalSwitch = "show logical-switch host "+$myNewHostID+" verbose"
         invokeNSXCLICmd -commandToInvoke $nsxMgrCommandLogicalSwitch -fileName "logical-switch-info.txt"
         $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
         $sshCommandOutputDataLogicalSwitch = parseSSHOutput -fileToParse "logical-switch-info.txt" -findElements $findElements -direction "Row"
+        #>
+        get-cluster -Server $NSXConnection.ViConnection | %{ if ($_.id -eq $myClusterID){
+            get-cluster $_ | Get-NsxClusterStatus | %{ if($_.featureId -eq "com.vmware.vshield.vsm.vxlan" -And $_.installed -eq "true"){
+                $vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
+                $myVDSName = $vdsInfo.VDSName
+                $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
+                $sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
+                $sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
+                $sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
+                
+                $vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
+                $myVmknicName = $vmknicInfo.VmknicName
+                $sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
+                $sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
+                $sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
+                $sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
+
+                $gotVXLAN = $true
+            }}
+        }}
+        if($gotVXLAN -eq $false){
+            $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "False")
+            $sshCommandOutputDataVMKNIC.Add("VmknicCount", "0")}
 
         # Run SSH Command to get Route Table Info from NSX Manager here...
         $getDLRs = Get-NsxLogicalRouter
@@ -257,7 +285,6 @@ function getHostInformation($sectionNumber){
         # NSX Manager SSH Command Ends here.
 
         # Run ESXCLI Command to get VIB List Info from ESXi Host here...
-        $esxcli = $eachVMHost | Get-EsxCli -v2
         $allHostVIBList += $esxcli.software.vib.list.invoke() | Select-Object @{N="VMHostName"; E={$VMHostName}}, *
         #Filter out VIB with starting name 'esx-v'
         $allHostVIBList | %{if ($_.name.StartsWith("esx-v")){$nsxVIBList += $_}}
@@ -268,18 +295,27 @@ function getHostInformation($sectionNumber){
         $allVmHostsExcelData=@{}
         $tempHostData=@()
         $tempHostDataMgrDetails=@()
+        $tempHostDataVmkNicDetails=@()
         $tempHostDataRouteTable=@()
         $tempHostDataNSXVIBList=@()
         $tempHostDataNSXNICList=@()
         #$allVmHostsExcelData = @{"ESXi Host" = $eachVMHost, "Name", "ConnectionState", "PowerState", "NumCpu", "CpuUsageMhz", "CpuTotalMhz", "MemoryUsageGB", "MemoryTotalGB", "Version"}
         $tempHostData = $eachVMHost, "all"
-        $tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "Control plane Out-Of-Sync", "MTU", "VXLAN vmknic"
+        if ($gotVXLAN -eq $true){
+            $tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "VXLAN Installed", "VDSName", "GatewayIP","MTU"
+            $tempHostDataVmkNicDetails = $sshCommandOutputDataVMKNIC, "VmknicCount", "VmknicName", "IP", "Netmask"
+        }else{
+            $tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "VXLAN Installed"
+            $tempHostDataVmkNicDetails = $sshCommandOutputDataVMKNIC, "VmknicCount"}
+
+        #$tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "Control plane Out-Of-Sync", "MTU", "VXLAN vmknic"
         $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, "route-table-info.txt"
         $tempHostDataNSXVIBList = $nsxVIBList, "AcceptanceLevel", "CreationDate", "InstallDate", "Name", "Version" 
         $tempHostDataNSXNICList = $allHostNICList, "all"
 
         $allVmHostsExcelData.Add($myNewHostID, $tempHostData)
-        $allVmHostsExcelData.Add("Host Switch Details", $tempHostDataMgrDetails)
+        $allVmHostsExcelData.Add("Host VDSwitch Details", $tempHostDataMgrDetails)
+        $allVmHostsExcelData.Add("Host VMKnic Details", $tempHostDataVmkNicDetails)        
         $allVmHostsExcelData.Add("Route Table", $tempHostDataRouteTable)
         $allVmHostsExcelData.Add("NSX VIB List", $tempHostDataNSXVIBList)
         $allVmHostsExcelData.Add("NSX VM NIC List", $tempHostDataNSXNICList)
@@ -371,7 +407,7 @@ function getRoutingInformation($sectionNumber){
     documentationkMenu(22)
 }
 
-
+<#
 #get VXLAN Info
 function getVXLANInformation($sectionNumber){
     Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now documenting VXLAN Info to the excel file..."
@@ -380,21 +416,31 @@ function getVXLANInformation($sectionNumber){
     $excelName = "NSX-VXLAN-Excel"
     $nsxVXLANExcelWorkBook = createNewExcel($excelName)
     $numberOfEdges = Get-NsxEdge
+    $edgeInterfaceInfo = @()
     foreach ($eachEdge in $numberOfEdges){
         $allVXLANExcelData = @{}
-        $edgeInterfaceInfo = Get-NsxEdge $eachEdge.name | Get-NsxEdgeInterface
+        Get-NsxEdge $eachEdge.name | Get-NsxEdgeInterface | %{ if($_.isConnected -eq "TRUE"){$edgeInterfaceInfo += $_}}
         $tempEdgeInterfaceValueArray = $edgeInterfaceInfo, "all"
         $allVXLANExcelData.Add($eachEdge.name, $tempEdgeInterfaceValueArray)
         $plotNSXInterfaceExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxVXLANExcelWorkBook -workSheetName $eachEdge.name -listOfDataToPlot $allVXLANExcelData     
     }
     documentationkMenu(22)
 }
-
+#>
 
 #Run DFW2Excel
 function runDFW2Excel($sectionNumber){
     Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now documenting DFW to excel file..."
-    invoke-expression -Command .\PowerNSX-Scripts\DFW2Excel.ps1
+    invoke-expression -Command .\PowerNSX-DFW2Excel\DFW2Excel.ps1
+    documentationkMenu(22)
+}
+
+
+#Run DFW2Excel
+function runDFWVAT($sectionNumber){
+    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now Exicuting DFW VATool..."
+    #invoke DFW_VAT subgit folder here...
+    #invoke-expression -Command .\PowerNSX-Scripts\DFW2Excel.ps1
     documentationkMenu(22)
 }
 
@@ -729,11 +775,11 @@ function printDocumentationMenu{
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* Networking Documentation                               *"
     Write-Host (" " * $ScreenSize) "* |-> 5) Document Routing info                           *"
-    Write-Host (" " * $ScreenSize) "* |-> 6) Document VxLAN info                             *"
+#    Write-Host (" " * $ScreenSize) "* |-> 6) Document VxLAN info                             *"
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* Security Documentation                                 *"
-    Write-Host (" " * $ScreenSize) "* |-> 7) Document NSX DFW info to Excel - DFW2Excel      *"
-    Write-Host (" " * $ScreenSize) "* |-> 8) Document DFW-VAT                                *"
+    Write-Host (" " * $ScreenSize) "* |-> 6) Document NSX DFW info to Excel - DFW2Excel      *"
+    Write-Host (" " * $ScreenSize) "* |-> 7) Document DFW-VAT                                *"
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* 0) Exit Documentation Menu                             *"
     Write-Host (" " * $ScreenSize) "**********************************************************"
