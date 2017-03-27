@@ -371,76 +371,70 @@ function getRoutingInformation($sectionNumber){
 
         #Run SSH Command to get IP Route Info
         [string]$ipRouteCommand = "show edge $($numberOfEdges[0].id) ip route"
-        $txtFileName = $ipRouteCommand
+        $txtFileName11 = $ipRouteCommand
         #invokeNSXCLICmd -commandToInvoke $ipRouteCommand -fileName "ip-route-info.txt"
-        invokeNSXCLICmd -commandToInvoke $ipRouteCommand -fileName $txtFileName
+        invokeNSXCLICmd -commandToInvoke $ipRouteCommand -fileName $txtFileName11
         #Parse SSH Output here
         $findIPRouteElements= @("Total number of routes")
-        $sshCommandOutputIPRouteInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findIPRouteElements -direction "Column"
+        $sshCommandOutputIPRouteInfo = parseSSHOutput -fileToParse $txtFileName11 -findElements $findIPRouteElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalIPRouteInfo = $sshCommandOutputIPRouteInfo, $txtFileName
+        $finalIPRouteInfo = $sshCommandOutputIPRouteInfo, $txtFileName11
         $allEdgeRoutingExcelData.Add("Route IP Table", $finalIPRouteInfo)
-        Remove-Item ./$txtFileName
 
         #Run SSH Command to get Route Forwarding Info
         [string]$routeForwardingCommand = "show edge $($numberOfEdges[0].id) ip forwarding"
-        $txtFileName = $routeForwardingCommand
-        invokeNSXCLICmd -commandToInvoke $routeForwardingCommand -fileName $txtFileName
+        $txtFileName12 = $routeForwardingCommand
+        invokeNSXCLICmd -commandToInvoke $routeForwardingCommand -fileName $txtFileName12
         #Parse SSH Output here
         $findRouteFwdElements= @("haIndex")
-        $sshCommandOutputRouteFwdInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findRouteFwdElements -direction "Column"
+        $sshCommandOutputRouteFwdInfo = parseSSHOutput -fileToParse $txtFileName12 -findElements $findRouteFwdElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalRouteFwdInfo = $sshCommandOutputRouteFwdInfo, $txtFileName
+        $finalRouteFwdInfo = $sshCommandOutputRouteFwdInfo, $txtFileName12
         $allEdgeRoutingExcelData.Add("Route Forwarding Table", $finalRouteFwdInfo)
-        Remove-Item ./$txtFileName
 
         #Run SSH Command to get Route BGP Info
         [string]$routeBGPCommand = "show edge $($numberOfEdges[0].id) ip bgp"
-        $txtFileName = $routeBGPCommand
-        invokeNSXCLICmd -commandToInvoke $routeBGPCommand -fileName $txtFileName
+        $txtFileName13 = $routeBGPCommand
+        invokeNSXCLICmd -commandToInvoke $routeBGPCommand -fileName $txtFileName13
         #Parse SSH Output here
         $findRouteBGPElements= @("haIndex")
-        $sshCommandOutputRouteBGPInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findRouteBGPElements -direction "Column"
+        $sshCommandOutputRouteBGPInfo = parseSSHOutput -fileToParse $txtFileName13 -findElements $findRouteBGPElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalRouteBGPInfo = $sshCommandOutputRouteBGPInfo, $txtFileName
+        $finalRouteBGPInfo = $sshCommandOutputRouteBGPInfo, $txtFileName13
         $allEdgeRoutingExcelData.Add("Route BGP Table", $finalRouteBGPInfo)
-        Remove-Item ./$txtFileName
 
         #Run SSH Command to get Route BGP Neighbors Info
         [string]$routeBGPNeighborsCommand = "show edge $($numberOfEdges[0].id) ip bgp neighbors"
-        $txtFileName = $routeBGPNeighborsCommand
-        invokeNSXCLICmd -commandToInvoke $routeBGPNeighborsCommand -fileName $txtFileName
+        $txtFileName14 = $routeBGPNeighborsCommand
+        invokeNSXCLICmd -commandToInvoke $routeBGPNeighborsCommand -fileName $txtFileName14
         #Parse SSH Output here
         $findRouteBGPNeighborsElements= @("haIndex")
-        $sshCommandOutputRouteBGPNeighborsInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findRouteBGPNeighborsElements -direction "Column"
+        $sshCommandOutputRouteBGPNeighborsInfo = parseSSHOutput -fileToParse $txtFileName14 -findElements $findRouteBGPNeighborsElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalRouteBGPNeighborsInfo = $sshCommandOutputRouteBGPNeighborsInfo, $txtFileName
+        $finalRouteBGPNeighborsInfo = $sshCommandOutputRouteBGPNeighborsInfo, $txtFileName14
         $allEdgeRoutingExcelData.Add("BGP Neighbors", $finalRouteBGPNeighborsInfo)
-        Remove-Item ./$txtFileName
 
         #Run SSH Command to get Route OSPF Info
         [string]$routeOSPFCommand = "show edge $($numberOfEdges[0].id) ip ospf"
-        $txtFileName = $routeOSPFCommand
-        invokeNSXCLICmd -commandToInvoke $routeOSPFCommand -fileName $txtFileName
+        $txtFileName15 = $routeOSPFCommand
+        invokeNSXCLICmd -commandToInvoke $routeOSPFCommand -fileName $txtFileName15
         #Parse SSH Output here
         $findRouteOSPFElements= @("haIndex")
-        $sshCommandOutputRouteOSPFInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findRouteOSPFElements -direction "Column"
+        $sshCommandOutputRouteOSPFInfo = parseSSHOutput -fileToParse $txtFileName15 -findElements $findRouteOSPFElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalRouteOSPFInfo = $sshCommandOutputRouteOSPFInfo, $txtFileName
+        $finalRouteOSPFInfo = $sshCommandOutputRouteOSPFInfo, $txtFileName15
         $allEdgeRoutingExcelData.Add("Route OSPF Table", $finalRouteOSPFInfo)
-        Remove-Item ./$txtFileName
 
         #Run SSH Command to get Route OSPF Neighbors Info
         [string]$routeOSPFNeighborsCommand = "show edge $($numberOfEdges[0].id) ip ospf neighbors"
-        $txtFileName = $routeOSPFNeighborsCommand
-        invokeNSXCLICmd -commandToInvoke $routeOSPFNeighborsCommand -fileName $txtFileName
+        $txtFileName16 = $routeOSPFNeighborsCommand
+        invokeNSXCLICmd -commandToInvoke $routeOSPFNeighborsCommand -fileName $txtFileName16
         #Parse SSH Output here
         $findRouteOSPFNeighborsElements= @("haIndex")
-        $sshCommandOutputRouteOSPFNeighborsInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findRouteOSPFNeighborsElements -direction "Column"
+        $sshCommandOutputRouteOSPFNeighborsInfo = parseSSHOutput -fileToParse $txtFileName16 -findElements $findRouteOSPFNeighborsElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalRouteOSPFNeighborsInfo = $sshCommandOutputRouteOSPFNeighborsInfo, $txtFileName
+        $finalRouteOSPFNeighborsInfo = $sshCommandOutputRouteOSPFNeighborsInfo, $txtFileName16
         $allEdgeRoutingExcelData.Add("OSPF Neighbors", $finalRouteOSPFNeighborsInfo)
-        Remove-Item ./$txtFileName
 
         if ($edgeID.length -gt 13){ $nsxEdgeWorkSheetName = "NSX Edge Routing-$($edgeID.substring(0,13))" }else{$nsxEdgeWorkSheetName = "NSX Edge Routing-$edgeID"}
         $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxEdgeWorkSheetName -listOfDataToPlot $allEdgeRoutingExcelData
@@ -465,75 +459,69 @@ function getRoutingInformation($sectionNumber){
         #Run SSH Command to get Route Table
         #[string]$nsxMgrCommandRouteTable = "show logical-router host "+$hostID+" dlr "+$dlrID+" route"
         [string]$nsxMgrCommandRouteTable = "show edge $dlrID ip route"
-        $txtFileName = $nsxMgrCommandRouteTable
-        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $txtFileName
+        $txtFileName1 = $nsxMgrCommandRouteTable
+        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $txtFileName1
         #Parse SSH Output here
         $findLogicalSwitchElements= @("haIndex")
-        $sshCommandOutputDataRouteTable = parseSSHOutput -fileToParse $txtFileName -findElements $findLogicalSwitchElements -direction "Column"
+        $sshCommandOutputDataRouteTable = parseSSHOutput -fileToParse $txtFileName1 -findElements $findLogicalSwitchElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $tempDLRRoutingValueArray2 = $sshCommandOutputDataRouteTable, $txtFileName
+        $tempDLRRoutingValueArray2 = $sshCommandOutputDataRouteTable, $txtFileName1
         $allDLRRoutingExcelData.Add("Route IP Table", $tempDLRRoutingValueArray2)
-        Remove-Item ./$txtFileName
-
+        
         #Run SSH Command to get Route Table
         [string]$nsxMgrCommandIPFwd = "show edge $dlrID ip forwarding"
-        $txtFileName = $nsxMgrCommandIPFwd
-        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandIPFwd -fileName $txtFileName
+        $txtFileName2 = $nsxMgrCommandIPFwd
+        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandIPFwd -fileName $txtFileName2
         #Parse SSH Output here
         $findIPFwdElements= @("haIndex")
-        $sshCommandOutputDataIPFwd = parseSSHOutput -fileToParse $txtFileName -findElements $findIPFwdElements -direction "Column"
+        $sshCommandOutputDataIPFwd = parseSSHOutput -fileToParse $txtFileName2 -findElements $findIPFwdElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $tempIPFwdValueArray2 = $sshCommandOutputDataIPFwd, $txtFileName
+        $tempIPFwdValueArray2 = $sshCommandOutputDataIPFwd, $txtFileName2
         $allDLRRoutingExcelData.Add("Route Forwarding Table", $tempIPFwdValueArray2)
-        Remove-Item ./$txtFileName
 
         #Run SSH Command to get BGP Table
         [string]$nsxMgrCommandBGPTable = "show edge $dlrID ip bgp"
-        $txtFileName = $nsxMgrCommandBGPTable
-        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandBGPTable -fileName $txtFileName
+        $txtFileName3 = $nsxMgrCommandBGPTable
+        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandBGPTable -fileName $txtFileName3
         #Parse SSH Output here
         $findtxtFileElements= @("haIndex")
-        $sshCommandOutputDataBGPTable = parseSSHOutput -fileToParse $txtFileName -findElements $findtxtFileElements -direction "Column"
+        $sshCommandOutputDataBGPTable = parseSSHOutput -fileToParse $txtFileName3 -findElements $findtxtFileElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalRouteBGPInfo = $sshCommandOutputDataBGPTable, $txtFileName
+        $finalRouteBGPInfo = $sshCommandOutputDataBGPTable, $txtFileName3
         $allDLRRoutingExcelData.Add("BGP Table", $finalRouteBGPInfo)
-        Remove-Item ./$txtFileName
 
         #Run SSH Command to get BGP Neighbors Table
         [string]$nsxMgrCommandBGPNeighborsTable = "show edge $dlrID ip bgp neighbors"
-        $txtFileName = $nsxMgrCommandBGPNeighborsTable
-        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandBGPNeighborsTable -fileName $txtFileName
+        $txtFileName4 = $nsxMgrCommandBGPNeighborsTable
+        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandBGPNeighborsTable -fileName $txtFileName4
         #Parse SSH Output here
         $findtxtFileElements= @("haIndex")
-        $sshCommandOutputDataBGPNeighborsTable = parseSSHOutput -fileToParse $txtFileName -findElements $findtxtFileElements -direction "Column"
+        $sshCommandOutputDataBGPNeighborsTable = parseSSHOutput -fileToParse $txtFileName4 -findElements $findtxtFileElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalRouteBGPNeighborsInfo = $sshCommandOutputDataBGPNeighborsTable, $txtFileName
+        $finalRouteBGPNeighborsInfo = $sshCommandOutputDataBGPNeighborsTable, $txtFileName4
         $allDLRRoutingExcelData.Add("BGP Neighbors Info", $finalRouteBGPNeighborsInfo)
-        Remove-Item ./$txtFileName
 
         #Run SSH Command to get OSPF Table
         [string]$nsxMgrCommandOSPFTable = "show edge $dlrID ip ospf"
-        $txtFileName = $nsxMgrCommandOSPFTable
-        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandOSPFTable -fileName $txtFileName
+        $txtFileName5 = $nsxMgrCommandOSPFTable
+        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandOSPFTable -fileName $txtFileName5
         #Parse SSH Output here
         $findtxtFileElements= @("haIndex")
-        $sshCommandOutputDataOSPFTable = parseSSHOutput -fileToParse $txtFileName -findElements $findtxtFileElements -direction "Column"
+        $sshCommandOutputDataOSPFTable = parseSSHOutput -fileToParse $txtFileName5 -findElements $findtxtFileElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalRouteOSPFInfo = $sshCommandOutputDataOSPFTable, $txtFileName
+        $finalRouteOSPFInfo = $sshCommandOutputDataOSPFTable, $txtFileName5
         $allDLRRoutingExcelData.Add("OSPF Table", $finalRouteOSPFInfo)
-        Remove-Item ./$txtFileName
 
         #Run SSH Command to get OSPF Neighbors Table
         [string]$nsxMgrCommandOSPFNeighborsTable = "show edge $dlrID ip ospf neighbors"
-        $txtFileName = $nsxMgrCommandOSPFNeighborsTable
-        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandOSPFNeighborsTable -fileName $txtFileName
+        $txtFileName6 = $nsxMgrCommandOSPFNeighborsTable
+        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandOSPFNeighborsTable -fileName $txtFileName6
         #Parse SSH Output here
         $findtxtFileElements= @("haIndex")
-        $sshCommandOutputDataOSPFNeighborsTable = parseSSHOutput -fileToParse $txtFileName -findElements $findtxtFileElements -direction "Column"
+        $sshCommandOutputDataOSPFNeighborsTable = parseSSHOutput -fileToParse $txtFileName6 -findElements $findtxtFileElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalRouteOSPFNeighborsInfo = $sshCommandOutputDataOSPFNeighborsTable, $txtFileName
+        $finalRouteOSPFNeighborsInfo = $sshCommandOutputDataOSPFNeighborsTable, $txtFileName6
         $allDLRRoutingExcelData.Add("OSPF Neighbors Info", $finalRouteOSPFNeighborsInfo)
-        Remove-Item ./$txtFileName
 
         #Make sure workbook name wont exceed 31 letters
         if ($dlrID.length -gt 14){ $nsxDLRWorkSheetName = "NSX DLR Routing-$($dlrID.substring(0,13))" }else{$nsxDLRWorkSheetName = "NSX DLR Routing-$dlrID"}
@@ -541,6 +529,18 @@ function getRoutingInformation($sectionNumber){
         $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxDLRWorkSheetName -listOfDataToPlot $allDLRRoutingExcelData
     }
     $nsxRoutingExcelWorkBook.SaveAs()
+    Remove-Item ./$txtFileName1
+    Remove-Item ./$txtFileName2
+    Remove-Item ./$txtFileName3
+    Remove-Item ./$txtFileName4
+    Remove-Item ./$txtFileName5
+    Remove-Item ./$txtFileName6
+    Remove-Item ./$txtFileName11
+    Remove-Item ./$txtFileName12
+    Remove-Item ./$txtFileName13
+    Remove-Item ./$txtFileName14
+    Remove-Item ./$txtFileName15
+    Remove-Item ./$txtFileName16
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     documentationkMenu(22)
 }
