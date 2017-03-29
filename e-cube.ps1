@@ -234,6 +234,7 @@ function getHostInformation($sectionNumber){
         $sshCommandOutputDataLogicalSwitch = @{}
         $sshCommandOutputDataVMKNIC = @{}
         $sshCommandOutputDataRouteTable = @{}
+        $tempHostDataRouteTable=@()
         $sshCommandOutputLable = @()
         $allHostVIBList = @()
         $nsxVIBList = @()
@@ -276,12 +277,20 @@ function getHostInformation($sectionNumber){
 
         # Run SSH Command to get Route Table Info from NSX Manager here...
         $getDLRs = Get-NsxLogicalRouter
-        if($getDLRs.gettype().BaseType.Name -eq "Array"){
-            [string]$nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$($getDLRs[0].id)+" route"
-        }else{[string]$nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$getDLRs.id+" route"}
-        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName "route-table-info.txt"
         $findLogicalSwitchElements= @("Destination")
-        $sshCommandOutputDataRouteTable = parseSSHOutput -fileToParse "route-table-info.txt" -findElements $findLogicalSwitchElements -direction "Column"
+        if($getDLRs.gettype().BaseType.Name -eq "Array"){$getDLRs | %{
+            [string]$nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$($_.id)+" route"
+            invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $nsxMgrCommandRouteTable
+            $sshCommandOutputDataRouteTable.Add($nsxMgrCommandRouteTable, (parseSSHOutput -fileToParse $nsxMgrCommandRouteTable -findElements $findLogicalSwitchElements -direction "Column"))
+            $tempHostDataRouteTable += $sshCommandOutputDataRouteTable, $nsxMgrCommandRouteTable
+        }
+        }else{[string]$nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$getDLRs.id+" route"
+        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $nsxMgrCommandRouteTable
+        $sshCommandOutputDataRouteTable.Add($nsxMgrCommandRouteTable, (parseSSHOutput -fileToParse $nsxMgrCommandRouteTable -findElements $findLogicalSwitchElements -direction "Column"))
+        $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, $nsxMgrCommandRouteTable
+        Write-Host "tempHostDataRouteTable is: $tempHostDataRouteTable"
+        Write-Host "tempHostDataRouteTable length is: $($tempHostDataRouteTable.length)"
+        Write-Host "tempHostDataRouteTable key is: $($tempHostDataRouteTable[0].keys)"}
         # NSX Manager SSH Command Ends here.
 
         # Run ESXCLI Command to get VIB List Info from ESXi Host here...
@@ -296,7 +305,7 @@ function getHostInformation($sectionNumber){
         $tempHostData=@()
         $tempHostDataMgrDetails=@()
         $tempHostDataVmkNicDetails=@()
-        $tempHostDataRouteTable=@()
+        
         $tempHostDataNSXVIBList=@()
         $tempHostDataNSXNICList=@()
         #$allVmHostsExcelData = @{"ESXi Host" = $eachVMHost, "Name", "ConnectionState", "PowerState", "NumCpu", "CpuUsageMhz", "CpuTotalMhz", "MemoryUsageGB", "MemoryTotalGB", "Version"}
@@ -309,16 +318,17 @@ function getHostInformation($sectionNumber){
             $tempHostDataVmkNicDetails = $sshCommandOutputDataVMKNIC, "VmknicCount"}
 
         #$tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "Control plane Out-Of-Sync", "MTU", "VXLAN vmknic"
-        $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, "route-table-info.txt"
+        #$tempHostDataRouteTable = $sshCommandOutputDataRouteTable, "route-table-info.txt"
+        ##$tempHostDataRouteTable = $sshCommandOutputDataRouteTable, "all"
         $tempHostDataNSXVIBList = $nsxVIBList, "AcceptanceLevel", "CreationDate", "InstallDate", "Name", "Version" 
         $tempHostDataNSXNICList = $allHostNICList, "all"
 
-        $allVmHostsExcelData.Add($myNewHostID, $tempHostData)
-        $allVmHostsExcelData.Add("Host VDSwitch Details", $tempHostDataMgrDetails)
-        $allVmHostsExcelData.Add("Host VMKnic Details", $tempHostDataVmkNicDetails)        
-        $allVmHostsExcelData.Add("Route Table", $tempHostDataRouteTable)
-        $allVmHostsExcelData.Add("NSX VIB List", $tempHostDataNSXVIBList)
-        $allVmHostsExcelData.Add("NSX VM NIC List", $tempHostDataNSXNICList)
+        $allVmHostsExcelData.Add("2-"+$myNewHostID, $tempHostData)
+        $allVmHostsExcelData.Add("1-Route Table", $tempHostDataRouteTable)
+        $allVmHostsExcelData.Add("3-Host VDSwitch Details", $tempHostDataMgrDetails)
+        $allVmHostsExcelData.Add("4-Host VMKnic Details", $tempHostDataVmkNicDetails)
+        $allVmHostsExcelData.Add("5-NSX VIB List", $tempHostDataNSXVIBList)
+        $allVmHostsExcelData.Add("6-NSX VM NIC List", $tempHostDataNSXNICList)
         if ($myHostName.length -gt 31){ $hostWorkSheetName = $myHostName.substring(0,30) }else{$hostWorkSheetName = $myHostName}
 
         ####plotDynamicExcel one workBook at a time
@@ -719,6 +729,11 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
     $sheet.Name = $workSheetName
     $sheet.Cells.Item(1,1) = $workSheetName
 
+    ####$listOfDataToPlot = $listOfDataToPlot.GetEnumerator() | sort -Property name
+    #$tempDic = $listOfDataToPlot.GetEnumerator() | sort -Property name
+    #Write-Host "list Of Data To Plot is: $tempDic"
+    #Write-Host "list Of keys are: $($tempDic.Keys)"
+    
     foreach($eachDataSetKey in $listOfDataToPlot.Keys){
         Write-Host " =>Plotting data for:" $eachDataSetKey
         $global:myRow++
