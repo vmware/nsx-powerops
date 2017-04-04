@@ -900,7 +900,7 @@ function printMainMenu{
     $ScreenSize = [math]::Round($ConsoleWidth-39)/2
     Write-Host "`n"
     Write-Host (" " * $ScreenSize) "*******************|*******************"
-    Write-Host (" " * $ScreenSize) "**         E-Cube Main Menu          **"
+    Write-Host (" " * $ScreenSize) "**        PowerOps Main Menu         **"
     Write-Host (" " * $ScreenSize) "***************************************"
     Write-Host (" " * $ScreenSize) "*                                     *"
     Write-Host (" " * $ScreenSize) "* 1) Install PowerNSX                 *"
@@ -909,7 +909,7 @@ function printMainMenu{
     Write-Host (" " * $ScreenSize) "* 4) Show Health Check Menu           *"
 #    Write-Host (" " * $ScreenSize) "* 5) Check NSX Upgrade Prerequisites  *"
     Write-Host (" " * $ScreenSize) "*                                     *"
-    Write-Host (" " * $ScreenSize) "* 0) Exit E-Cube                      *"
+    Write-Host (" " * $ScreenSize) "* 0) Exit PowerOps                    *"
     Write-Host (" " * $ScreenSize) "***************************************"
 }
 
@@ -919,7 +919,7 @@ function printDocumentationMenu{
     $ScreenSize = [math]::Round($ConsoleWidth-58)/2
     Write-Host "`n"
     Write-Host (" " * $ScreenSize) "****************************|*****************************"
-    Write-Host (" " * $ScreenSize) "**              E-Cube Documentation Menu               **"
+    Write-Host (" " * $ScreenSize) "**             PowerOps Documentation Menu              **"
     Write-Host (" " * $ScreenSize) "**********************************************************"
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* Environment Documentation                              *"
@@ -946,7 +946,7 @@ function printHealthCheckMenu{
     $ScreenSize = [math]::Round($ConsoleWidth-41)/2
     Write-Host "`n"
     Write-Host (" " * $ScreenSize) "********************|********************"
-    Write-Host (" " * $ScreenSize) "**       E-Cube Health Check Menu      **"
+    Write-Host (" " * $ScreenSize) "**      PowerOps Health Check Menu     **"
     Write-Host (" " * $ScreenSize) "*****************************************"
     Write-Host (" " * $ScreenSize) "*                                       *"
     Write-Host (" " * $ScreenSize) "* 1) NSX Connectivity Test              *"
@@ -962,6 +962,7 @@ function printHealthCheckMenu{
     Write-Host (" " * $ScreenSize) "*****************************************"
 }
 
+<#
 clx
 $ScreenSize = [math]::Round($ConsoleWidth-99)/2
 Write-Host "`n"
@@ -974,12 +975,26 @@ Write-Host (" " * $ScreenSize) "    _\/\\\___________________________\//\\\_____
 Write-Host (" " * $ScreenSize) "     _\/\\\____________________________\///\\\__________\/\\\___\/\\\_\/\\\__\/\\\_\//\\/  //______  " -BackgroundColor Black -ForegroundColor Blue
 Write-Host (" " * $ScreenSize) "      _\/\\\\\\\\\\\\\\\__________________\////\\\\\\\\\_\//\\\\\\\\\__\/\\\\\\\\\___\//\\\\\\\\\___ " -BackgroundColor Black -ForegroundColor Blue
 Write-Host (" " * $ScreenSize) "       _\///////////////______________________\//|//////___\/////////___\/////////_____\/////////____" -BackgroundColor Black -ForegroundColor Blue
+#>
+
+clx
+$ScreenSize = [math]::Round($ConsoleWidth-127)/2
+Write-Host "`n"
+Write-Host (" " * $ScreenSize) "  __/\\\\\\\\\\\_______________________________________________|__________________/\\\\\_________________________________       " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "   _\/\\\///////\\\______________________________________________________________/\\\///\\\_______________________________      " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "    _\/\\\_____\/\\\____________________________________________________________/\\\/__\///\\\____/\\\\\\\\\______________      " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "     _\/\\\\\\\\\\\/___/\\\\\_____/\\ __ /\\ _ /\\____/\\\\\\\\\__/\\/\\\\\\___/\\\______\//\\\__/\\\/___/\\\__/\\\\\\\\\\_     " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "      _\/\\\///////___/\\\///\\\__\/\\\  /\\\\ /\\\__/\\\///\\//__\/\\\////\\\_\/\\\_______\/\\\_\/\\\___\\\\__\/\\\/___//__    " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "       _\/\\\_________/\\\__\//\\\_\//\\ /\\\\ /\\\__/\\\\\\\\\____\/\\\  \///__\//\\\______/\\\__\/\\\//////___\/\\\\\\\\\\_   " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "        _\/\\\________\//\\\__/\\\___\//\\\\\/\\\\\__\//\\/////_____\/\\\_________\///\\\__/\\\____\/\\\_________\///___//\\\_  " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "         _\/\\\_________\///\\\\\/_____\//\\\\//\\\____\//\\\\\\\\\__\/\\\___________\///\\\\\/_____\/\\\__________/\\\\\\\\\\_ " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "          _\///____________\/////________\///__\///______\/////////___\///______________\/////_______\///__________\//////////__" -BackgroundColor Black -ForegroundColor Blue
 
 $ScreenSize = [math]::Round($ConsoleWidth-59)/2
 Write-Host "`n"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-Write-Host (" " * $ScreenSize) "~~                  Welcome to E-Cube                    ~~"
+Write-Host (" " * $ScreenSize) "~~                 Welcome to PowerOps                   ~~"
 Write-Host (" " * $ScreenSize) "~~                A project by SA Team                   ~~"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
