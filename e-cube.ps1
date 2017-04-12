@@ -242,7 +242,7 @@ function getHostInformation($sectionNumber){
 
         $myHostID = $eachVMHost.id
         $myHostName = $eachVMHost.Name
-        $myClusterID = $eachVMHost.ParentId
+        $myParentClusterID = $eachVMHost.ParentId
         if ($myHostID -match "HostSystem-"){$myNewHostID = $myHostID -replace "HostSystem-", ""}else{$myNewHostID = $myHostID}
 
         <#
@@ -252,23 +252,30 @@ function getHostInformation($sectionNumber){
         $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
         $sshCommandOutputDataLogicalSwitch = parseSSHOutput -fileToParse "logical-switch-info.txt" -findElements $findElements -direction "Row"
         #>
-        get-cluster -Server $NSXConnection.ViConnection | %{ if ($_.id -eq $myClusterID){
+        get-cluster -Server $NSXConnection.ViConnection | %{ if ($_.id -eq $myParentClusterID){
             get-cluster $_ | Get-NsxClusterStatus | %{ if($_.featureId -eq "com.vmware.vshield.vsm.vxlan" -And $_.installed -eq "true"){
-                $vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
-                $myVDSName = $vdsInfo.VDSName
-                $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
-                $sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
-                $sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
-                $sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
-                
-                $vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
-                $myVmknicName = $vmknicInfo.VmknicName
-                $sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
-                $sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
-                $sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
-                $sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
+                    try{
+						$vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
+						$myVDSName = $vdsInfo.VDSName
+						$sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
+						$sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
+						$sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
+						$sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
 
-                $gotVXLAN = $true
+						$vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
+						$myVmknicName = $vmknicInfo.VmknicName
+						$sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
+						$sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
+						$sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
+						$sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
+
+						$gotVXLAN = $true
+					}catch{$ErrorMessage = $_.Exception.Message
+						if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
+							Write-Host " Warning: No VxLAN data found on this Host $myHostName" -ForegroundColor Red
+							$gotVXLAN = $false
+						}else{Write-Host $ErrorMessage}
+					}
             }}
         }}
         if($gotVXLAN -eq $false){
