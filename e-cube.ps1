@@ -234,14 +234,17 @@ function getHostInformation($sectionNumber){
         $sshCommandOutputDataLogicalSwitch = @{}
         $sshCommandOutputDataVMKNIC = @{}
         $sshCommandOutputDataRouteTable = @{}
+        $tempHostDataRouteTable=@()
         $sshCommandOutputLable = @()
         $allHostVIBList = @()
         $nsxVIBList = @()
+        $listOfDLRCmd = @()
+        $allHostNICList =@()
         $gotVXLAN = $false
 
         $myHostID = $eachVMHost.id
         $myHostName = $eachVMHost.Name
-        $myClusterID = $eachVMHost.ParentId
+        $myParentClusterID = $eachVMHost.ParentId
         if ($myHostID -match "HostSystem-"){$myNewHostID = $myHostID -replace "HostSystem-", ""}else{$myNewHostID = $myHostID}
 
         <#
@@ -251,23 +254,30 @@ function getHostInformation($sectionNumber){
         $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
         $sshCommandOutputDataLogicalSwitch = parseSSHOutput -fileToParse "logical-switch-info.txt" -findElements $findElements -direction "Row"
         #>
-        get-cluster -Server $NSXConnection.ViConnection | %{ if ($_.id -eq $myClusterID){
+        get-cluster -Server $NSXConnection.ViConnection | %{ if ($_.id -eq $myParentClusterID){
             get-cluster $_ | Get-NsxClusterStatus | %{ if($_.featureId -eq "com.vmware.vshield.vsm.vxlan" -And $_.installed -eq "true"){
-                $vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
-                $myVDSName = $vdsInfo.VDSName
-                $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
-                $sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
-                $sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
-                $sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
-                
-                $vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
-                $myVmknicName = $vmknicInfo.VmknicName
-                $sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
-                $sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
-                $sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
-                $sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
+                    try{
+						$vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
+						$myVDSName = $vdsInfo.VDSName
+						$sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
+						$sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
+						$sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
+						$sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
 
-                $gotVXLAN = $true
+						$vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
+						$myVmknicName = $vmknicInfo.VmknicName
+						$sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
+						$sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
+						$sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
+						$sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
+
+						$gotVXLAN = $true
+					}catch{$ErrorMessage = $_.Exception.Message
+						if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
+							Write-Host " Warning: No VxLAN data found on this Host $myHostName" -ForegroundColor Red
+							$gotVXLAN = $false
+						}else{Write-Host $ErrorMessage}
+					}
             }}
         }}
         if($gotVXLAN -eq $false){
@@ -276,12 +286,24 @@ function getHostInformation($sectionNumber){
 
         # Run SSH Command to get Route Table Info from NSX Manager here...
         $getDLRs = Get-NsxLogicalRouter
-        if($getDLRs.gettype().BaseType.Name -eq "Array"){
-            [string]$nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$($getDLRs[0].id)+" route"
-        }else{[string]$nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$getDLRs.id+" route"}
-        invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName "route-table-info.txt"
         $findLogicalSwitchElements= @("Destination")
-        $sshCommandOutputDataRouteTable = parseSSHOutput -fileToParse "route-table-info.txt" -findElements $findLogicalSwitchElements -direction "Column"
+        #$findLogicalSwitchElements= @("show")
+        if($getDLRs.gettype().BaseType.Name -eq "Array"){
+            $getDLRs | %{
+                $nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$($_.id)+" route"
+                invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $nsxMgrCommandRouteTable
+                $parsedRouteTable = parseSSHOutput -fileToParse $nsxMgrCommandRouteTable -findElements $findLogicalSwitchElements -direction "Column"
+                $sshCommandOutputDataRouteTable.Add($nsxMgrCommandRouteTable, $parsedRouteTable.$($parsedRouteTable.keys))
+                $listOfDLRCmd += $nsxMgrCommandRouteTable
+                }
+            $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, $listOfDLRCmd
+        }else{
+            $nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$getDLRs.id+" route"
+            invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $nsxMgrCommandRouteTable
+            $parsedRouteTable = (parseSSHOutput -fileToParse $nsxMgrCommandRouteTable -findElements $findLogicalSwitchElements -direction "Column")
+            $sshCommandOutputDataRouteTable.Add($nsxMgrCommandRouteTable, $parsedRouteTable.$($parsedRouteTable.keys))
+            $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, $nsxMgrCommandRouteTable
+        }
         # NSX Manager SSH Command Ends here.
 
         # Run ESXCLI Command to get VIB List Info from ESXi Host here...
@@ -296,7 +318,7 @@ function getHostInformation($sectionNumber){
         $tempHostData=@()
         $tempHostDataMgrDetails=@()
         $tempHostDataVmkNicDetails=@()
-        $tempHostDataRouteTable=@()
+        
         $tempHostDataNSXVIBList=@()
         $tempHostDataNSXNICList=@()
         #$allVmHostsExcelData = @{"ESXi Host" = $eachVMHost, "Name", "ConnectionState", "PowerState", "NumCpu", "CpuUsageMhz", "CpuTotalMhz", "MemoryUsageGB", "MemoryTotalGB", "Version"}
@@ -309,16 +331,17 @@ function getHostInformation($sectionNumber){
             $tempHostDataVmkNicDetails = $sshCommandOutputDataVMKNIC, "VmknicCount"}
 
         #$tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "Control plane Out-Of-Sync", "MTU", "VXLAN vmknic"
-        $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, "route-table-info.txt"
+        #$tempHostDataRouteTable = $sshCommandOutputDataRouteTable, "route-table-info.txt"
+        ##$tempHostDataRouteTable = $sshCommandOutputDataRouteTable, "all"
         $tempHostDataNSXVIBList = $nsxVIBList, "AcceptanceLevel", "CreationDate", "InstallDate", "Name", "Version" 
         $tempHostDataNSXNICList = $allHostNICList, "all"
 
-        $allVmHostsExcelData.Add($myNewHostID, $tempHostData)
-        $allVmHostsExcelData.Add("Host VDSwitch Details", $tempHostDataMgrDetails)
-        $allVmHostsExcelData.Add("Host VMKnic Details", $tempHostDataVmkNicDetails)        
-        $allVmHostsExcelData.Add("Route Table", $tempHostDataRouteTable)
-        $allVmHostsExcelData.Add("NSX VIB List", $tempHostDataNSXVIBList)
-        $allVmHostsExcelData.Add("NSX VM NIC List", $tempHostDataNSXNICList)
+        $allVmHostsExcelData.Add("A) "+$myNewHostID, $tempHostData)
+        $allVmHostsExcelData.Add("B) Route Table", $tempHostDataRouteTable)
+        $allVmHostsExcelData.Add("C) Host VDSwitch Details", $tempHostDataMgrDetails)
+        $allVmHostsExcelData.Add("D) Host VMKnic Details", $tempHostDataVmkNicDetails)
+        $allVmHostsExcelData.Add("E) NSX VIB List", $tempHostDataNSXVIBList)
+        $allVmHostsExcelData.Add("F) NSX VM NIC List", $tempHostDataNSXNICList)
         if ($myHostName.length -gt 31){ $hostWorkSheetName = $myHostName.substring(0,30) }else{$hostWorkSheetName = $myHostName}
 
         ####plotDynamicExcel one workBook at a time
@@ -368,7 +391,7 @@ function getRoutingInformation($sectionNumber){
         $edgeID = $eachEdge.id
         $edgeRoutingInfo = Get-NsxEdge $edgeName | Get-NsxEdgeRouting        
         $tempEdgeRoutingValueArray = $edgeRoutingInfo, "all"
-        $allEdgeRoutingExcelData.Add($edgeName, $tempEdgeRoutingValueArray)
+        $allEdgeRoutingExcelData.Add("A) "+$edgeName, $tempEdgeRoutingValueArray)
 
         #Run SSH Command to get IP Route Info
         [string]$ipRouteCommand = "show edge $edgeID ip route"
@@ -380,7 +403,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputIPRouteInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findIPRouteElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $finalIPRouteInfo = $sshCommandOutputIPRouteInfo, $txtFileName
-        $allEdgeRoutingExcelData.Add("Route IP Table", $finalIPRouteInfo)
+        $allEdgeRoutingExcelData.Add("B) Route IP Table", $finalIPRouteInfo)
         $tempTXTFileNamesList += $txtFileName
 
         #Run SSH Command to get Route Forwarding Info
@@ -392,7 +415,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputRouteFwdInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findRouteFwdElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $finalRouteFwdInfo = $sshCommandOutputRouteFwdInfo, $txtFileName
-        $allEdgeRoutingExcelData.Add("Route Forwarding Table", $finalRouteFwdInfo)
+        $allEdgeRoutingExcelData.Add("C) Route Forwarding Table", $finalRouteFwdInfo)
         $tempTXTFileNamesList += $txtFileName
 
         #Run SSH Command to get Route BGP Info
@@ -404,7 +427,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputRouteBGPInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findRouteBGPElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $finalRouteBGPInfo = $sshCommandOutputRouteBGPInfo, $txtFileName
-        $allEdgeRoutingExcelData.Add("Route BGP Table", $finalRouteBGPInfo)
+        $allEdgeRoutingExcelData.Add("D) Route BGP Table", $finalRouteBGPInfo)
         $tempTXTFileNamesList += $txtFileName
 
         #Run SSH Command to get Route BGP Neighbors Info
@@ -416,7 +439,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputRouteBGPNeighborsInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findRouteBGPNeighborsElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $finalRouteBGPNeighborsInfo = $sshCommandOutputRouteBGPNeighborsInfo, $txtFileName
-        $allEdgeRoutingExcelData.Add("BGP Neighbors", $finalRouteBGPNeighborsInfo)
+        $allEdgeRoutingExcelData.Add("E) BGP Neighbors", $finalRouteBGPNeighborsInfo)
         $tempTXTFileNamesList += $txtFileName
 
         #Run SSH Command to get Route OSPF Info
@@ -428,7 +451,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputRouteOSPFInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findRouteOSPFElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $finalRouteOSPFInfo = $sshCommandOutputRouteOSPFInfo, $txtFileName
-        $allEdgeRoutingExcelData.Add("Route OSPF Table", $finalRouteOSPFInfo)
+        $allEdgeRoutingExcelData.Add("F) Route OSPF Table", $finalRouteOSPFInfo)
         $tempTXTFileNamesList += $txtFileName
 
         #Run SSH Command to get Route OSPF Neighbors Info
@@ -440,7 +463,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputRouteOSPFNeighborsInfo = parseSSHOutput -fileToParse $txtFileName -findElements $findRouteOSPFNeighborsElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $finalRouteOSPFNeighborsInfo = $sshCommandOutputRouteOSPFNeighborsInfo, $txtFileName
-        $allEdgeRoutingExcelData.Add("OSPF Neighbors", $finalRouteOSPFNeighborsInfo)
+        $allEdgeRoutingExcelData.Add("G) OSPF Neighbors", $finalRouteOSPFNeighborsInfo)
         $tempTXTFileNamesList += $txtFileName
 
         if ($edgeID.length -gt 13){ $nsxEdgeWorkSheetName = "NSX Edge Routing-$($edgeID.substring(0,13))" }else{$nsxEdgeWorkSheetName = "NSX Edge Routing-$edgeID"}
@@ -455,7 +478,7 @@ function getRoutingInformation($sectionNumber){
         $dlrName = $eachDLR.Name
         $dlrRoutinginfo = Get-NsxLogicalRouter $dlrName | Get-NsxLogicalRouterRouting
         $tempDLRRoutingValueArray = $dlrRoutinginfo, "all"
-        $allDLRRoutingExcelData.Add($dlrName, $tempDLRRoutingValueArray)
+        $allDLRRoutingExcelData.Add("A) "+$dlrName, $tempDLRRoutingValueArray)
 
         #get host id here
         $nsxLogicalRouter = Get-NsxLogicalRouter $dlrName
@@ -473,7 +496,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputDataRouteTable = parseSSHOutput -fileToParse $txtFileName -findElements $findLogicalSwitchElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $tempDLRRoutingValueArray2 = $sshCommandOutputDataRouteTable, $txtFileName
-        $allDLRRoutingExcelData.Add("Route IP Table", $tempDLRRoutingValueArray2)
+        $allDLRRoutingExcelData.Add("B) Route IP Table", $tempDLRRoutingValueArray2)
         $tempTXTFileNamesList += $txtFileName
         
         #Run SSH Command to get Route Table
@@ -485,7 +508,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputDataIPFwd = parseSSHOutput -fileToParse $txtFileName -findElements $findIPFwdElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $tempIPFwdValueArray2 = $sshCommandOutputDataIPFwd, $txtFileName
-        $allDLRRoutingExcelData.Add("Route Forwarding Table", $tempIPFwdValueArray2)
+        $allDLRRoutingExcelData.Add("C) Route Forwarding Table", $tempIPFwdValueArray2)
         $tempTXTFileNamesList += $txtFileName
 
         #Run SSH Command to get BGP Table
@@ -497,7 +520,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputDataBGPTable = parseSSHOutput -fileToParse $txtFileName -findElements $findtxtFileElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $finalRouteBGPInfo = $sshCommandOutputDataBGPTable, $txtFileName
-        $allDLRRoutingExcelData.Add("BGP Table", $finalRouteBGPInfo)
+        $allDLRRoutingExcelData.Add("D) BGP Table", $finalRouteBGPInfo)
         $tempTXTFileNamesList += $txtFileName
 
         #Run SSH Command to get BGP Neighbors Table
@@ -509,7 +532,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputDataBGPNeighborsTable = parseSSHOutput -fileToParse $txtFileName -findElements $findtxtFileElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $finalRouteBGPNeighborsInfo = $sshCommandOutputDataBGPNeighborsTable, $txtFileName
-        $allDLRRoutingExcelData.Add("BGP Neighbors Info", $finalRouteBGPNeighborsInfo)
+        $allDLRRoutingExcelData.Add("E) BGP Neighbors Info", $finalRouteBGPNeighborsInfo)
         $tempTXTFileNamesList += $txtFileName
 
         #Run SSH Command to get OSPF Table
@@ -521,7 +544,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputDataOSPFTable = parseSSHOutput -fileToParse $txtFileName -findElements $findtxtFileElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $finalRouteOSPFInfo = $sshCommandOutputDataOSPFTable, $txtFileName
-        $allDLRRoutingExcelData.Add("OSPF Table", $finalRouteOSPFInfo)
+        $allDLRRoutingExcelData.Add("F) OSPF Table", $finalRouteOSPFInfo)
         $tempTXTFileNamesList += $txtFileName
 
         #Run SSH Command to get OSPF Neighbors Table
@@ -533,7 +556,7 @@ function getRoutingInformation($sectionNumber){
         $sshCommandOutputDataOSPFNeighborsTable = parseSSHOutput -fileToParse $txtFileName -findElements $findtxtFileElements -direction "Column"
         #Add parsed output to the allDLRRoutingExcelData dictionary
         $finalRouteOSPFNeighborsInfo = $sshCommandOutputDataOSPFNeighborsTable, $txtFileName
-        $allDLRRoutingExcelData.Add("OSPF Neighbors Info", $finalRouteOSPFNeighborsInfo)
+        $allDLRRoutingExcelData.Add("G) OSPF Neighbors Info", $finalRouteOSPFNeighborsInfo)
         $tempTXTFileNamesList += $txtFileName
 
         #Make sure workbook name wont exceed 31 letters
@@ -696,7 +719,7 @@ function createNewExcel($newExcelName){
     
     #$xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
     $newExcel = New-Object -Com Excel.Application
-    $newExcel.visible = $True
+    $newExcel.visible = $False
     $newExcel.DisplayAlerts = $false
     #$Excel.Name = "Test Excel Name"
     $wb = $newExcel.Workbooks.Add()
@@ -718,8 +741,10 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
     $sheet = $myOpenExcelWBReturn.WorkSheets.Add()
     $sheet.Name = $workSheetName
     $sheet.Cells.Item(1,1) = $workSheetName
-
-    foreach($eachDataSetKey in $listOfDataToPlot.Keys){
+    
+    #Use this loop for nonsorted dic data: foreach($eachDataSetKey in $listOfDataToPlot.Keys){
+    foreach($eachsortedDataSetKey in $listOfDataToPlot.GetEnumerator() | Sort Name){
+        $eachDataSetKey = $eachsortedDataSetKey.name
         Write-Host " =>Plotting data for:" $eachDataSetKey
         $global:myRow++
         $global:myRow++
@@ -732,8 +757,8 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
         $sheet.Cells.Item($global:myRow,$global:myColumn).Interior.ColorIndex = $titleInteriorColor
         $sheet.Cells.Item($global:myRow,$global:myColumn).HorizontalAlignment = -4108
         foreach ($eachDataElement in $listOfDataToPlot.Item($eachDataSetKey)[0]){
-            $listOfAllAttributes = @()
             #Write-Host "  listOfDataToPlot[0] eachDataElement is:" $eachDataElement.name
+            $listOfAllAttributes = @()
             $global:myRow++
             $global:myRow++
             if ($listOfDataToPlot.Item($eachDataSetKey)[1] -eq "all"){
@@ -752,6 +777,7 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
                 }
             }
             $global:myColumn = 1
+            
             writeToExcel $eachDataElement $listOfAllAttributes
         }
         #$sheet.Cells.Item($myRow,1) = $eachDataSetKey
@@ -885,7 +911,7 @@ function printMainMenu{
     $ScreenSize = [math]::Round($ConsoleWidth-39)/2
     Write-Host "`n"
     Write-Host (" " * $ScreenSize) "*******************|*******************"
-    Write-Host (" " * $ScreenSize) "**         E-Cube Main Menu          **"
+    Write-Host (" " * $ScreenSize) "**        PowerOps Main Menu         **"
     Write-Host (" " * $ScreenSize) "***************************************"
     Write-Host (" " * $ScreenSize) "*                                     *"
     Write-Host (" " * $ScreenSize) "* 1) Install PowerNSX                 *"
@@ -894,7 +920,7 @@ function printMainMenu{
     Write-Host (" " * $ScreenSize) "* 4) Show Health Check Menu           *"
 #    Write-Host (" " * $ScreenSize) "* 5) Check NSX Upgrade Prerequisites  *"
     Write-Host (" " * $ScreenSize) "*                                     *"
-    Write-Host (" " * $ScreenSize) "* 0) Exit E-Cube                      *"
+    Write-Host (" " * $ScreenSize) "* 0) Exit PowerOps                    *"
     Write-Host (" " * $ScreenSize) "***************************************"
 }
 
@@ -904,7 +930,7 @@ function printDocumentationMenu{
     $ScreenSize = [math]::Round($ConsoleWidth-58)/2
     Write-Host "`n"
     Write-Host (" " * $ScreenSize) "****************************|*****************************"
-    Write-Host (" " * $ScreenSize) "**              E-Cube Documentation Menu               **"
+    Write-Host (" " * $ScreenSize) "**             PowerOps Documentation Menu              **"
     Write-Host (" " * $ScreenSize) "**********************************************************"
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* Environment Documentation                              *"
@@ -931,7 +957,7 @@ function printHealthCheckMenu{
     $ScreenSize = [math]::Round($ConsoleWidth-41)/2
     Write-Host "`n"
     Write-Host (" " * $ScreenSize) "********************|********************"
-    Write-Host (" " * $ScreenSize) "**       E-Cube Health Check Menu      **"
+    Write-Host (" " * $ScreenSize) "**      PowerOps Health Check Menu     **"
     Write-Host (" " * $ScreenSize) "*****************************************"
     Write-Host (" " * $ScreenSize) "*                                       *"
     Write-Host (" " * $ScreenSize) "* 1) NSX Connectivity Test              *"
@@ -947,6 +973,7 @@ function printHealthCheckMenu{
     Write-Host (" " * $ScreenSize) "*****************************************"
 }
 
+<#
 clx
 $ScreenSize = [math]::Round($ConsoleWidth-99)/2
 Write-Host "`n"
@@ -959,12 +986,26 @@ Write-Host (" " * $ScreenSize) "    _\/\\\___________________________\//\\\_____
 Write-Host (" " * $ScreenSize) "     _\/\\\____________________________\///\\\__________\/\\\___\/\\\_\/\\\__\/\\\_\//\\/  //______  " -BackgroundColor Black -ForegroundColor Blue
 Write-Host (" " * $ScreenSize) "      _\/\\\\\\\\\\\\\\\__________________\////\\\\\\\\\_\//\\\\\\\\\__\/\\\\\\\\\___\//\\\\\\\\\___ " -BackgroundColor Black -ForegroundColor Blue
 Write-Host (" " * $ScreenSize) "       _\///////////////______________________\//|//////___\/////////___\/////////_____\/////////____" -BackgroundColor Black -ForegroundColor Blue
+#>
+
+clx
+$ScreenSize = [math]::Round($ConsoleWidth-127)/2
+Write-Host "`n"
+Write-Host (" " * $ScreenSize) "  __/\\\\\\\\\\\_______________________________________________|__________________/\\\\\________________________________        " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "   _\/\\\///////\\\______________________________________________________________/\\\///\\\______________________________       " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "    _\/\\\_____\/\\\____________________________________________________________/\\\/__\///\\\____/\\\\\\\\\______________      " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "     _\/\\\\\\\\\\\/___/\\\\\_____/\\ __ /\\ _ /\\____/\\\\\\\\\__/\\/\\\\\\___/\\\______\//\\\__/\\\/___/\\\__/\\\\\\\\\\_     " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "      _\/\\\///////___/\\\///\\\__\/\\\  /\\\\ /\\\__/\\\///\\//__\/\\\////\\\_\/\\\_______\/\\\_\/\\\___\\\\__\/\\\/___//__    " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "       _\/\\\_________/\\\__\//\\\_\//\\ /\\\\ /\\\__/\\\\\\\\\____\/\\\  \///__\//\\\______/\\\__\/\\\//////___\/\\\\\\\\\\_   " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "        _\/\\\________\//\\\__/\\\___\//\\\\\/\\\\\__\//\\/////_____\/\\\_________\///\\\__/\\\____\/\\\_________\///___//\\\_  " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "         _\/\\\_________\///\\\\\/_____\//\\\\//\\\____\//\\\\\\\\\__\/\\\___________\///\\\\\/_____\/\\\__________/\\\\\\\\\\_ " -BackgroundColor Black -ForegroundColor Blue
+Write-Host (" " * $ScreenSize) "          _\///____________\/////________\///__\///______\/////////___\///______________\/////_______\///__________\//////////__" -BackgroundColor Black -ForegroundColor Blue
 
 $ScreenSize = [math]::Round($ConsoleWidth-59)/2
 Write-Host "`n"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-Write-Host (" " * $ScreenSize) "~~                  Welcome to E-Cube                    ~~"
+Write-Host (" " * $ScreenSize) "~~                 Welcome to PowerOps                   ~~"
 Write-Host (" " * $ScreenSize) "~~                A project by SA Team                   ~~"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
