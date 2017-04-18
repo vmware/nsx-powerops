@@ -195,9 +195,13 @@ Get-Vm -server $connection.ViConnection| % {
 
 write-host "  Getting IP and MAC details from Spoofguard"
 Get-NsxSpoofguardPolicy -connection $connection | Get-NsxSpoofguardNic -connection $connection | % {
-    $MacHash.Add($_.detectedmacaddress, $_)
+    if ($MacHash.ContainsKey($_.detectedmacAddress)) {
+        write-warning "Duplicate MAC ($($_.detectedMacAddress) - $($_.nicname)) found.  Skipping NIC!"
+    }
+    else {
+        $MacHash.Add($_.detectedmacaddress, $_)
+    }
 }
-
 
 
 write-host  -ForeGroundColor Green "`nCreating Object Export Bundle"
@@ -224,5 +228,3 @@ while ( ( $Captures | measure ).count -ge $maxCaptures ) {
 }
 
 write-host -ForeGroundColor Green "`nCapture Bundle created at $ExportFile"
-
-return $ExportFile
