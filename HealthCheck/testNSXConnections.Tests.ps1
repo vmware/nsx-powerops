@@ -32,7 +32,7 @@ Describe "Basic System Connectivity and Time Tests" {
 
     #vCenter Connected Check
     It "is connected to vCenter" { 
-        $vCenterStatus | should be $true
+        $vCenterStatus.Connected | should be $true
     }
     Write-Verbose "vCenter Server : $($vCenterStatus.IpAddress), Connected : $($vCenterStatus.Connected)"
 

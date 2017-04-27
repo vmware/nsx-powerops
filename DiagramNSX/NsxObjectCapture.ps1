@@ -228,3 +228,4 @@ while ( ( $Captures | measure ).count -ge $maxCaptures ) {
 }
 
 write-host -ForeGroundColor Green "`nCapture Bundle created at $ExportFile"
+return $ExportFile

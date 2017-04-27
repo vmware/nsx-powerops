@@ -28,18 +28,13 @@ import-module Pester
     $titleFontName = "Calibri (Body)"
     $titleInteriorColor = 10
 
-    $subTitleFontSize = 10.5
+    $subTitleFontSize = 10
     $subTitleFontBold = $True
     $subTitleFontName = "Calibri (Body)"
     $subTitleInteriorColor = 42
 
     $valueFontName = "Calibri (Body)"
-    $valueFontSize = 10.5
-    $valueMissingColorIndex =
-    $valueMissingText = "<BLANK>"
-    $valueMissingHighlight = 6
-    $valueNotApplicable = "<NOT APPLICABLE>"
-    $valueNotDefined = "<NOT DEFINED>"
+    $valueFontSize = 10
 
     $subSetInteriorColor = 22
 
@@ -211,7 +206,10 @@ function getNSXComponents($sectionNumber){
         $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName $nsxComponentWorkSheetName -listOfDataToPlot $nsxComponentExcelDataDLR
     }
     
-    $nsxComponentExcelWorkBook.SaveAs()
+    #$nsxComponentExcelWorkBook.SaveAs()
+    $global:newExcel.ActiveWorkbook.SaveAs()
+    $global:newExcel.Workbooks.Close()
+    $global:newExcel.Quit()
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     #Loop back to document Menu
     documentationkMenu(22) #Keep in Documentation Menu
@@ -349,7 +347,10 @@ function getHostInformation($sectionNumber){
         ####writeToExcel -eachDataElementToPrint $sshCommandOutputDataLogicalSwitch -listOfAllAttributesToPrint $sshCommandOutputLable
     }
     #invokeNSXCLICmd(" show logical-switch host host-31 verbose ")
-    $nsxHosttExcelWorkBook.SaveAs()
+    #$nsxHosttExcelWorkBook.SaveAs()
+    $global:newExcel.ActiveWorkbook.SaveAs()
+    $global:newExcel.Workbooks.Close()
+    $global:newExcel.Quit()
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     documentationkMenu(22)
 }
@@ -358,10 +359,11 @@ function getHostInformation($sectionNumber){
 function runNSXVISIOTool($sectionNumber){
     Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now starting VISIO tool..."
     $capturePath = invoke-expression -Command .\DiagramNSX\NsxObjectCapture.ps1
-    Write-Host "`n"
+    ##Write-Host "`n Capture Path is: $capturePath"
     #$pathVISIO = Read-Host -Prompt " Please provide the above .zip file path to generate the VISIO file"
     #$visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -CaptureBundle " + $pathVISIO
     $visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -CaptureBundle " + $capturePath
+    ##Write-Host "DiagramCommand is: $visioDiagramCommand"
     invoke-expression -Command $visioDiagramCommand
     documentationkMenu(22)
 }
@@ -369,8 +371,9 @@ function runNSXVISIOTool($sectionNumber){
 #Download Log Insite's Dashboard
 function importLogInSightDashBoard($sectionNumber){
     Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now starting VISIO tool..."
-    $lisVersion = Read-Host -Prompt " Please provide your Log Insite Version"
-    Write-Host "`n Downloading custom Dashboard for your Log Insite version..."
+    Write-Host "`n Currently this feature is disabled."
+    ##$lisVersion = Read-Host -Prompt " Please provide your Log Insite Version"
+    ##Write-Host "`n Downloading custom Dashboard for your Log Insite version..."
 }
 
 #Get Routing info here
@@ -564,7 +567,10 @@ function getRoutingInformation($sectionNumber){
         #Plot the NSX Route final
         $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxDLRWorkSheetName -listOfDataToPlot $allDLRRoutingExcelData
     }
-    $nsxRoutingExcelWorkBook.SaveAs()
+    #$nsxRoutingExcelWorkBook.SaveAs()
+    $global:newExcel.ActiveWorkbook.SaveAs()
+    $global:newExcel.Workbooks.Close()
+    $global:newExcel.Quit()
     $tempTXTFileNamesList | %{ Remove-Item ./$_}
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     documentationkMenu(22)
@@ -599,9 +605,10 @@ function runDFW2Excel($sectionNumber){
 }
 
 
-#Run DFW2Excel
+#Run DFW-VAT
 function runDFWVAT($sectionNumber){
     Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now Exicuting DFW VATool..."
+    Write-Host "Need python2.7 to run DFW-VAT. Currently disabled."
     #invoke DFW_VAT subgit folder here...
     #invoke-expression -Command .\PowerNSX-Scripts\DFW2Excel.ps1
     documentationkMenu(22)
@@ -718,16 +725,16 @@ function createNewExcel($newExcelName){
     Write-Host -ForeGroundColor Green "`n Creating Excel File:" $newExcelNameWithDate
     
     #$xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
-    $newExcel = New-Object -Com Excel.Application
-    $newExcel.visible = $False
-    $newExcel.DisplayAlerts = $false
+    $global:newExcel = New-Object -Com Excel.Application
+    $global:newExcel.visible = $false
+    $global:newExcel.DisplayAlerts = $false
     #$Excel.Name = "Test Excel Name"
-    $wb = $newExcel.Workbooks.Add()
+    $wb = $global:newExcel.Workbooks.Add()
     #$sheet = $wb.ActiveSheet
     
     # Save the excel with provided Name
     #$newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate, $xlFixedFormat)
-    $newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate)
+    $global:newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate)
     return $wb
 } # End of function createNewExcel
 
@@ -735,7 +742,7 @@ function createNewExcel($newExcelName){
 # Call this function seperatelly for multiple Work Sheets.
 function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfDataToPlot){
     $listOfAllAttributes =@()
-    Write-Host -ForeGroundColor Green "`n Creating WorkSheet: $workSheetName. This can take upto 30 mins..."
+    Write-Host -ForeGroundColor Green "`n Creating WorkSheet: $workSheetName. This can take upto 10 mins..."
     $global:myRow =1
     $global:myColumn=1
     $sheet = $myOpenExcelWBReturn.WorkSheets.Add()
@@ -796,9 +803,9 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
 
 function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
     $newListOfXMLToPrint =@()
-    #Write-Host "eachDataElementToPrint again is:" $eachDataElementToPrint
-    #Write-Host "list Of All Attributes again is:" $listOfAllAttributesToPrint
-    #Write-Host "myRow again is:" $global:myRow
+    ##Write-Host "eachDataElementToPrint type is:" $eachDataElementToPrint.gettype()
+    ##Write-Host "list Of All Attributes are:" $listOfAllAttributesToPrint
+    ##Write-Host "myRow again is:" $global:myRow
     foreach ($eachLabelToPrint in $listOfAllAttributesToPrint){        
         Try{
             $valueOfLableToPrint = $eachDataElementToPrint.$eachLabelToPrint
@@ -860,7 +867,7 @@ function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
     if ($newListOfXMLToPrint.count -gt 0){
         foreach ($newDataElementToPrint in $newListOfXMLToPrint){
             $sheet.Cells.Item($global:myRow,$global:myColumn) = $newDataElementToPrint.Name
-            $sheet.Cells.Item($global:myRow,$global:myColumn).Font.Size = $subTitleFontSize
+            #$sheet.Cells.Item($global:myRow,$global:myColumn).Font.Size = $subTitleFontSize
             $sheet.Cells.Item($global:myRow,$global:myColumn).Font.Bold = $subTitleFontBold
             $sheet.Cells.Item($global:myRow,$global:myColumn).Font.Name = $subTitleFontName
             $sheet.Cells.Item($global:myRow,$global:myColumn).Interior.ColorIndex = $subSetInteriorColor
@@ -973,20 +980,6 @@ function printHealthCheckMenu{
     Write-Host (" " * $ScreenSize) "*****************************************"
 }
 
-<#
-clx
-$ScreenSize = [math]::Round($ConsoleWidth-99)/2
-Write-Host "`n"
-Write-Host (" " * $ScreenSize) "__/\\\\\\\\\\\\\\\______________________/\\\\\\\\\________________/\\\_______________________        " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "__\/\\\///////////____________________/\\\////////________________\/\\\_______________________       " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) " _\/\\\_____________________________/\\\/_________________________\/\\\________________________      " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "  _\/\\\\\\\\\\\______/\\\\\\\\\\\__/\\\______________/\\\____/\\\_\/\\\____________/\\\\\\\\\__     " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "   _\/\\\///////______\///////////__\/\\\_____________\/\\\___\/\\\_\/\\\\\\\\\____/\\\//    /___    " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "    _\/\\\___________________________\//\\\____________\/\\\___\/\\\_\/\\\////\\\__/\\\\\\\\\_____   " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "     _\/\\\____________________________\///\\\__________\/\\\___\/\\\_\/\\\__\/\\\_\//\\/  //______  " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "      _\/\\\\\\\\\\\\\\\__________________\////\\\\\\\\\_\//\\\\\\\\\__\/\\\\\\\\\___\//\\\\\\\\\___ " -BackgroundColor Black -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "       _\///////////////______________________\//|//////___\/////////___\/////////_____\/////////____" -BackgroundColor Black -ForegroundColor Blue
-#>
 
 clx
 $ScreenSize = [math]::Round($ConsoleWidth-127)/2
