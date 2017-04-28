@@ -13,6 +13,7 @@
 * Access to vSphere Web Client and Privileges (Read)
 
 ## Notes:
+* 'Set-ExecutionPolicy RemoteSigned' in powercli
 * Run the e-Cube.ps1 in PowerShell [tested on VMware PowerCLI 6.5 Release 1]
 * When in e-Cube.ps1:
     * To get the list of available commands type 'help'
