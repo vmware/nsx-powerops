@@ -466,6 +466,18 @@ function getRoutingInformation($sectionNumber){
         $allEdgeRoutingExcelData.Add("G) OSPF Neighbors", $finalRouteOSPFNeighborsInfo)
         $tempTXTFileNamesList += $txtFileName
 
+        #Run SSH Command to get Route OSPF Neighbors Info
+        [string]$routeTableFromControllerCommand = "show logical-router controller master dlr $edgeID route"
+        $txtFileName = $routeTableFromControllerCommand
+        invokeNSXCLICmd -commandToInvoke $routeTableFromControllerCommand -fileName $txtFileName
+        #Parse SSH Output here
+        $findControllerRouteTableElements= @("Destination")
+        $sshCommandOutputControllerRouteTable = parseSSHOutput -fileToParse $txtFileName -findElements $findControllerRouteTableElements -direction "Column"
+        #Add parsed output to the allDLRRoutingExcelData dictionary
+        $finalControllerRouteTable = $sshCommandOutputControllerRouteTable, $txtFileName
+        $allEdgeRoutingExcelData.Add("H) NSX Controller Route Table", $finalControllerRouteTable)
+        $tempTXTFileNamesList += $txtFileName        
+
         if ($edgeID.length -gt 13){ $nsxEdgeWorkSheetName = "NSX Edge Routing-$($edgeID.substring(0,13))" }else{$nsxEdgeWorkSheetName = "NSX Edge Routing-$edgeID"}
         $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxEdgeWorkSheetName -listOfDataToPlot $allEdgeRoutingExcelData
     }
