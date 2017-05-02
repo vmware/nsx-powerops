@@ -240,6 +240,7 @@ function getHostInformation($sectionNumber){
         $nsxVIBList = @()
         $listOfDLRCmd = @()
         $allHostNICList =@()
+        $tempvmknicLableList = @()
         $gotVXLAN = $false
 
         $myHostID = $eachVMHost.id
@@ -267,10 +268,20 @@ function getHostInformation($sectionNumber){
 						$vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
 						$myVmknicName = $vmknicInfo.VmknicName
 						$sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
-						$sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
-						$sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
-						$sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
-
+                        $tempCountVMKnic = 0
+                        if ($vdsInfo.VmknicCount -gt 1){
+                            $myVmknicName | %{
+                                $sshCommandOutputDataVMKNIC.Add("VmknicName$tempCountVMKnic", $myVmknicName[$tempCountVMKnic])
+                                $sshCommandOutputDataVMKNIC.Add("IP$tempCountVMKnic", $vmknicInfo.IP[$tempCountVMKnic])
+                                $sshCommandOutputDataVMKNIC.Add("Netmask$tempCountVMKnic", $vmknicInfo.Netmask[$tempCountVMKnic])
+                                $tempvmknicLableList = $tempvmknicLableList + ("VmknicName$tempCountVMKnic", "IP$tempCountVMKnic", "Netmask$tempCountVMKnic")
+                                $tempCountVMKnic ++
+                            }
+                        }else{
+                            $sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
+                            $sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
+                            $sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
+                        }
 						$gotVXLAN = $true
 					}catch{$ErrorMessage = $_.Exception.Message
 						if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
