@@ -358,6 +358,7 @@ function getHostInformation($sectionNumber){
         ####plotDynamicExcel one workBook at a time
         $plotHostInformationExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxHosttExcelWorkBook -workSheetName $hostWorkSheetName -listOfDataToPlot $allVmHostsExcelData
         ####writeToExcel -eachDataElementToPrint $sshCommandOutputDataLogicalSwitch -listOfAllAttributesToPrint $sshCommandOutputLable
+        Remove-Item ./$nsxMgrCommandRouteTable
     }
     #invokeNSXCLICmd(" show logical-switch host host-31 verbose ")
     $nsxHosttExcelWorkBook.SaveAs()
