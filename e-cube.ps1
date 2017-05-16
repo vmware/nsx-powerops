@@ -132,6 +132,7 @@ function healthCheckMenu($sectionNumber){
     elseif ($healthCheckSectionNumber -eq 5){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXDistributedFirewallHeap"}
     elseif ($healthCheckSectionNumber -eq 6){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXVDR"}
     elseif ($healthCheckSectionNumber -eq 7){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXVIBVersion"}
+    elseif ($healthCheckSectionNumber -eq 8){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXMTUUnderlay"}
 
     elseif ($healthCheckSectionNumber -eq "help"){healthCheckMenu(4)}
     elseif ($healthCheckSectionNumber -eq "clear"){healthCheckMenu(4)}
@@ -238,6 +239,7 @@ function getHostInformation($sectionNumber){
         $nsxVIBList = @()
         $listOfDLRCmd = @()
         $allHostNICList =@()
+        $tempvmknicLableList = @()
         $gotVXLAN = $false
 
         $myHostID = $eachVMHost.id
@@ -265,10 +267,20 @@ function getHostInformation($sectionNumber){
 						$vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
 						$myVmknicName = $vmknicInfo.VmknicName
 						$sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
-						$sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
-						$sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
-						$sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
-
+                        $tempCountVMKnic = 0
+                        if ($vdsInfo.VmknicCount -gt 1){
+                            $myVmknicName | %{
+                                $sshCommandOutputDataVMKNIC.Add("VmknicName$tempCountVMKnic", $myVmknicName[$tempCountVMKnic])
+                                $sshCommandOutputDataVMKNIC.Add("IP$tempCountVMKnic", $vmknicInfo.IP[$tempCountVMKnic])
+                                $sshCommandOutputDataVMKNIC.Add("Netmask$tempCountVMKnic", $vmknicInfo.Netmask[$tempCountVMKnic])
+                                $tempvmknicLableList = $tempvmknicLableList + ("VmknicName$tempCountVMKnic", "IP$tempCountVMKnic", "Netmask$tempCountVMKnic")
+                                $tempCountVMKnic ++
+                            }
+                        }else{
+                            $sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
+                            $sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
+                            $sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
+                        }
 						$gotVXLAN = $true
 					}catch{$ErrorMessage = $_.Exception.Message
 						if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
@@ -345,6 +357,7 @@ function getHostInformation($sectionNumber){
         ####plotDynamicExcel one workBook at a time
         $plotHostInformationExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxHosttExcelWorkBook -workSheetName $hostWorkSheetName -listOfDataToPlot $allVmHostsExcelData
         ####writeToExcel -eachDataElementToPrint $sshCommandOutputDataLogicalSwitch -listOfAllAttributesToPrint $sshCommandOutputLable
+        Remove-Item ./$nsxMgrCommandRouteTable
     }
     #invokeNSXCLICmd(" show logical-switch host host-31 verbose ")
     #$nsxHosttExcelWorkBook.SaveAs()
@@ -468,6 +481,18 @@ function getRoutingInformation($sectionNumber){
         $finalRouteOSPFNeighborsInfo = $sshCommandOutputRouteOSPFNeighborsInfo, $txtFileName
         $allEdgeRoutingExcelData.Add("G) OSPF Neighbors", $finalRouteOSPFNeighborsInfo)
         $tempTXTFileNamesList += $txtFileName
+
+        #Run SSH Command to get Route OSPF Neighbors Info
+        [string]$routeTableFromControllerCommand = "show logical-router controller master dlr $edgeID route"
+        $txtFileName = $routeTableFromControllerCommand
+        invokeNSXCLICmd -commandToInvoke $routeTableFromControllerCommand -fileName $txtFileName
+        #Parse SSH Output here
+        $findControllerRouteTableElements= @("Destination")
+        $sshCommandOutputControllerRouteTable = parseSSHOutput -fileToParse $txtFileName -findElements $findControllerRouteTableElements -direction "Column"
+        #Add parsed output to the allDLRRoutingExcelData dictionary
+        $finalControllerRouteTable = $sshCommandOutputControllerRouteTable, $txtFileName
+        $allEdgeRoutingExcelData.Add("H) NSX Controller Route Table", $finalControllerRouteTable)
+        $tempTXTFileNamesList += $txtFileName        
 
         if ($edgeID.length -gt 13){ $nsxEdgeWorkSheetName = "NSX Edge Routing-$($edgeID.substring(0,13))" }else{$nsxEdgeWorkSheetName = "NSX Edge Routing-$edgeID"}
         $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxEdgeWorkSheetName -listOfDataToPlot $allEdgeRoutingExcelData
@@ -975,6 +1000,7 @@ function printHealthCheckMenu{
     Write-Host (" " * $ScreenSize) "*                                       *"
     Write-Host (" " * $ScreenSize) "* 6) Check VDR Instance                 *"
     Write-Host (" " * $ScreenSize) "* 7) Check VIB Version                  *"
+    Write-Host (" " * $ScreenSize) "* 8) Check vTEP to vTEP connectivity    *"
     Write-Host (" " * $ScreenSize) "*                                       *"
     Write-Host (" " * $ScreenSize) "* 0) Exit Health Check Menu             *"
     Write-Host (" " * $ScreenSize) "*****************************************"
