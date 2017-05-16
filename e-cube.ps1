@@ -137,6 +137,7 @@ function healthCheckMenu($sectionNumber){
     elseif ($healthCheckSectionNumber -eq 5){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXDistributedFirewallHeap"}
     elseif ($healthCheckSectionNumber -eq 6){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXVDR"}
     elseif ($healthCheckSectionNumber -eq 7){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXVIBVersion"}
+    elseif ($healthCheckSectionNumber -eq 8){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXMTUUnderlay"}
 
     elseif ($healthCheckSectionNumber -eq "help"){healthCheckMenu(4)}
     elseif ($healthCheckSectionNumber -eq "clear"){healthCheckMenu(4)}
@@ -992,6 +993,7 @@ function printHealthCheckMenu{
     Write-Host (" " * $ScreenSize) "*                                       *"
     Write-Host (" " * $ScreenSize) "* 6) Check VDR Instance                 *"
     Write-Host (" " * $ScreenSize) "* 7) Check VIB Version                  *"
+    Write-Host (" " * $ScreenSize) "* 8) Check vTEP to vTEP connectivity    *"
     Write-Host (" " * $ScreenSize) "*                                       *"
     Write-Host (" " * $ScreenSize) "* 0) Exit Health Check Menu             *"
     Write-Host (" " * $ScreenSize) "*****************************************"

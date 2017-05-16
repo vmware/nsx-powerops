@@ -1,8 +1,20 @@
 # ***************************** #
+# Function to get NSX prep Host #
+# ***************************** #
+function getNSXPrepairedHosts() {
+    $allEnvClusters = get-cluster -Server $NSXConnection.ViConnection | %{
+        $nsxCluster = $_
+        get-cluster $_ | Get-NsxClusterStatus | %{
+            if($_.featureId -eq "com.vmware.vshield.vsm.nwfabric.hostPrep" -And $_.installed -eq "true"){
+                $global:listOfNSXPrepHosts += $nsxCluster | get-vmhost}}
+    }
+    $global:listOfNSXPrepHosts = $global:listOfNSXPrepHosts | Sort-Object -unique
+}
+
+# ***************************** #
 # Function to start SSH Session #
 # ***************************** #
 function startSSHSession($serverToConnectTo, $credentialsToUse){
-    #$myNSXManagerCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $mySecurePass
     $newSSHSession = New-Sshsession -computername $serverToConnectTo -Credential $credentialsToUse
     return $newSSHSession
 }
@@ -11,6 +23,11 @@ function startSSHSession($serverToConnectTo, $credentialsToUse){
 # Function to get global list if host VMKnic Data dic w/ all host and their VMKnic and IPs #
 # **************************************************************************************** #
 function getHostAndTheirVMKnics(){
+    if ($global:listOfNSXPrepHosts.count -eq 0){
+        ##Write-Host -ForegroundColor DarkRed "`n  NO NSX Prepaired Host found! Please Run 'Document ESXi Host(s) Info' first"
+        ##exit
+        getNSXPrepairedHosts
+    }
     $vmHosts = $global:listOfNSXPrepHosts
     #Write-Host " Number of NSX Prepaired vmHosts are:" $vmHosts.length
     foreach ($eachVMHost in $vmHosts){
@@ -68,14 +85,22 @@ function getHostAndTheirVMKnics(){
 # Function to make netstack ping from one provided host to list of VMKnics IPs #
 # **************************************************************************** #
 function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Null){
+    if ($hostCredentails -eq $Null){$hostCredentails = Get-Credential -Message "Credentials for ESXi Host: $fromHost" -UserName "root"}
+    $newSSHSession = startSSHSession -serverToConnectTo $fromHost -credentialsToUse $hostCredentails
+    
+    if ($newSSHSession -eq $null){
+        #Write-Host -ForegroundColor DarkRed "`n Error connecting to SSH!"
+        $SSH_Connection_Error = "SSH Connection Failed! For Host: $fromHost`n"
+        Throw $SSH_Connection_Error
+        #exit
+    }
+    
     Write-Host -ForegroundColor DarkGreen "`n ******************************"
     Write-Host -ForegroundColor DarkGreen " Pinging From Host: $fromHost"
     Write-Host -ForegroundColor DarkGreen " Pinging From VMKnic: $fromVMKnic"
     Write-Host -ForegroundColor DarkGreen " Ping MTU Size is: $MTUSize"
     Write-Host -ForegroundColor DarkGreen " ******************************"
-    
-    if ($hostCredentails -eq $Null){$hostCredentails = Get-Credential -Message "Credentials for ESXi Host: $fromHost" -UserName "root"}
-    $newSSHSession = startSSHSession -serverToConnectTo $fromHost -credentialsToUse $hostCredentails
+
     $listOfHosts = $hostVMKnicData.keys
     $listOfHosts | %{
         $myHost=$_
@@ -91,6 +116,7 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
                 $pingStatus = invoke-sshcommand -SessionId $newSSHSession.SessionId -command "ping ++netstack=vxlan -I $fromVMKnic $vmknicIPToPing -d -s $MTUSize"
                 if ($pingStatus.exitstatus -eq 0){
                     Write-Host -ForegroundColor Green " Ping Passed!"
+                    Write-Host -ForegroundColor Green " "+ $($pingStatus.Output)[-1]
                     #return $pingStatus.Output
                 }else{ Write-Host -ForegroundColor DarkRed "Ping failed! From host: $fromHost, its vmknic: $fromVMKnic. `nError is: $($pingStatus.Output)." }
             }
@@ -114,12 +140,17 @@ $global:listOfHostsVMKnicIPs = @()
 $getHostAndVMKnicDic=@{}
 
 # Get the MTU size to test the ping command with.
-Write-Host "`n>> Please provide the MTU size to test (eg: 1572):" -ForegroundColor DarkGreen -NoNewline
+Write-Host "`n>> Please provide the MTU size to test [Default: 1572]:" -ForegroundColor DarkGreen -NoNewline
 $testMTUSize = Read-Host
+
+if ($testMTUSize -eq ''){
+    $testMTUSize = 1572
+}
 
 # get the one or all host options from the user.
 Write-Host "`n>> Run this test from 'one' host or 'all' [Default: all]:" -ForegroundColor DarkGreen -NoNewline
 [string]$numberOfHostToTest = Read-Host
+
 
 # Check if user entered one or all. Call getHostAndTheirVMKnics appropriatelly as per the user choice.
 if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
@@ -130,7 +161,14 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
     if ($hostVMKnicData[$testHostIP]){
         $detailsOfHost = $hostVMKnicData.$testHostIP
         $detailsOfHost.keys | %{
-            checkVMKNICPing -fromHost $testHostIP -fromVMKnic $_ -MTUSize $testMTUSize -hostCredentails $Null
+            try{
+                checkVMKNICPing -fromHost $testHostIP -fromVMKnic $_ -MTUSize $testMTUSize -hostCredentails $Null
+            }Catch{
+                $ErrorMessage = $_.Exception.Message
+                Write-Host -ForegroundColor DarkRed " Error is: $ErrorMessage"
+                $ErrorActionPreference = "Continue"
+                #exit
+            }
         }
     }
 }elseif ($numberOfHostToTest -eq "all" -or $numberOfHostToTest -eq "ALL" -or $numberOfHostToTest -eq ''){
@@ -157,11 +195,22 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
                 }
             }Catch{
                 $ErrorMessage = $_.Exception.Message
-                Write-Host -ForegroundColor DarkRed "Error is: $ErrorMessage"
-                exit
+                Write-Host -ForegroundColor DarkRed " Error is: $ErrorMessage"
+                $ErrorActionPreference = "Continue"
+                #exit
             }
         }
 }else{
     Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
     exit
 }
+
+<#
+Write-Host "Still passing the try block!!"
+    }Catch{
+        $Error[0].Exception
+        $ErrorMessage = $_.Exception.Message
+        Write-Host -ForegroundColor DarkRed "Error is: $ErrorMessage"
+        $ErrorActionPreference = "Continue"
+    }
+#>
