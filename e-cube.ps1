@@ -77,12 +77,19 @@ function connectNSXManager($sectionNumber){
     }else{
         Write-Host -ForegroundColor Yellow "`n Connecting with vCenter..."
         ####Connect-VIServer -Server $global:vCenterHost -User $vCenterUser -Password $vCenterPass
-        Connect-VIServer -Server $global:vCenterHost -Credential $vCenterCredentials
+        $global:vCenterConnection = Connect-VIServer -Server $global:vCenterHost -Credential $vCenterCredentials
+        if ($global:vCenterConnection -eq $None){
+            Write-Host -ForegroundColor Yellow "`n ERROR: Connecting with vCenter!"
+            exit
+        }
 
         Write-Host -ForegroundColor Yellow "`n Connecting with NSX Manager..."
         ####$global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPasswd -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
         $global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost  -Credential $NSXManagerCredentials -VICred $vCenterCredentials -ViWarningAction "Ignore"
-        $NsxConnection
+        if ($global:NsxConnection -eq $None){
+            Write-Host -ForegroundColor Yellow "`n ERROR: Connecting with NSX Manager!"
+            exit
+        }
         
         ##"`n Establishing SSH connection with NSX Manager..."
         #$nsxManagerSecurePass = $nsxManagerPass | ConvertTo-SecureString -AsPlainText -Force
@@ -486,18 +493,6 @@ function getRoutingInformation($sectionNumber){
         $allEdgeRoutingExcelData.Add("G) OSPF Neighbors", $finalRouteOSPFNeighborsInfo)
         $tempTXTFileNamesList += $txtFileName
 
-        #Run SSH Command to get Route OSPF Neighbors Info
-        [string]$routeTableFromControllerCommand = "show logical-router controller master dlr $edgeID route"
-        $txtFileName = $routeTableFromControllerCommand
-        invokeNSXCLICmd -commandToInvoke $routeTableFromControllerCommand -fileName $txtFileName
-        #Parse SSH Output here
-        $findControllerRouteTableElements= @("Destination")
-        $sshCommandOutputControllerRouteTable = parseSSHOutput -fileToParse $txtFileName -findElements $findControllerRouteTableElements -direction "Column"
-        #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalControllerRouteTable = $sshCommandOutputControllerRouteTable, $txtFileName
-        $allEdgeRoutingExcelData.Add("H) NSX Controller Route Table", $finalControllerRouteTable)
-        $tempTXTFileNamesList += $txtFileName        
-
         if ($edgeID.length -gt 13){ $nsxEdgeWorkSheetName = "NSX Edge Routing-$($edgeID.substring(0,13))" }else{$nsxEdgeWorkSheetName = "NSX Edge Routing-$edgeID"}
         $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxEdgeWorkSheetName -listOfDataToPlot $allEdgeRoutingExcelData
     }
@@ -591,6 +586,18 @@ function getRoutingInformation($sectionNumber){
         $allDLRRoutingExcelData.Add("G) OSPF Neighbors Info", $finalRouteOSPFNeighborsInfo)
         $tempTXTFileNamesList += $txtFileName
 
+        #Run SSH Command to get Route Info from Master Controller
+        [string]$routeTableFromControllerCommand = "show logical-router controller master dlr $dlrID route"
+        $txtFileName = $routeTableFromControllerCommand
+        invokeNSXCLICmd -commandToInvoke $routeTableFromControllerCommand -fileName $txtFileName
+        #Parse SSH Output here
+        $findControllerRouteTableElements= @("Destination")
+        $sshCommandOutputControllerRouteTable = parseSSHOutput -fileToParse $txtFileName -findElements $findControllerRouteTableElements -direction "Column"
+        #Add parsed output to the allDLRRoutingExcelData dictionary
+        $finalControllerRouteTable = $sshCommandOutputControllerRouteTable, $txtFileName
+        $allDLRRoutingExcelData.Add("H) NSX Controller Route Table", $finalControllerRouteTable)
+        $tempTXTFileNamesList += $txtFileName
+
         #Make sure workbook name wont exceed 31 letters
         if ($dlrID.length -gt 14){ $nsxDLRWorkSheetName = "NSX DLR Routing-$($dlrID.substring(0,13))" }else{$nsxDLRWorkSheetName = "NSX DLR Routing-$dlrID"}
         #Plot the NSX Route final
@@ -658,7 +665,7 @@ function getMemberWithProperty($tempListOfAllAttributesInFunc){
 
 function invokeNSXCLICmd($commandToInvoke, $fileName){
     Write-Host -ForeGroundColor Yellow "`n Note: CLI Command Invoked:" $commandToInvoke
-    '''
+    <#
     if ($nsxManagerAuthorization -eq ''){
             $nsxManagerUser = Read-Host -Prompt " Enter NSX Manager $nsxManagerHost User"
             $nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password"
@@ -671,7 +678,7 @@ function invokeNSXCLICmd($commandToInvoke, $fileName){
     else{$nsxMgrCliApiURL = "https://"+$nsxMgrCliApiURL}
 
     $curlHead = @{"Accept"="text/plain"; "Content-type"="Application/xml"; "Authorization"="Basic $global:nsxManagerAuthorization"}
-    '''
+    #>
     $xmlBody = "<nsxcli>
      <command> $commandToInvoke </command>
      </nsxcli>"
@@ -1055,13 +1062,17 @@ while($true)
     $sectionNumber = Read-Host
 
     if ($sectionNumber -eq 0 -or $sectionNumber -eq "exit"){
-        if ($global:nsxManagerHost){Write-Host -ForegroundColor Yellow "Disconnecting NSX Server..."
-        try{Disconnect-NsxServer}catch{}}
-        if ($global:vCenterHost){Write-Host -ForegroundColor Yellow "Disconnecting VIServer..."
-        try{Disconnect-VIServer -Server * -Force}catch{}}
+        if ($global:nsxManagerHost -ne $None){
+            Write-Host -ForegroundColor Yellow "Disconnecting NSX Server $($global:nsxManagerHost)"
+            Disconnect-NsxServer}
+        if ($global:vCenterHost -ne $None){
+            Write-Host -ForegroundColor Yellow "Disconnecting VIServer $($global:vCenterHost)"
+            Disconnect-VIServer -Server * -Force}
+        try{
         remove-variable -scope global myRow
         remove-variable -scope global myColumn
         #remove-variable -scope global listOfNSXClusterName
+        }catch{}
         break}
 
     elseif ($sectionNumber -eq "help"){printMainMenu}
