@@ -43,6 +43,7 @@ import-module Pester
 
     $global:ConsoleWidth = (Get-host).ui.RawUI.windowsize.width
     $global:listOfNSXPrepHosts=@()
+    $global:nsxManagerAuthorization = ''
 
 #Install PowerNSX here
 function installPowerNSX($sectionNumber){
@@ -57,37 +58,40 @@ function connectNSXManager($sectionNumber){
     Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now executing Connect with Hosts..."
     
     $global:vCenterHost = Read-Host -Prompt " Enter vCenter IP"
-    $vCenterUser = Read-Host -Prompt " Enter vCenter User"
-    $vCenterPass = Read-Host -Prompt " Enter vCenter Password" 
+    $vCenterCredentials = Get-Credential -Message "Credentials for vCenter $vCenterHost"
+    ####$vCenterUser = Read-Host -Prompt " Enter vCenter User"
+    ####$vCenterPass = Read-Host -Prompt " Enter vCenter Password"
 
     $global:nsxManagerHost = Read-Host -Prompt "`n Enter NSX Manager IP"
-    $nsxManagerUser = Read-Host -Prompt " Enter NSX Manager User"
-    $nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password" 
-    $global:nsxManagerAuthorization = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($nsxManagerUser + ":" + $nsxManagerPasswd))
-    $nsxManagerSecurepasswd = ConvertTo-SecureString $nsxManagerPasswd -AsPlainText -Force
-    $global:nsxManagerPSCredential = New-Object System.Management.Automation.PSCredential ($nsxManagerUser, $nsxManagerSecurepasswd)
+    $NSXManagerCredentials = Get-Credential -Message "Credentials for NSX Manager $nsxManagerHost" -UserName "admin"
+    ####$nsxManagerUser = Read-Host -Prompt " Enter NSX Manager User"
+    ####$nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password"
+    ####$nsxManagerSecurepasswd = ConvertTo-SecureString $nsxManagerPasswd -AsPlainText -Force
+    ####$global:nsxManagerPSCredential = New-Object System.Management.Automation.PSCredential ($nsxManagerUser, $nsxManagerSecurepasswd)
 
-    if ($global:nsxManagerHost -eq '' -or $nsxManagerUser -eq '' -or $nsxManagerPasswd -eq ''){
-        " NSX Manager information not provided. Can't connect to NSX Manager or vCenter!"
-    }
-    elseif ($global:vCenterHost -eq '' -or $vCenterUser -eq '' -or $vCenterPass -eq ''){
+    ####elseif ($global:vCenterHost -eq '' -or $vCenterUser -eq '' -or $vCenterPass -eq ''){
+    if ($global:vCenterHost -eq '' -or $vCenterCredentials.username -eq '' -or $vCenterCredentials.password -eq ''){
         " vCenter information not provided. Can't connect to NSX Manager or vCenter!"
-    }
-    else{
+    }elseif ($global:nsxManagerHost -eq '' -or $NSXManagerCredentials.username -eq '' -or $NSXManagerCredentials.password -eq ''){
+        " NSX Manager information not provided. Can't connect to NSX Manager or vCenter!"
+    }else{
         Write-Host -ForegroundColor Yellow "`n Connecting with vCenter..."
-        Connect-VIServer -Server $global:vCenterHost -User $vCenterUser -Password $vCenterPass
+        ####Connect-VIServer -Server $global:vCenterHost -User $vCenterUser -Password $vCenterPass
+        Connect-VIServer -Server $global:vCenterHost -Credential $vCenterCredentials
 
         Write-Host -ForegroundColor Yellow "`n Connecting with NSX Manager..."
-        $global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPasswd -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
-
+        ####$global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPasswd -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
+        $global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost  -Credential $NSXManagerCredentials -VICred $vCenterCredentials -ViWarningAction "Ignore"
+        $NsxConnection
+        
         ##"`n Establishing SSH connection with NSX Manager..."
         #$nsxManagerSecurePass = $nsxManagerPass | ConvertTo-SecureString -AsPlainText -Force
         #$myNSXManagerSecureCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxManagerUser, $nsxManagerSecurePass
         ##$global:NsxSSHConnection = startSSHSession -serverToConnectTo $nsxManagerHost -credentialsToUse $nsxManagerPSCredential
         ##$global:NsxSSHConnection
 
-        Write-Host -ForegroundColor Yellow "`n Connecting NSX Manager to vCenter..."
-        Set-NsxManager -vCenterServer $global:vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
+        ####Write-Host -ForegroundColor Yellow "`n Connecting NSX Manager to vCenter..."
+        ####Set-NsxManager -vCenterServer $global:vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
         Write-Host -ForegroundColor Green "Done!"
     }
 }
@@ -654,7 +658,12 @@ function getMemberWithProperty($tempListOfAllAttributesInFunc){
 
 function invokeNSXCLICmd($commandToInvoke, $fileName){
     Write-Host -ForeGroundColor Yellow "`n Note: CLI Command Invoked:" $commandToInvoke
-    
+    if ($nsxManagerAuthorization -eq ''){
+            $nsxManagerUser = Read-Host -Prompt " Enter NSX Manager $nsxManagerHost User:"
+            $nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password:"
+            $nsxManagerAuthorization = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($nsxManagerUser + ":" + $nsxManagerPasswd))
+    }
+
     $nsxMgrCliApiURL = $global:nsxManagerHost+"/api/1.0/nsx/cli?action=execute"
     if ($nsxMgrCliApiURL.StartsWith("http://")){$nsxMgrCliApiURL -replace "http://", "https://"}
     elseif($nsxMgrCliApiURL.StartsWith("https://")){}
@@ -1043,14 +1052,14 @@ while($true)
 
     if ($sectionNumber -eq 0 -or $sectionNumber -eq "exit"){
         if ($global:nsxManagerHost){Write-Host -ForegroundColor Yellow "Disconnecting NSX Server..."
-        Disconnect-NsxServer}
+        try{Disconnect-NsxServer}catch{}}
         if ($global:vCenterHost){Write-Host -ForegroundColor Yellow "Disconnecting VIServer..."
-        Disconnect-VIServer -Server * -Force}
+        try{Disconnect-VIServer -Server * -Force}catch{}}
         remove-variable -scope global myRow
         remove-variable -scope global myColumn
-        remove-variable -scope global listOfNSXClusterName
-        
+        #remove-variable -scope global listOfNSXClusterName
         break}
+
     elseif ($sectionNumber -eq "help"){printMainMenu}
     #elseif ($sectionNumber -eq "clear"){clear-host | printMainMenu}
     elseif ($sectionNumber -eq "clear"){clx | printMainMenu}
