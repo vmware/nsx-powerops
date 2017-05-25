@@ -111,7 +111,7 @@ function documentationkMenu($sectionNumber){
     elseif ($documentationSectionNumber -eq 4){importLogInSightDashBoard($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 5){getRoutingInformation($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 6){runDFW2Excel($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 7){runDFWVAT($documentationSectionNumber)}
+    #elseif ($documentationSectionNumber -eq 7){runDFWVAT($documentationSectionNumber)}
     
     elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
     elseif ($documentationSectionNumber -eq "clear"){documentationkMenu(3)}
@@ -658,23 +658,27 @@ function getMemberWithProperty($tempListOfAllAttributesInFunc){
 
 function invokeNSXCLICmd($commandToInvoke, $fileName){
     Write-Host -ForeGroundColor Yellow "`n Note: CLI Command Invoked:" $commandToInvoke
+    '''
     if ($nsxManagerAuthorization -eq ''){
-            $nsxManagerUser = Read-Host -Prompt " Enter NSX Manager $nsxManagerHost User:"
-            $nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password:"
+            $nsxManagerUser = Read-Host -Prompt " Enter NSX Manager $nsxManagerHost User"
+            $nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password"
             $nsxManagerAuthorization = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($nsxManagerUser + ":" + $nsxManagerPasswd))
     }
-
+    
     $nsxMgrCliApiURL = $global:nsxManagerHost+"/api/1.0/nsx/cli?action=execute"
     if ($nsxMgrCliApiURL.StartsWith("http://")){$nsxMgrCliApiURL -replace "http://", "https://"}
     elseif($nsxMgrCliApiURL.StartsWith("https://")){}
     else{$nsxMgrCliApiURL = "https://"+$nsxMgrCliApiURL}
 
+    $curlHead = @{"Accept"="text/plain"; "Content-type"="Application/xml"; "Authorization"="Basic $global:nsxManagerAuthorization"}
+    '''
     $xmlBody = "<nsxcli>
      <command> $commandToInvoke </command>
      </nsxcli>"
-    $curlHead = @{"Accept"="text/plain"; "Content-type"="Application/xml"; "Authorization"="Basic $global:nsxManagerAuthorization"}
 
-    $nsxCLIResponceweb = Invoke-WebRequest -uri $nsxMgrCliApiURL -Body $xmlBody -Headers $curlHead -Method Post
+    ####$nsxCLIResponceweb = Invoke-WebRequest -UseBasicParsing -uri $nsxMgrCliApiURL -Body $xmlBody -Headers $curlHead -Method Post
+    $AdditionalHeaders = @{"Accept"="text/plain"; "Content-type"="Application/xml"}
+    $nsxCLIResponceweb = Invoke-NsxWebRequest -URI "/api/1.0/nsx/cli?action=execute" -method post -extraheader $AdditionalHeaders -body $xmlBody
     $nsxCLIResponceweb.content > $fileName
 }
 
@@ -986,7 +990,7 @@ function printDocumentationMenu{
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* Security Documentation                                 *"
     Write-Host (" " * $ScreenSize) "* |-> 6) Document NSX DFW info to Excel - DFW2Excel      *"
-    Write-Host (" " * $ScreenSize) "* |-> 7) Document DFW-VAT                                *"
+#    Write-Host (" " * $ScreenSize) "* |-> 7) Document DFW-VAT                                *"
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* 0) Exit Documentation Menu                             *"
     Write-Host (" " * $ScreenSize) "**********************************************************"
