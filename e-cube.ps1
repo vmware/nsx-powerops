@@ -5,7 +5,7 @@
 # and help build the env networking documents   #
 # ********************************************* #
 # *-------------------------------------------* #
-#                Version: GA 1.0                #
+#                 Version: DEMO                 #
 # *-------------------------------------------* #
 
 #Setting up max window size and max buffer size

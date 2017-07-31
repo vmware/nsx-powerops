@@ -11,6 +11,28 @@ function getNSXPrepairedHosts() {
     $global:listOfNSXPrepHosts = $global:listOfNSXPrepHosts | Sort-Object -unique
 }
 
+# ********************************************* #
+# Create empty excel sheet here w/ correct name # 
+# ********************************************* #
+function createNewExcel($newExcelName){
+    $startTime = Get-Date
+    $newExcelNameWithDate = $newExcelName +"-"+ $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xlsx"
+    Write-Host -ForeGroundColor Green "`n Creating Excel File:" $newExcelNameWithDate
+    
+    #$xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
+    $global:newExcel = New-Object -Com Excel.Application
+    $global:newExcel.visible = $false
+    $global:newExcel.DisplayAlerts = $false
+    #$Excel.Name = "Test Excel Name"
+    $wb = $global:newExcel.Workbooks.Add()
+    #$sheet = $wb.ActiveSheet
+    
+    # Save the excel with provided Name
+    #$newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate, $xlFixedFormat)
+    $global:newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate)
+    return $wb
+} # End of function create New Excel
+
 # ***************************** #
 # Function to start SSH Session #
 # ***************************** #
@@ -84,7 +106,7 @@ function getHostAndTheirVMKnics(){
 # **************************************************************************** #
 # Function to make netstack ping from one provided host to list of VMKnics IPs #
 # **************************************************************************** #
-function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Null){
+function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Null, $excelSheet){
     if ($hostCredentails -eq $Null){$hostCredentails = Get-Credential -Message "Credentials for ESXi Host: $fromHost" -UserName "root"}
     $newSSHSession = startSSHSession -serverToConnectTo $fromHost -credentialsToUse $hostCredentails
     
@@ -94,31 +116,66 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
         Throw $SSH_Connection_Error
         #exit
     }
-    
+
     Write-Host -ForegroundColor DarkGreen "`n ******************************"
     Write-Host -ForegroundColor DarkGreen " Pinging From Host: $fromHost"
     Write-Host -ForegroundColor DarkGreen " Pinging From VMKnic: $fromVMKnic"
     Write-Host -ForegroundColor DarkGreen " Ping MTU Size is: $MTUSize"
     Write-Host -ForegroundColor DarkGreen " ******************************"
 
+    $global:excelRowCursor++
+    $global:excelRowCursor++
+    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor) = " Pinging From Host:"
+    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor+1) = $fromHost
+    $global:excelRowCursor++
+    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor) = " Pinging From VMKnic:"
+    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor+1) = $fromVMKnic
+    $global:excelRowCursor++
+    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor) = " Ping MTU Size is:"
+    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor+1) = $MTUSize
+    $global:excelRowCursor++
+
     $listOfHosts = $hostVMKnicData.keys
     $listOfHosts | %{
         $myHost=$_
         Write-Host -ForegroundColor Darkyellow "`n Pinging To Host: $myHost"
+        $global:excelRowCursor++
+        $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor) = " Pinging To Host:"
+        $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor+1) = $myHost
+        
         $listOfHostsVMKnics = $hostVMKnicData[$_].keys
         if ($listOfHostsVMKnics.count -eq 0){
             Write-Host -ForegroundColor DarkRed "No VMKnic found on this Host!"
+            $global:excelRowCursor++
+            $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor) = "No VMKnic found on this Host!"
         }else{
             $listOfHostsVMKnics | %{
                 Write-Host " Pinging To its VMKnic: $_"
+                $global:excelRowCursor++
+                $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor) = " Pinging To its VMKnic:"
+                $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor+1) = $_
+
                 $vmknicIPToPing = $hostVMKnicData[$myHost].$_
                 Write-Host " Pinging To its IP: $vmknicIPToPing"
+                $global:excelRowCursor++
+                $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor) = " Pinging To its IP:"
+                $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor+1) = $vmknicIPToPing
+
                 $pingStatus = invoke-sshcommand -SessionId $newSSHSession.SessionId -command "ping ++netstack=vxlan -I $fromVMKnic $vmknicIPToPing -d -s $MTUSize"
                 if ($pingStatus.exitstatus -eq 0){
                     Write-Host -ForegroundColor Green " Ping Passed!"
                     Write-Host -ForegroundColor Green " "+ $($pingStatus.Output)[-1]
+                    $global:excelRowCursor++
+                    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor) = " Ping Passed!"
+                    $global:excelRowCursor++
+                    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor) = $($pingStatus.Output)[-1]
+                                        
                     #return $pingStatus.Output
-                }else{ Write-Host -ForegroundColor DarkRed "Ping failed! From host: $fromHost, its vmknic: $fromVMKnic. `nError is: $($pingStatus.Output)." }
+                }else{ 
+                    Write-Host -ForegroundColor DarkRed "Ping failed! From host: $fromHost, its vmknic: $fromVMKnic. `nError is: $($pingStatus.Output)."
+                    $global:excelRowCursor++
+                    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnSursor) = "Ping failed! From host: $fromHost, its vmknic: $fromVMKnic. `nError is: $($pingStatus.Output)."
+                }
             }
         }
     }
@@ -138,6 +195,8 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
 $global:hostVMKnicData = @{}
 $global:listOfHostsVMKnicIPs = @()
 $getHostAndVMKnicDic=@{}
+$global:excelRowCursor =1
+$global:excelColumnSursor =1
 
 # Get the MTU size to test the ping command with.
 Write-Host "`n>> Please provide the MTU size to test [Default: 1572]:" -ForegroundColor DarkGreen -NoNewline
@@ -151,7 +210,6 @@ if ($testMTUSize -eq ''){
 Write-Host "`n>> Run this test from 'one' host or 'all' [Default: all]:" -ForegroundColor DarkGreen -NoNewline
 [string]$numberOfHostToTest = Read-Host
 
-
 # Check if user entered one or all. Call getHostAndTheirVMKnics appropriatelly as per the user choice.
 if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
     Write-Host "`n>> Please provide the Host ID:" -ForegroundColor DarkGreen -NoNewline
@@ -159,10 +217,16 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
     getHostAndTheirVMKnics
 
     if ($hostVMKnicData[$testHostIP]){
+        #Creating the excel sheet here...
+        $newExcelWB = createNewExcel("VMKnicPingTestOutput")
+        $sheet = $newExcelWB.WorkSheets.Add()
+        $sheet.Name = "Summery"
+        $sheet.Cells.Item(1,1) = "VMKnic Ping Test Output"
+
         $detailsOfHost = $hostVMKnicData.$testHostIP
         $detailsOfHost.keys | %{
             try{
-                checkVMKNICPing -fromHost $testHostIP -fromVMKnic $_ -MTUSize $testMTUSize -hostCredentails $Null
+                checkVMKNICPing -fromHost $testHostIP -fromVMKnic $_ -MTUSize $testMTUSize -hostCredentails $Null -excelSheet $sheet
             }Catch{
                 $ErrorMessage = $_.Exception.Message
                 Write-Host -ForegroundColor DarkRed " Error is: $ErrorMessage"
@@ -170,6 +234,9 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
                 #exit
             }
         }
+        $global:newExcel.ActiveWorkbook.SaveAs()
+        $global:newExcel.Workbooks.Close()
+        $global:newExcel.Quit()
     }
 }elseif ($numberOfHostToTest -eq "all" -or $numberOfHostToTest -eq "ALL" -or $numberOfHostToTest -eq ''){
         # Check if one credential for all host?
@@ -182,7 +249,13 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
         # get global hostVMKnicData by running function getHostAndTheirVMKnics
         getHostAndTheirVMKnics
         
-        # get list of hosts and run a loop through them to call function checkVMKNICPing to ping 
+        #Creating the excel sheet here...
+        $newExcelWB = createNewExcel("VMKnicPingTestOutput")
+        $sheet = $newExcelWB.WorkSheets.Add()
+        $sheet.Name = "Summery"
+        $sheet.Cells.Item(1,1) = "VMKnic Ping Test Output"
+
+        # get list of hosts and run a loop through them to call function check VMKNIC Ping to ping 
         # from each host's each vmknic to all Host's vmknics.
         $listOfHosts = $hostVMKnicData.keys
         $listOfHosts | %{
@@ -191,7 +264,7 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
                 #Write-Host "`nfromHost is: $_"
                 $listOfHostsVMKnics = $hostVMKnicData[$_].keys
                 $listOfHostsVMKnics | %{
-                    checkVMKNICPing -fromHost $myHost -fromVMKnic $_ -MTUSize $testMTUSize -hostCredentails $esxicred
+                    checkVMKNICPing -fromHost $myHost -fromVMKnic $_ -MTUSize $testMTUSize -hostCredentails $esxicred -excelSheet $sheet
                 }
             }Catch{
                 $ErrorMessage = $_.Exception.Message
@@ -200,6 +273,9 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
                 #exit
             }
         }
+$global:newExcel.ActiveWorkbook.SaveAs()
+$global:newExcel.Workbooks.Close()
+$global:newExcel.Quit()
 }else{
     Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
     exit
