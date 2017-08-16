@@ -65,17 +65,10 @@ Describe "NSX Manager" {
     }
     Write-Verbose "Enabled: $(($ComponentSummary | ? { $_.name -match 'RabbitMQ'}).enabled), Running $(($ComponentSummary | ? { $_.name -match 'RabbitMQ'}).status)"
 
-    if ($Someimaginaryflagforuniversalandimaprimary ) { 
-
-        it "has the NSX Replicator Service in a running state" { 
-            ($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).status | should match RUNNING
-        }
-        Write-Verbose "Enabled: $(($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).enabled), Running $(($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).status)"
+    it "has the NSX Replicator Service in a running state" {
+        ($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).status | should match RUNNING
     }
-    else {
-
-        it "is not a cross VC NSX deployment, skipping universal sync service check" {}
-    }
+    Write-Verbose "Enabled: $(($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).enabled), Running $(($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).status)"
 
 }
 

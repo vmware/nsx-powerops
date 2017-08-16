@@ -42,6 +42,8 @@ if ($singlrHostsPass -eq 'Y' -or $singlrHostsPass -eq 'y' -or $singlrHostsPass -
 }
 
 Describe "NSX VIB Versions"{
+    Write-Host -ForegroundColor Yellow "WARNING: Currently this test checks all clusters including those NOT prepared for NSX."
+    Write-Host -ForegroundColor Yellow "Please ignore them as false alerts."
     $vSphereHosts = get-vmhost -Server $NSXConnection.ViConnection
     #Getting all hosts.
     foreach ( $hv in $vSphereHosts ) {

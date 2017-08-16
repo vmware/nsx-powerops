@@ -5,7 +5,7 @@
 # and help build the env networking documents   #
 # ********************************************* #
 # *-------------------------------------------* #
-#                Version: GA 1.0                #
+#                 Version: DEMO                 #
 # *-------------------------------------------* #
 
 #Setting up max window size and max buffer size
@@ -43,6 +43,7 @@ import-module Pester
 
     $global:ConsoleWidth = (Get-host).ui.RawUI.windowsize.width
     $global:listOfNSXPrepHosts=@()
+    $global:nsxManagerAuthorization = ''
 
 #Install PowerNSX here
 function installPowerNSX($sectionNumber){
@@ -57,37 +58,47 @@ function connectNSXManager($sectionNumber){
     Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now executing Connect with Hosts..."
     
     $global:vCenterHost = Read-Host -Prompt " Enter vCenter IP"
-    $vCenterUser = Read-Host -Prompt " Enter vCenter User"
-    $vCenterPass = Read-Host -Prompt " Enter vCenter Password" 
+    $vCenterCredentials = Get-Credential -Message "Credentials for vCenter $vCenterHost"
+    ####$vCenterUser = Read-Host -Prompt " Enter vCenter User"
+    ####$vCenterPass = Read-Host -Prompt " Enter vCenter Password"
 
     $global:nsxManagerHost = Read-Host -Prompt "`n Enter NSX Manager IP"
-    $nsxManagerUser = Read-Host -Prompt " Enter NSX Manager User"
-    $nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password" 
-    $global:nsxManagerAuthorization = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($nsxManagerUser + ":" + $nsxManagerPasswd))
-    $nsxManagerSecurepasswd = ConvertTo-SecureString $nsxManagerPasswd -AsPlainText -Force
-    $global:nsxManagerPSCredential = New-Object System.Management.Automation.PSCredential ($nsxManagerUser, $nsxManagerSecurepasswd)
+    $NSXManagerCredentials = Get-Credential -Message "Credentials for NSX Manager $nsxManagerHost" -UserName "admin"
+    ####$nsxManagerUser = Read-Host -Prompt " Enter NSX Manager User"
+    ####$nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password"
+    ####$nsxManagerSecurepasswd = ConvertTo-SecureString $nsxManagerPasswd -AsPlainText -Force
+    ####$global:nsxManagerPSCredential = New-Object System.Management.Automation.PSCredential ($nsxManagerUser, $nsxManagerSecurepasswd)
 
-    if ($global:nsxManagerHost -eq '' -or $nsxManagerUser -eq '' -or $nsxManagerPasswd -eq ''){
-        " NSX Manager information not provided. Can't connect to NSX Manager or vCenter!"
-    }
-    elseif ($global:vCenterHost -eq '' -or $vCenterUser -eq '' -or $vCenterPass -eq ''){
+    ####elseif ($global:vCenterHost -eq '' -or $vCenterUser -eq '' -or $vCenterPass -eq ''){
+    if ($global:vCenterHost -eq '' -or $vCenterCredentials.username -eq '' -or $vCenterCredentials.password -eq ''){
         " vCenter information not provided. Can't connect to NSX Manager or vCenter!"
-    }
-    else{
+    }elseif ($global:nsxManagerHost -eq '' -or $NSXManagerCredentials.username -eq '' -or $NSXManagerCredentials.password -eq ''){
+        " NSX Manager information not provided. Can't connect to NSX Manager or vCenter!"
+    }else{
         Write-Host -ForegroundColor Yellow "`n Connecting with vCenter..."
-        Connect-VIServer -Server $global:vCenterHost -User $vCenterUser -Password $vCenterPass
+        ####Connect-VIServer -Server $global:vCenterHost -User $vCenterUser -Password $vCenterPass
+        $global:vCenterConnection = Connect-VIServer -Server $global:vCenterHost -Credential $vCenterCredentials
+        if ($global:vCenterConnection -eq $None){
+            Write-Host -ForegroundColor Yellow "`n ERROR: Connecting with vCenter!"
+            exit
+        }
 
         Write-Host -ForegroundColor Yellow "`n Connecting with NSX Manager..."
-        $global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPasswd -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
-
+        ####$global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPasswd -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
+        $global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost  -Credential $NSXManagerCredentials -VICred $vCenterCredentials -ViWarningAction "Ignore"
+        if ($global:NsxConnection -eq $None){
+            Write-Host -ForegroundColor Yellow "`n ERROR: Connecting with NSX Manager!"
+            exit
+        }
+        
         ##"`n Establishing SSH connection with NSX Manager..."
         #$nsxManagerSecurePass = $nsxManagerPass | ConvertTo-SecureString -AsPlainText -Force
         #$myNSXManagerSecureCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxManagerUser, $nsxManagerSecurePass
         ##$global:NsxSSHConnection = startSSHSession -serverToConnectTo $nsxManagerHost -credentialsToUse $nsxManagerPSCredential
         ##$global:NsxSSHConnection
 
-        Write-Host -ForegroundColor Yellow "`n Connecting NSX Manager to vCenter..."
-        Set-NsxManager -vCenterServer $global:vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
+        ####Write-Host -ForegroundColor Yellow "`n Connecting NSX Manager to vCenter..."
+        ####Set-NsxManager -vCenterServer $global:vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
         Write-Host -ForegroundColor Green "Done!"
     }
 }
@@ -107,7 +118,7 @@ function documentationkMenu($sectionNumber){
     elseif ($documentationSectionNumber -eq 4){importLogInSightDashBoard($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 5){getRoutingInformation($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 6){runDFW2Excel($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 7){runDFWVAT($documentationSectionNumber)}
+    #elseif ($documentationSectionNumber -eq 7){runDFWVAT($documentationSectionNumber)}
     
     elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
     elseif ($documentationSectionNumber -eq "clear"){documentationkMenu(3)}
@@ -482,18 +493,6 @@ function getRoutingInformation($sectionNumber){
         $allEdgeRoutingExcelData.Add("G) OSPF Neighbors", $finalRouteOSPFNeighborsInfo)
         $tempTXTFileNamesList += $txtFileName
 
-        #Run SSH Command to get Route OSPF Neighbors Info
-        [string]$routeTableFromControllerCommand = "show logical-router controller master dlr $edgeID route"
-        $txtFileName = $routeTableFromControllerCommand
-        invokeNSXCLICmd -commandToInvoke $routeTableFromControllerCommand -fileName $txtFileName
-        #Parse SSH Output here
-        $findControllerRouteTableElements= @("Destination")
-        $sshCommandOutputControllerRouteTable = parseSSHOutput -fileToParse $txtFileName -findElements $findControllerRouteTableElements -direction "Column"
-        #Add parsed output to the allDLRRoutingExcelData dictionary
-        $finalControllerRouteTable = $sshCommandOutputControllerRouteTable, $txtFileName
-        $allEdgeRoutingExcelData.Add("H) NSX Controller Route Table", $finalControllerRouteTable)
-        $tempTXTFileNamesList += $txtFileName        
-
         if ($edgeID.length -gt 13){ $nsxEdgeWorkSheetName = "NSX Edge Routing-$($edgeID.substring(0,13))" }else{$nsxEdgeWorkSheetName = "NSX Edge Routing-$edgeID"}
         $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxEdgeWorkSheetName -listOfDataToPlot $allEdgeRoutingExcelData
     }
@@ -587,6 +586,18 @@ function getRoutingInformation($sectionNumber){
         $allDLRRoutingExcelData.Add("G) OSPF Neighbors Info", $finalRouteOSPFNeighborsInfo)
         $tempTXTFileNamesList += $txtFileName
 
+        #Run SSH Command to get Route Info from Master Controller
+        [string]$routeTableFromControllerCommand = "show logical-router controller master dlr $dlrID route"
+        $txtFileName = $routeTableFromControllerCommand
+        invokeNSXCLICmd -commandToInvoke $routeTableFromControllerCommand -fileName $txtFileName
+        #Parse SSH Output here
+        $findControllerRouteTableElements= @("Destination")
+        $sshCommandOutputControllerRouteTable = parseSSHOutput -fileToParse $txtFileName -findElements $findControllerRouteTableElements -direction "Column"
+        #Add parsed output to the allDLRRoutingExcelData dictionary
+        $finalControllerRouteTable = $sshCommandOutputControllerRouteTable, $txtFileName
+        $allDLRRoutingExcelData.Add("H) NSX Controller Route Table", $finalControllerRouteTable)
+        $tempTXTFileNamesList += $txtFileName
+
         #Make sure workbook name wont exceed 31 letters
         if ($dlrID.length -gt 14){ $nsxDLRWorkSheetName = "NSX DLR Routing-$($dlrID.substring(0,13))" }else{$nsxDLRWorkSheetName = "NSX DLR Routing-$dlrID"}
         #Plot the NSX Route final
@@ -654,18 +665,27 @@ function getMemberWithProperty($tempListOfAllAttributesInFunc){
 
 function invokeNSXCLICmd($commandToInvoke, $fileName){
     Write-Host -ForeGroundColor Yellow "`n Note: CLI Command Invoked:" $commandToInvoke
+    <#
+    if ($nsxManagerAuthorization -eq ''){
+            $nsxManagerUser = Read-Host -Prompt " Enter NSX Manager $nsxManagerHost User"
+            $nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password"
+            $nsxManagerAuthorization = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($nsxManagerUser + ":" + $nsxManagerPasswd))
+    }
     
     $nsxMgrCliApiURL = $global:nsxManagerHost+"/api/1.0/nsx/cli?action=execute"
     if ($nsxMgrCliApiURL.StartsWith("http://")){$nsxMgrCliApiURL -replace "http://", "https://"}
     elseif($nsxMgrCliApiURL.StartsWith("https://")){}
     else{$nsxMgrCliApiURL = "https://"+$nsxMgrCliApiURL}
 
+    $curlHead = @{"Accept"="text/plain"; "Content-type"="Application/xml"; "Authorization"="Basic $global:nsxManagerAuthorization"}
+    #>
     $xmlBody = "<nsxcli>
      <command> $commandToInvoke </command>
      </nsxcli>"
-    $curlHead = @{"Accept"="text/plain"; "Content-type"="Application/xml"; "Authorization"="Basic $global:nsxManagerAuthorization"}
 
-    $nsxCLIResponceweb = Invoke-WebRequest -uri $nsxMgrCliApiURL -Body $xmlBody -Headers $curlHead -Method Post
+    ####$nsxCLIResponceweb = Invoke-WebRequest -UseBasicParsing -uri $nsxMgrCliApiURL -Body $xmlBody -Headers $curlHead -Method Post
+    $AdditionalHeaders = @{"Accept"="text/plain"; "Content-type"="Application/xml"}
+    $nsxCLIResponceweb = Invoke-NsxWebRequest -URI "/api/1.0/nsx/cli?action=execute" -method post -extraheader $AdditionalHeaders -body $xmlBody
     $nsxCLIResponceweb.content > $fileName
 }
 
@@ -977,7 +997,7 @@ function printDocumentationMenu{
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* Security Documentation                                 *"
     Write-Host (" " * $ScreenSize) "* |-> 6) Document NSX DFW info to Excel - DFW2Excel      *"
-    Write-Host (" " * $ScreenSize) "* |-> 7) Document DFW-VAT                                *"
+#    Write-Host (" " * $ScreenSize) "* |-> 7) Document DFW-VAT                                *"
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* 0) Exit Documentation Menu                             *"
     Write-Host (" " * $ScreenSize) "**********************************************************"
@@ -1042,15 +1062,19 @@ while($true)
     $sectionNumber = Read-Host
 
     if ($sectionNumber -eq 0 -or $sectionNumber -eq "exit"){
-        if ($global:nsxManagerHost){Write-Host -ForegroundColor Yellow "Disconnecting NSX Server..."
-        Disconnect-NsxServer}
-        if ($global:vCenterHost){Write-Host -ForegroundColor Yellow "Disconnecting VIServer..."
-        Disconnect-VIServer -Server * -Force}
+        if ($global:nsxManagerHost -ne $None){
+            Write-Host -ForegroundColor Yellow "Disconnecting NSX Server $($global:nsxManagerHost)"
+            Disconnect-NsxServer}
+        if ($global:vCenterHost -ne $None){
+            Write-Host -ForegroundColor Yellow "Disconnecting VIServer $($global:vCenterHost)"
+            Disconnect-VIServer -Server * -Force}
+        try{
         remove-variable -scope global myRow
         remove-variable -scope global myColumn
-        remove-variable -scope global listOfNSXClusterName
-        
+        #remove-variable -scope global listOfNSXClusterName
+        }catch{}
         break}
+
     elseif ($sectionNumber -eq "help"){printMainMenu}
     #elseif ($sectionNumber -eq "clear"){clear-host | printMainMenu}
     elseif ($sectionNumber -eq "clear"){clx | printMainMenu}
