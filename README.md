@@ -21,12 +21,12 @@ Required Pre-Requisites:
 
 * PowerShell's SSH Module name: Posh-SSH [https://github.com/darkoperator/Posh-SSH]
 
-Option 1 (Automated Install):  
+    Option 1 (Automated Install):  
 	* Run PowerCLI as Administrator and execute: iex (New-Object Net.WebClient).DownloadString("https://gist.github.com/darkoperator/6152630/raw/c67de4f7cd780ba367cccbc2593f38d18ce6df89/instposhsshdev")
 
-Option 2 (Manual Steps):
+    Option 2 (Manual Steps):
 	* Download the Module [https://github.com/darkoperator/Posh-SSH/archive/master.zip]
-	* Extract the files under [C:\Program Files (x86)\VMware\Infrastructure\PowerCLI\Modules\Pester] such that all the files are under folder Posh-SSH in the Modules directory.
+	* Extract the files under [C:\Program Files (x86)\VMware\Infrastructure\PowerCLI\Modules\Posh-SSH] such that all the files are under folder Posh-SSH in the Modules directory.
 	* Run PowerCLI as Administrator and execute following commands
 		* Get-Module -ListAvailable -Name Posh-SSH
 		* Import-Module Posh-SSH
@@ -39,10 +39,11 @@ Option 2 (Manual Steps):
 Optional Pre-Requisites:
 
 * GIT (optional) [https://git-scm.com/]
-* MS VISIO (optional - some feature wont work if not installed) [https://www.microsoft.com/en-us/evalcenter/evaluate-visio-professional-2016]
+* MS VISIO (optional - Needed for Environment Documentation option 'Document NSX Environment Diagram via VISIO Tool') [https://www.microsoft.com/en-us/evalcenter/evaluate-visio-professional-2016]
 
 
 ## Notes:
+* After downloading the NSX-PowerOps repo as zip, Right click on the zip file -> Click Properties -> Click Unblock. Do it before unzipping otherwise may get error that execution of script was blocked.
 * For PowerCLI to work correctly: 'Set-ExecutionPolicy RemoteSigned' in powercli
 * Run the e-Cube.ps1 in PowerShell [tested on VMware PowerCLI 6.5 Release 1]
 * When in e-Cube.ps1:
@@ -51,4 +52,4 @@ Optional Pre-Requisites:
 * Install VMware PowerNSX by selecting option #1
 * Connect with NSX Manager and vCenter by selecting option #2
  
-### Contact Info: cpuneet@vmware.com
+### Contact Info: cpuneet@vmware.com, halam@vmware.com
