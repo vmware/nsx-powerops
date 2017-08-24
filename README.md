@@ -54,4 +54,4 @@ Optional Pre-Requisites:
 * Install VMware PowerNSX by selecting option #1
 * Connect with NSX Manager and vCenter by selecting option #2
  
-### Contact Info: cpuneet@vmware.com
+### Contact Info: cpuneet@vmware.com (Puneet Chawla) and halam@vmware.com (Hammad Alam)
