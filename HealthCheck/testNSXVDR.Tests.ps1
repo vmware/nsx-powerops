@@ -24,11 +24,11 @@ has its own license that is located in the source code of the respective compone
 Write-Host "Please provide the Compute Cluster name [example: Compute Cluster A1]: " -ForegroundColor Darkyellow -NoNewline
 $vdrTestClusterName = Read-Host
 
-Write-Host "Please provide Cluster's VDS name [example: Compute_VDS]: " -ForegroundColor Darkyellow -NoNewline
+Write-Host "Please provide Cluster's VDS name [example: ComputeA_VDS]: " -ForegroundColor Darkyellow -NoNewline
 $vdrTestVDSName = Read-Host
 
 Write-Host "Please provide VDN ID [example: 10000]: " -ForegroundColor Darkyellow -NoNewline
-$vdrTestVDSID = Read-Host
+$vdrTestVXLANID = Read-Host
 
 $result = $false
 Write-Host "`n"
@@ -37,8 +37,9 @@ Describe "NSX VDR Port Tests" {
 
 	Get-Cluster -Name $vdrTestClusterName | Get-VMHost | %{
 		$esxcli = Get-EsxCli -VMHost $_
+		Write-Host "Checking Host:", $_
 		$_.toString()
-		$esxcli.network.vswitch.dvs.vmware.vxlan.network.port.list($vdrTestVDSName,"vdrPort",$vdrTestVDSID) | Measure-Object | %{
+		$esxcli.network.vswitch.dvs.vmware.vxlan.network.port.list($vdrTestVDSName,"vdrPort",$vdrTestVXLANID) | Measure-Object | %{
 			#Write-Host "Count in main test file is:" $_.Count
 			if ($_.Count -eq 1) {$result = $true}
 		}

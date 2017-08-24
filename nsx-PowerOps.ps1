@@ -1,6 +1,6 @@
 # *-------------------------------------------* #
 # ********************************************* #
-#      VMware NSX e-Cube by @thisispuneet       #
+#      VMware NSX PowerOps by @thisispuneet       #
 # This script automate NSX-v day 2 Operations   #
 # and help build the env networking documents   #
 # ********************************************* #
@@ -1058,7 +1058,7 @@ printMainMenu
 
 while($true)
 {
-    Write-Host "`n>> Please select an e-cube option: " -ForegroundColor DarkGreen -NoNewline
+    Write-Host "`n>> Please select an PowerOps option: " -ForegroundColor DarkGreen -NoNewline
     $sectionNumber = Read-Host
 
     if ($sectionNumber -eq 0 -or $sectionNumber -eq "exit"){
