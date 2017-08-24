@@ -26,13 +26,13 @@ Option 1 (Automated Install):
 
 Option 2 (Manual Steps):
 	* Download the Module [https://github.com/darkoperator/Posh-SSH/archive/master.zip]
-	* Extract the files under [C:\Program Files (x86)\VMware\Infrastructure\PowerCLI\Modules\Pester] such that all the files are under folder Posh-SSH in the Modules directory.
+	* Extract the files under [C:\Program Files (x86)\VMware\Infrastructure\PowerCLI\Modules\Posh-SSH] such that all the files are under folder Posh-SSH in the Modules directory.
 	* Run PowerCLI as Administrator and execute following commands
 		* Get-Module -ListAvailable -Name Posh-SSH
 		* Import-Module Posh-SSH
 		* Get-Module -Name Posh-SSH | Select -ExpandProperty ExportedCommands
 
-		* Access to NSX Manager API with privileges
+* Access to NSX Manager API with privileges
 
 * Access to vSphere Web Client and Privileges (Read)
 
@@ -41,6 +41,9 @@ Optional Pre-Requisites:
 * GIT (optional) [https://git-scm.com/]
 * MS VISIO (optional - some feature wont work if not installed) [https://www.microsoft.com/en-us/evalcenter/evaluate-visio-professional-2016]
 
+## Install via git:
+    git clone https://gitlab.com/VMware-NSBU-SAS/NSX-PowerOps.git
+    
 
 ## Notes:
 * For PowerCLI to work correctly: 'Set-ExecutionPolicy RemoteSigned' in powercli
