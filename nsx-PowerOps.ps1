@@ -115,9 +115,9 @@ function documentationkMenu($sectionNumber){
     elseif ($documentationSectionNumber -eq 1){$allNSXComponentData = getNSXComponents($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 2){getHostInformation($documentationSectionNumber)}
     elseif ($documentationSectionNumber -eq 3){runNSXVISIOTool($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 4){importLogInSightDashBoard($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 5){getRoutingInformation($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 6){runDFW2Excel($documentationSectionNumber)}
+#    elseif ($documentationSectionNumber -eq 4){importLogInSightDashBoard($documentationSectionNumber)}
+    elseif ($documentationSectionNumber -eq 4){getRoutingInformation($documentationSectionNumber)}
+    elseif ($documentationSectionNumber -eq 5){runDFW2Excel($documentationSectionNumber)}
     #elseif ($documentationSectionNumber -eq 7){runDFWVAT($documentationSectionNumber)}
     
     elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
@@ -989,14 +989,14 @@ function printDocumentationMenu{
     Write-Host (" " * $ScreenSize) "* |-> 1) Document all NSX Components                     *"
     Write-Host (" " * $ScreenSize) "* |-> 2) Document ESXi Host(s) Info                      *"
     Write-Host (" " * $ScreenSize) "* |-> 3) Document NSX Environment Diagram via VISIO Tool *"
-    Write-Host (" " * $ScreenSize) "* |-> 4) Import vRealize Log Insight Dashboard           *"
+#    Write-Host (" " * $ScreenSize) "* |-> 4) Import vRealize Log Insight Dashboard           *"
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* Networking Documentation                               *"
-    Write-Host (" " * $ScreenSize) "* |-> 5) Document Routing info                           *"
+    Write-Host (" " * $ScreenSize) "* |-> 4) Document Routing info                           *"
 #    Write-Host (" " * $ScreenSize) "* |-> 6) Document VxLAN info                             *"
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* Security Documentation                                 *"
-    Write-Host (" " * $ScreenSize) "* |-> 6) Document NSX DFW info to Excel - DFW2Excel      *"
+    Write-Host (" " * $ScreenSize) "* |-> 5) Document NSX DFW info to Excel - DFW2Excel      *"
 #    Write-Host (" " * $ScreenSize) "* |-> 7) Document DFW-VAT                                *"
     Write-Host (" " * $ScreenSize) "*                                                        *"
     Write-Host (" " * $ScreenSize) "* 0) Exit Documentation Menu                             *"
