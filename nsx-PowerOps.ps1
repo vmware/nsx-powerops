@@ -1018,7 +1018,7 @@ function printHealthCheckMenu{
     Write-Host (" " * $ScreenSize) "* 4) NSX Logical Switch Test            *"
     Write-Host (" " * $ScreenSize) "* 5) NSX Distributed Firewall Heap Test *"
     Write-Host (" " * $ScreenSize) "*                                       *"
-    Write-Host (" " * $ScreenSize) "* 6) Check VDR Instance                 *"
+    Write-Host (" " * $ScreenSize) "* 6) Check DLR Instance                 *"
     Write-Host (" " * $ScreenSize) "* 7) Check VIB Version                  *"
     Write-Host (" " * $ScreenSize) "* 8) Check vTEP to vTEP connectivity    *"
     Write-Host (" " * $ScreenSize) "*                                       *"
