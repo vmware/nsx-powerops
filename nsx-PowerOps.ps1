@@ -45,11 +45,16 @@ import-module Pester
     $global:listOfNSXPrepHosts=@()
     $global:nsxManagerAuthorization = ''
 
-#Install PowerNSX here
-function installPowerNSX($sectionNumber){
-    $userSelection = "Install PowerNSX"
+#Install Dependencies here
+function installDependencies($sectionNumber){
+    $userSelection = "Install Dependencies"
     Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now executing '$userSelection'..."\
-    $Branch="v2";$url="https://raw.githubusercontent.com/vmware/powernsx/$Branch/PowerNSXInstaller.ps1"; try { $wc = new-object Net.WebClient;$scr = try { $wc.DownloadString($url)} catch { if ( $_.exception.innerexception -match "(407)") { $wc.proxy.credentials = Get-Credential -Message "Proxy Authentication Required"; $wc.DownloadString($url) } else { throw $_ }}; $scr | iex } catch { throw $_ }
+    Install-Module -Name PowerNSX -RequiredVersion 3.0.1012
+    Write-Host -ForegroundColor DarkGreen "Finished installing PowerNSX. Now installing Pester."
+    Install-Module -Name Pester
+    Write-Host -ForegroundColor DarkGreen "Finished installing Pester. Now Installing Posh-SSH."
+    Install-Module -Name Posh-SSH
+    Write-Host -ForegroundColor DarkGreen "Finished installing Posh-SSH."
     printMainMenu
 }
 
@@ -268,16 +273,16 @@ function getHostInformation($sectionNumber){
         get-cluster -Server $NSXConnection.ViConnection | %{ if ($_.id -eq $myParentClusterID){
             get-cluster $_ | Get-NsxClusterStatus | %{ if($_.featureId -eq "com.vmware.vshield.vsm.vxlan" -And $_.installed -eq "true"){
                     try{
-						$vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
-						$myVDSName = $vdsInfo.VDSName
-						$sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
-						$sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
-						$sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
-						$sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
+                        $vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
+                        $myVDSName = $vdsInfo.VDSName
+                        $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
+                        $sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
+                        $sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
+                        $sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
 
-						$vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
-						$myVmknicName = $vmknicInfo.VmknicName
-						$sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
+                        $vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
+                        $myVmknicName = $vmknicInfo.VmknicName
+                        $sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
                         $tempCountVMKnic = 0
                         if ($vdsInfo.VmknicCount -gt 1){
                             $myVmknicName | %{
@@ -292,13 +297,13 @@ function getHostInformation($sectionNumber){
                             $sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
                             $sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
                         }
-						$gotVXLAN = $true
-					}catch{$ErrorMessage = $_.Exception.Message
-						if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
-							Write-Host " Warning: No VxLAN data found on this Host $myHostName" -ForegroundColor Red
-							$gotVXLAN = $false
-						}else{Write-Host $ErrorMessage}
-					}
+                        $gotVXLAN = $true
+                    }catch{$ErrorMessage = $_.Exception.Message
+                        if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
+                            Write-Host " Warning: No VxLAN data found on this Host $myHostName" -ForegroundColor Red
+                            $gotVXLAN = $false
+                        }else{Write-Host $ErrorMessage}
+                    }
             }}
         }}
         if($gotVXLAN -eq $false){
@@ -966,7 +971,7 @@ function printMainMenu{
     Write-Host (" " * $ScreenSize) "**        PowerOps Main Menu         **"
     Write-Host (" " * $ScreenSize) "***************************************"
     Write-Host (" " * $ScreenSize) "*                                     *"
-    Write-Host (" " * $ScreenSize) "* 1) Install PowerNSX                 *"
+    Write-Host (" " * $ScreenSize) "* 1) Install Dependencies             *"
     Write-Host (" " * $ScreenSize) "* 2) Connect NSX Manager & vCenter    *"
     Write-Host (" " * $ScreenSize) "* 3) Show Documentation Menu          *"
     Write-Host (" " * $ScreenSize) "* 4) Show Health Check Menu           *"
@@ -1079,7 +1084,7 @@ while($true)
     #elseif ($sectionNumber -eq "clear"){clear-host | printMainMenu}
     elseif ($sectionNumber -eq "clear"){clx | printMainMenu}
 
-    elseif ($sectionNumber -eq 1){installPowerNSX($sectionNumber)}
+    elseif ($sectionNumber -eq 1){installDependencies($sectionNumber)}
     elseif ($sectionNumber -eq 2){connectNSXManager($sectionNumber)}
     elseif ($sectionNumber -eq 3){documentationkMenu($sectionNumber)}
     elseif ($sectionNumber -eq 4){healthCheckMenu($sectionNumber)}
