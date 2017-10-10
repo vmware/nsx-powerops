@@ -141,7 +141,7 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.Name = $titleFontName
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
+    #$excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor+1) = $fromHost
 
     $global:excelRowCursor++
@@ -151,7 +151,7 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.Name = $titleFontName
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
+    #$excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor+1) = $fromVMKnic
     $global:excelRowCursor++
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = " Pinging From VMKnic IP:"
@@ -160,7 +160,7 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.Name = $titleFontName
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
+    #$excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor+1) = $vmknicIPToPingFrom
     $global:excelRowCursor++
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = " Ping MTU Size is:"
@@ -169,7 +169,7 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.Name = $titleFontName
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
+    #$excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor+1) = $MTUSize
     $global:excelRowCursor++
 
@@ -263,27 +263,25 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Name = $titleFontName
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
+    #$summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor+1) = $global:totalPings
     $global:summaryExcelRowCursor++
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Tests Passed:"
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Number of Ping Tests:"
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Size = $titleFontSize
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Bold = $titleFontBold
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Name = $titleFontName
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
+    #$summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor+1) = $global:totalPings-$global:totalFailedPings
     $global:summaryExcelRowCursor++
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Test Failed:"
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Number of Ping Tests:"
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Size = $titleFontSize
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Bold = $titleFontBold
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Name = $titleFontName
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
+    #$summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor+1) = $global:totalFailedPings
     $global:summaryExcelRowCursor++
 
@@ -292,7 +290,6 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = "List of Failed Ping(s)"
     $global:summaryExcelRowCursor++
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = "From Host"
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Number of Ping Tests:"
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Size = $titleFontSize
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Bold = $titleFontBold
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
@@ -301,7 +298,6 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $global:summaryExcelColumnCursor++
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = "From VMKnic"
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Number of Ping Tests:"
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Size = $titleFontSize
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Bold = $titleFontBold
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
@@ -310,7 +306,6 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $global:summaryExcelColumnCursor++
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = "From IP"
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Number of Ping Tests:"
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Size = $titleFontSize
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Bold = $titleFontBold
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
@@ -319,7 +314,6 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $global:summaryExcelColumnCursor++
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = "To IP"
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Number of Ping Tests:"
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Size = $titleFontSize
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Bold = $titleFontBold
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
@@ -328,7 +322,6 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $global:summaryExcelColumnCursor++
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = "To VMKnic"
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Number of Ping Tests:"
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Size = $titleFontSize
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Bold = $titleFontBold
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
@@ -337,7 +330,6 @@ function checkVMKNICPing($fromHost, $fromVMKnic, $MTUSize, $hostCredentails=$Nul
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $global:summaryExcelColumnCursor++
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = "To Host"
-    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Number of Ping Tests:"
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Size = $titleFontSize
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Bold = $titleFontBold
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
