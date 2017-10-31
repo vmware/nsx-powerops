@@ -6,9 +6,11 @@
 
 Required Pre-Requisites:
 
-* PowerShell 5.0
+* PowerShell 5.1 [KB3191564: https://support.microsoft.com/en-us/help/3191564/update-for-windows-management-framework-5-1-for-windows-8-1-and-window]
 
-* VMware PowerCLI 6.5.2 [https://www.vmware.com/support/developer/PowerCLI/]
+* VMware PowerCLI 6.5.2 [https://code.vmware.com/tool/vsphere-powercli/6.5.2]
+    * `install-module -name vmware.powercli`
+    * [Only if needed] `Install-Module -Name VMware.VimAutomation.Sdk`
 
 * Microsoft Excel installed on the local system (tested on Office 365) [https://products.office.com/en-us/excel]
 
