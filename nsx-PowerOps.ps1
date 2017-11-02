@@ -49,7 +49,7 @@ import-module Pester
 function installDependencies($sectionNumber){
     $userSelection = "Install Dependencies"
     Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now executing '$userSelection'..."\
-    Install-Module -Name PowerNSX -RequiredVersion 3.0.1012
+    Install-Module -Name PowerNSX
     Write-Host -ForegroundColor DarkGreen "Finished installing PowerNSX. Now installing Pester."
     Install-Module -Name Pester
     Write-Host -ForegroundColor DarkGreen "Finished installing Pester. Now Installing Posh-SSH."
