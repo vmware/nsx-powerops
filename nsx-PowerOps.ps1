@@ -237,9 +237,9 @@ function getHostInformation($sectionNumber){
     $userSelection = "Get List of Hosts"
     Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now executing '$userSelection'..."
     #$vmHosts = get-vmhost
-    getNSXPrepairedHosts
+    getNSXPreparedHosts
     $vmHosts = $global:listOfNSXPrepHosts
-    Write-Host " Number of NSX Prepaired vmHosts are:" $vmHosts.length
+    Write-Host " Number of NSX prepared vmHosts are:" $vmHosts.length
 
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "ESXi-Hosts-Excel"
@@ -702,7 +702,7 @@ function startSSHSession($serverToConnectTo, $credentialsToUse){
 }
 
 
-function getNSXPrepairedHosts() {
+function getNSXPreparedHosts() {
     $allEnvClusters = get-cluster -Server $NSXConnection.ViConnection | %{
         $nsxCluster = $_
         get-cluster $_ | Get-NsxClusterStatus | %{
@@ -1050,7 +1050,7 @@ Write-Host "`n"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 Write-Host (" " * $ScreenSize) "~~                 Welcome to PowerOps                   ~~"
-Write-Host (" " * $ScreenSize) "~~                A project by SA Team                   ~~"
+Write-Host (" " * $ScreenSize) "~~            A project by the NSBU SA Team              ~~"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 Write-Host (" " * $ScreenSize) "~ Note: Please run this script in VMware PowerCLI.        ~"
@@ -1063,7 +1063,7 @@ printMainMenu
 
 while($true)
 {
-    Write-Host "`n>> Please select an PowerOps option: " -ForegroundColor DarkGreen -NoNewline
+    Write-Host "`n>> Please select a PowerOps option: " -ForegroundColor DarkGreen -NoNewline
     $sectionNumber = Read-Host
 
     if ($sectionNumber -eq 0 -or $sectionNumber -eq "exit"){
