@@ -38,7 +38,7 @@
 #TODO: start visio minimised (performance)
 #TODO: implement object type specific explusion (and inclusion?) regex as per discussion with KO
 
-
+[CmdletBinding(DefaultParameterSetName="GoodSwitch")]
 Param (
 
 	[parameter ( Mandatory = $true, Position = 1 )]
@@ -48,8 +48,10 @@ Param (
 		[string]$OutputDir = $([system.Environment]::GetFolderPath('MyDocuments')),
 	[parameter ( Mandatory = $false )]
 		[switch]$IgnoreLinkLocal = $true,
-	[Parameter (Mandatory = $false )]
+	[Parameter (Mandatory = $false, ParameterSetName = "BadSwitch" )]
 		[switch]$IncludeVms = $true,
+	[Parameter (Mandatory = $false, ParameterSetName = "GoodSwitch" )]
+		[switch]$NoVms,
 	[Parameter (Mandatory = $false)]
 		[string]$TenantRegex,
 	[Parameter (Mandatory = $False)]
@@ -234,6 +236,10 @@ write-host -ForeGroundColor Green "PowerNSX Object Diagram Script"
 
 ###################
 # Init and Validate
+
+if ( $NoVms ) { 
+	$IncludeVms = $false
+}
 
 if ( -not ( test-path $CaptureBundle )) {
 

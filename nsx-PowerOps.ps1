@@ -391,7 +391,7 @@ function runNSXVISIOTool($sectionNumber){
     ##Write-Host "`n Capture Path is: $capturePath"
     #$pathVISIO = Read-Host -Prompt " Please provide the above .zip file path to generate the VISIO file"
     #$visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -CaptureBundle " + $pathVISIO
-    $visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -includevms:$false -CaptureBundle " + $capturePath
+    $visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -NoVms -CaptureBundle " + $capturePath
     ##Write-Host "DiagramCommand is: $visioDiagramCommand"
     invoke-expression -Command $visioDiagramCommand
     documentationkMenu(22)
