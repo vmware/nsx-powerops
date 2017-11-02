@@ -109,7 +109,7 @@ function connectNSXManager($sectionNumber){
 }
 
 #---- Get Documentation Menu here ----#
-function documentationkMenu($sectionNumber){    
+function documentationMenu($sectionNumber){    
     if ($sectionNumber -eq 3){clx | printDocumentationMenu}
     Write-Host "`n>> Please select a Documentation Menu option: " -ForegroundColor Darkyellow -NoNewline 
     $documentationSectionNumber = Read-Host
@@ -125,7 +125,7 @@ function documentationkMenu($sectionNumber){
     elseif ($documentationSectionNumber -eq 5){runDFW2Excel($documentationSectionNumber)}
     #elseif ($documentationSectionNumber -eq 7){runDFWVAT($documentationSectionNumber)}
     
-    elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
+    elseif ($documentationSectionNumber -eq "help"){documentationMenu(3)}
     elseif ($documentationSectionNumber -eq "clear"){documentationkMenu(3)}
     elseif ($documentationSectionNumber -eq ''){documentationkMenu(22)}
     else { Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
@@ -229,7 +229,7 @@ function getNSXComponents($sectionNumber){
     $global:newExcel.Quit()
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
     #Loop back to document Menu
-    documentationkMenu(22) #Keep in Documentation Menu
+    documentationMenu(22) #Keep in Documentation Menu
 }
 
 #Get Host info here
@@ -381,7 +381,7 @@ function getHostInformation($sectionNumber){
     $global:newExcel.Workbooks.Close()
     $global:newExcel.Quit()
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
-    documentationkMenu(22)
+    documentationMenu(22)
 }
 
 #Run visio tool
@@ -394,7 +394,7 @@ function runNSXVISIOTool($sectionNumber){
     $visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -includevms:$false -CaptureBundle " + $capturePath
     ##Write-Host "DiagramCommand is: $visioDiagramCommand"
     invoke-expression -Command $visioDiagramCommand
-    documentationkMenu(22)
+    documentationMenu(22)
 }
 
 #Download Log Insite's Dashboard
@@ -614,7 +614,7 @@ function getRoutingInformation($sectionNumber){
     $global:newExcel.Quit()
     $tempTXTFileNamesList | %{ Remove-Item ./$_}
     Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
-    documentationkMenu(22)
+    documentationMenu(22)
 }
 
 <#
@@ -634,7 +634,7 @@ function getVXLANInformation($sectionNumber){
         $allVXLANExcelData.Add($eachEdge.name, $tempEdgeInterfaceValueArray)
         $plotNSXInterfaceExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxVXLANExcelWorkBook -workSheetName $eachEdge.name -listOfDataToPlot $allVXLANExcelData     
     }
-    documentationkMenu(22)
+    documentationMenu(22)
 }
 #>
 
@@ -642,7 +642,7 @@ function getVXLANInformation($sectionNumber){
 function runDFW2Excel($sectionNumber){
     Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now documenting DFW to excel file..."
     invoke-expression -Command .\PowerNSX-DFW2Excel\DFW2Excel.ps1
-    documentationkMenu(22)
+    documentationMenu(22)
 }
 
 
@@ -652,7 +652,7 @@ function runDFWVAT($sectionNumber){
     Write-Host "Need python2.7 to run DFW-VAT. Currently disabled."
     #invoke DFW_VAT subgit folder here...
     #invoke-expression -Command .\PowerNSX-Scripts\DFW2Excel.ps1
-    documentationkMenu(22)
+    documentationMenu(22)
 }
 
 
@@ -1086,7 +1086,7 @@ while($true)
 
     elseif ($sectionNumber -eq 1){installDependencies($sectionNumber)}
     elseif ($sectionNumber -eq 2){connectNSXManager($sectionNumber)}
-    elseif ($sectionNumber -eq 3){documentationkMenu($sectionNumber)}
+    elseif ($sectionNumber -eq 3){documentationMenu($sectionNumber)}
     elseif ($sectionNumber -eq 4){healthCheckMenu($sectionNumber)}
     elseif ($sectionNumber -eq 5){nsxUpdateCheckReport($sectionNumber)}
     #elseif ($sectionNumber -eq 'test'){testFunction}
