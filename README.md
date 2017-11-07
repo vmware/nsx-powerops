@@ -1,20 +1,14 @@
 Copyright © 2017 VMware, Inc. All Rights Reserved.
 SPDX-License-Identifier: MIT
+# NSX PowerOps - An NSX-v Operationalization Project </h1>
 
-# NSX PowerOps - An NSX-v Operationalization Project
-
-## Overview
-
-## Releases & Major Branches
-
+### Releases & Major Branches
 Current version: BETA
 
-## Documentation
-
+### Documentation
 http://www.vcdx248.com/
 
-## Prerequisites
-
+### Prerequisites
 Required Pre-Requisites:
 
 * Prereq 1: PowerShell 5.1 [KB3191564: https://support.microsoft.com/en-us/help/3191564/update-for-windows-management-framework-5-1-for-windows-8-1-and-window]
@@ -63,12 +57,10 @@ Optional Pre-Requisites:
 * MS VISIO (optional - some feature wont work if not installed) [https://www.microsoft.com/en-us/evalcenter/evaluate-visio-professional-2016]
 * GIT (optional) [https://git-scm.com/]
 
-## Download via git
-
+### Download via git
     git clone https://github.com/vmware/nsx-powerops.git    
 
-## Build & Run
-
+### Build & Run
 * For PowerCLI to work correctly: 'Set-ExecutionPolicy RemoteSigned' in powercli
 Step 1: Run the ./nsx-PowerOps.ps1 in PowerShell terminal [tested on VMware PowerCLI 6.5.2]
 
@@ -80,15 +72,13 @@ Step 3: Install NSX PowerOps depedency (PowerNSX, Pester, Posh-SSH) by selecting
 
 Step 4: Connect with NSX Manager and vCenter by selecting option # 2
 
-## Contributing
-
+### Contributing
 The nsx-powerops project team welcomes contributions from the community. If you wish to contribute code and you have not
 signed our contributor license agreement (CLA), our bot will update the issue when you open a Pull Request. For any
 questions about the CLA process, please refer to our [FAQ](https://cla.vmware.com/faq). For more detailed information,
 refer to [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## License
-
+### License
 NSX Power Operations
 
 Copyright 2017 VMware, Inc.  All rights reserved				
@@ -104,8 +94,7 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-## Notice
-
+### Notice
 NSX Power Operations
 
 Copyright (c) 2017 VMware, Inc. All Rights Reserved. 
@@ -114,6 +103,5 @@ This product is licensed to you under the MIT license (the "License").  You may 
 
 This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file. 
 
-## Contact Info
-
+### Contact Info
 Puneet Chawla (cpuneet@vmware.com) and Hammad Alam (halam@vmware.com)
