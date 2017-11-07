@@ -1,0 +1,10 @@
+README.md
+ListOfAllHost.txt
+*.xml
+*.txt
+*.zip
+execute-Request.ps1
+old-HealthCheck-old/
+vdrPort_check-original.ps1
+esxcli-powerShell.ps1
+noGitFiles
