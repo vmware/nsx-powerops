@@ -1,39 +1,30 @@
 Copyright © 2017 VMware, Inc. All Rights Reserved.
 SPDX-License-Identifier: MIT
 
-==================================================================
-# NSX PowerOps - An NSX-v Operationalization Project #
-==================================================================
+# NSX PowerOps - An NSX-v Operationalization Project
 
 ## Overview
 
 
-### Prerequisites
+## Prerequisites
 
 Required Pre-Requisites:
 
-* Prereq 1
-* PowerShell 5.1 [KB3191564: https://support.microsoft.com/en-us/help/3191564/update-for-windows-management-framework-5-1-for-windows-8-1-and-window]
+* Prereq 1: PowerShell 5.1 [KB3191564: https://support.microsoft.com/en-us/help/3191564/update-for-windows-management-framework-5-1-for-windows-8-1-and-window]
 
-* Prereq 2
-* VMware PowerCLI 6.5.2 [https://code.vmware.com/tool/vsphere-powercli/6.5.2]
+* Prereq 2: VMware PowerCLI 6.5.2 [https://code.vmware.com/tool/vsphere-powercli/6.5.2]
     * `install-module -name vmware.powercli`
     * [Only if needed] `Install-Module -Name VMware.VimAutomation.Sdk`
 
-* Prereq 3
-* Microsoft Excel installed on the local system (tested on Office 365) [https://products.office.com/en-us/excel]
+* Prereq 3: Microsoft Excel installed on the local system (tested on Office 365) [https://products.office.com/en-us/excel]
 
-* Prereq 4
-* Access to NSX Manager API with privileges (min Read)
+* Prereq 4: Access to NSX Manager API with privileges (min Read)
 
-* Prereq 5
-* Access to vSphere Web Client and Privileges (min Read)
+* Prereq 5: Access to vSphere Web Client and Privileges (min Read)
 
-* Prereq 6
-* VMware PowerNSX 3.0.1012 (NSX PowerOps automatically install this module)
+* Prereq 6: VMware PowerNSX 3.0.1012 (NSX PowerOps automatically install this module)
 
-* Prereq 7
-* Pester (NSX PowerOps automatically install this module)
+* Prereq 7: Pester (NSX PowerOps automatically install this module)
 
         Pester - PowerShell's Testing Framework Module - Manual Install Steps:
         [http://www.powershellmagazine.com/2014/03/12/get-started-with-pester-powershell-unit-testing-framework/]
@@ -45,8 +36,7 @@ Required Pre-Requisites:
                 * Import-Module Pester
                 * Get-Module -Name Pester | Select -ExpandProperty ExportedCommands
 
-* Prereq 8
-* Posh-SSH (NSX PowerOps automatically install this module)
+* Prereq 8: Posh-SSH (NSX PowerOps automatically install this module)
 
         Posh-SSH - PowerShell's SSH Module - Manual Install Steps:
         * Option 1:
@@ -67,24 +57,19 @@ Optional Pre-Requisites:
 * GIT (optional) [https://git-scm.com/]
 
 ## Download via git:
-    git clone https://github.com/vmware/nsx-powerops.git
-    
+    git clone https://github.com/vmware/nsx-powerops.git    
 
 ### Build & Run:
 * For PowerCLI to work correctly: 'Set-ExecutionPolicy RemoteSigned' in powercli
-1. Step 1
-* Run the nsx-PowerOps.ps1 in PowerShell [tested on VMware PowerCLI 6.5.2]
+1. Step 1: Run the ./nsx-PowerOps.ps1 in PowerShell terminal [tested on VMware PowerCLI 6.5.2]
 
-2. Step 2
-* When in nsx-PowerOps.ps1:
+2. Step 2: When in nsx-PowerOps.ps1:
     * To get the list of available commands type 'help'
     * To exit type 'exit' or '0'
 
-3. Step 3
-* Install NSX PowerOps depedency (PowerNSX, Pester, Posh-SSH) by selecting option # 1
+3. Step 3: Install NSX PowerOps depedency (PowerNSX, Pester, Posh-SSH) by selecting option # 1
 
-4. Step 4
-* Connect with NSX Manager and vCenter by selecting option # 2
+4. Step 4: Connect with NSX Manager and vCenter by selecting option # 2
 
 ## Documentation
 http://www.vcdx248.com/
