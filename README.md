@@ -5,6 +5,13 @@ SPDX-License-Identifier: MIT
 
 ## Overview
 
+## Releases & Major Branches
+
+Current version: BETA
+
+## Documentation
+
+http://www.vcdx248.com/
 
 ## Prerequisites
 
@@ -56,26 +63,22 @@ Optional Pre-Requisites:
 * MS VISIO (optional - some feature wont work if not installed) [https://www.microsoft.com/en-us/evalcenter/evaluate-visio-professional-2016]
 * GIT (optional) [https://git-scm.com/]
 
-## Download via git:
+## Download via git
+
     git clone https://github.com/vmware/nsx-powerops.git    
 
-### Build & Run:
-* For PowerCLI to work correctly: 'Set-ExecutionPolicy RemoteSigned' in powercli
-1. Step 1: Run the ./nsx-PowerOps.ps1 in PowerShell terminal [tested on VMware PowerCLI 6.5.2]
+## Build & Run
 
-2. Step 2: When in nsx-PowerOps.ps1:
+* For PowerCLI to work correctly: 'Set-ExecutionPolicy RemoteSigned' in powercli
+Step 1: Run the ./nsx-PowerOps.ps1 in PowerShell terminal [tested on VMware PowerCLI 6.5.2]
+
+Step 2: When in nsx-PowerOps.ps1:
     * To get the list of available commands type 'help'
     * To exit type 'exit' or '0'
 
-3. Step 3: Install NSX PowerOps depedency (PowerNSX, Pester, Posh-SSH) by selecting option # 1
+Step 3: Install NSX PowerOps depedency (PowerNSX, Pester, Posh-SSH) by selecting option # 1
 
-4. Step 4: Connect with NSX Manager and vCenter by selecting option # 2
-
-## Documentation
-http://www.vcdx248.com/
-
-## Releases & Major Branches
-Current version: BETA
+Step 4: Connect with NSX Manager and vCenter by selecting option # 2
 
 ## Contributing
 
@@ -111,4 +114,6 @@ This product is licensed to you under the MIT license (the "License").  You may 
 
 This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file. 
 
-### Contact Info: cpuneet@vmware.com (Puneet Chawla) and halam@vmware.com (Hammad Alam)
+## Contact Info
+
+Puneet Chawla (cpuneet@vmware.com) and Hammad Alam (halam@vmware.com)
