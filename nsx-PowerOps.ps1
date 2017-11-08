@@ -1,6 +1,29 @@
+<#
+Copyright © 2017 VMware, Inc. All Rights Reserved. 
+SPDX-License-Identifier: MIT
+
+NSX Power Operations
+
+Copyright 2017 VMware, Inc.  All rights reserved				
+
+The MIT license (the ìLicenseî) set forth below applies to all parts of the NSX Power Operations project.  You may not use this file except in compliance with the License.†
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
+to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#>
+
 # *-------------------------------------------* #
 # ********************************************* #
-#      VMware NSX PowerOps by @thisispuneet       #
+#      VMware NSX PowerOps by @thisispuneet     #
 # This script automate NSX-v day 2 Operations   #
 # and help build the env networking documents   #
 # ********************************************* #
@@ -181,6 +204,8 @@ function getNSXComponents($sectionNumber){
 
     $nsxManagerSummary = Get-NsxManagerSystemSummary
     $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
+	$nsxManagerRole = Get-NsxManagerRole
+	
     #Write-Host "Controller ID is:"$nsxControllers[0].id
     <# Example of the code to cherrypick dic elements to plot on documentation excel.
     $allNSXComponentExcelData = @{"NSX Controllers Info" = $nsxControllers, "objectTypeName", "revision", "clientHandle", "isUniversal", "universalRevision", "id", "ipAddress", "status", "upgradeStatus", "version", "upgradeAvailable", "virtualMachineInfo", "hostInfo", "resourcePoolInfo", "clusterInfo", "managedBy", "datastoreInfo", "controllerClusterStatus", "diskLatencyAlertDetected", "vmStatus"; 
@@ -188,9 +213,8 @@ function getNSXComponents($sectionNumber){
     "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "ipAddress", "userName", "certificateThumbprint", "assignRoleToUser", "vcInventoryLastUpdateTime", "Connected";
     "NSX Edge Info" = $nsxEdges, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "vnics", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "hypervisorAssist", "queryDaemon", "edgeSummary";
     "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
-    #>
-    $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"}
-    
+	#>
+	$allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"}
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "NSX-Components-Excel"
     $nsxComponentExcelWorkBook = createNewExcel($excelName)
