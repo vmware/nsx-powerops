@@ -1,4 +1,5 @@
-﻿Copyright © 2017 VMware, Inc. All Rights Reserved. 
+﻿<#
+Copyright © 2017 VMware, Inc. All Rights Reserved. 
 SPDX-License-Identifier: MIT
 
 #VMware NSX Healthcheck test
@@ -6,7 +7,6 @@ SPDX-License-Identifier: MIT
 #Nick Bradford
 #nbradford@vmware.com
 
-<#
 NSX Power Operations
 
 Copyright 2017 VMware, Inc.  All rights reserved				

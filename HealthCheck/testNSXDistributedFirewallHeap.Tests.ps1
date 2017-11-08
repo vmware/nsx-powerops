@@ -1,3 +1,4 @@
+<#
 Copyright © 2017 VMware, Inc. All Rights Reserved. 
 SPDX-License-Identifier: MIT
 
@@ -6,7 +7,6 @@ SPDX-License-Identifier: MIT
 #a: Anthony Burke - @pandom_
 #c: (dcoghland for original idea and initial code, nbradford for sanity checks)
 
-<#
 NSX Power Operations
 
 Copyright 2017 VMware, Inc.  All rights reserved				

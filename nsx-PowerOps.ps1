@@ -1,7 +1,7 @@
+<#
 Copyright © 2017 VMware, Inc. All Rights Reserved. 
 SPDX-License-Identifier: MIT
 
-<#
 NSX Power Operations
 
 Copyright 2017 VMware, Inc.  All rights reserved				

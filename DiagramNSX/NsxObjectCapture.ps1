@@ -1,3 +1,4 @@
+<#
 Copyright © 2017 VMware, Inc. All Rights Reserved. 
 SPDX-License-Identifier: MIT
 
@@ -6,7 +7,6 @@ SPDX-License-Identifier: MIT
 #nbradford@vmware.com
 #Version 0.1
 
-<#
 NSX Power Operations
 
 Copyright 2017 VMware, Inc.  All rights reserved				
