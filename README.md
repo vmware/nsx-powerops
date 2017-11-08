@@ -2,6 +2,9 @@ Copyright © 2017 VMware, Inc. All Rights Reserved.
 SPDX-License-Identifier: MIT
 # NSX PowerOps - An NSX-v Operationalization Project </h1>
 
+### Overview
+NSX Power Operations (nsx-powerops) is a platform that provides NSX users a way to document their NSX-v environment in Microsoft Excel and Visio files that are easily consumable and referable. The documentation not only captures the Desired State (configuration) but also the Realized State (for example: routing & forwarding tables) across the distributed environment. The platform also embeds rich healthcheck tools.
+
 ### Releases & Major Branches
 Current version: BETA
 
