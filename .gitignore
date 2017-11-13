@@ -8,3 +8,5 @@ old-HealthCheck-old/
 vdrPort_check-original.ps1
 esxcli-powerShell.ps1
 noGitFiles
+Report/*
+config.ps1
