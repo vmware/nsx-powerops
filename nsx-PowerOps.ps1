@@ -205,6 +205,12 @@ function getNSXComponents($sectionNumber){
     $nsxManagerSummary = Get-NsxManagerSystemSummary
     $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
 	$nsxManagerRole = Get-NsxManagerRole
+	$nsxManagerBackup = Get-NsxManagerBackup
+	$nsxManagerNetwork = Get-NsxManagerNetwork
+	$nsxManagerSsoConfig = Get-NsxManagerSsoConfig
+	$nsxManagerSyslogServer = Get-NsxManagerSyslogServer
+	$nsxManagerTimeSettings = Get-NsxManagerTimeSettings
+	$vCenterVersionInfo = $global:DefaultVIServer.ExtensionData.Content.About
 	
     #Write-Host "Controller ID is:"$nsxControllers[0].id
     <# Example of the code to cherrypick dic elements to plot on documentation excel.
@@ -214,7 +220,8 @@ function getNSXComponents($sectionNumber){
     "NSX Edge Info" = $nsxEdges, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "vnics", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "hypervisorAssist", "queryDaemon", "edgeSummary";
     "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
 	#>
-	$allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"}
+	$allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"; "NSX Manager Backup" = $nsxManagerBackup, "all"; "NSX Manager Network" = $nsxManagerNetwork, "all"; "NSX Manager SSO Config" = $nsxManagerSsoConfig, "all"; "NSX Manager Syslog Server" = $nsxManagerSyslogServer, "all"; "NSX Manager Time Settings" =  $nsxManagerTimeSettings, "all"; "vCenter Version" = $vCenterVersionInfo, "all"}
+	
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     $excelName = "NSX-Components-Excel"
     $nsxComponentExcelWorkBook = createNewExcel($excelName)
