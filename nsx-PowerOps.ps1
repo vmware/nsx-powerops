@@ -259,7 +259,8 @@ function getNSXComponents {
     $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"; "NSX Manager Backup" = $nsxManagerBackup, "all"; "NSX Manager Network" = $nsxManagerNetwork, "all"; "NSX Manager SSO Config" = $nsxManagerSsoConfig, "all"; "NSX Manager Syslog Server" = $nsxManagerSyslogServer, "all"; "NSX Manager Time Settings" =  $nsxManagerTimeSettings, "all"; "vCenter Version" = $vCenterVersionInfo, "all"}
 	
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel
-    $currentdocumentpath = "$documentlocation\NSX-Components.xlsx" 
+    
+    $currentdocumentpath = "$documentlocation\NSX-Components-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
     $nsxComponentExcelWorkBook = createNewExcel
     
     ####plotDynamicExcel one workBook at a time
@@ -306,7 +307,7 @@ function getHostInformation {
     # out-event "Number of NSX Prepared vmHosts are: $($vmHosts.length)"
 
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
-    $currentdocumentpath = "$documentlocation\ESXi-Hosts.xlsx" 
+    $currentdocumentpath = "$documentlocation\ESXi-Hosts-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
     $nsxHostExcelWorkBook = createNewExcel
     foreach ($eachVMHost in $vmHosts){
         $esxcli = $eachVMHost | Get-EsxCli -v2
@@ -460,8 +461,7 @@ function getHostInformation {
 
 #Run visio tool
 function runNSXVISIOTool {
-    
-    $capturePath = "$DocumentLocation\NSX-CaptureBundle.zip"
+    $capturePath = "$documentlocation\NSX-CaptureBundle-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.zip" -f (get-date)
     $ObjectDiagram = "$MyDirectory\DiagramNSX\NsxObjectDiagram.ps1"
     $ObjectCapture = "$MyDirectory\DiagramNSX\NsxObjectCapture.ps1"
     $null = &$ObjectCapture -ExportFile $capturePath
@@ -479,7 +479,7 @@ function getRoutingInformation {
     $userSelection = "Get Routing Information"
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
     
-    $currentdocumentpath = "$documentlocation\NSX-Routing.xlsx"
+    $currentdocumentpath = "$documentlocation\NSX-Routing-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
     $nsxRoutingExcelWorkBook = createNewExcel
 
     Write-Progress -Activity "Documenting Routing Information"
@@ -722,7 +722,7 @@ function getVXLANInformation($sectionNumber){
 function runDFW2Excel {
     
     $Dfw2Excel = "$myDirectory\PowerNSX-DFW2Excel\DFW2Excel.ps1"
-    $DocumentPath = "$DocumentLocation\DfwToExcel.xlsx"    
+    $DocumentPath = "$documentlocation\DfwToExcel-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
     &$Dfw2Excel -EnableIpDetection -StartMinimised -DocumentPath $DocumentPath
     
 }
@@ -1147,7 +1147,7 @@ Output Directory: $DocumentLocation
             "Script" = { Show-MenuV2 -menu $HealthCheckMenu }
             "HelpText" = "Displays a menu of PowerOps Healthchecks."
             "Name" = "PowerOps HealthChecks"
-            "Status" = { if ((checkDependancies -ListAvailable $true) -and ($DefaultNSXConnection)) { "MenuEnabled" } else { "Disabled" } }
+            "Status" = { if ((checkDependancies -ListAvailable $true)) { "MenuEnabled" } else { "Disabled" } }
             "Footer" = $footer
             "MainHeader" = $MainHeader
             "Subheader" = $Subheader
