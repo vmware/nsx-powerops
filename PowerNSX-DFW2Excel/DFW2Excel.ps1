@@ -1,31 +1,92 @@
+<#
+Copyright © 2017 VMware, Inc. All Rights Reserved. 
+SPDX-License-Identifier: MIT
+
+NSX Power Operations
+
+Copyright 2017 VMware, Inc.  All rights reserved				
+
+The MIT license (the ìLicenseî) set forth below applies to all parts of the NSX Power Operations project.  You may not use this file except in compliance with the License.†
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
+to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#>
+
 # Author:   Tony Sangha
 # Blog:    tonysangha.com
-# Version:  0.9
+# Version:  1.0
 # PowerCLI v6.0
 # PowerNSX v3.0
 # Purpose: Document NSX for vSphere Distributed Firewall
 
-# Import PowerNSX Module
-import-module PowerNSX
-
-# Import PowerCLI modules, PowerCLI must be installed
-if ( !(Get-Module -Name VMware.VimAutomation.Core -ErrorAction SilentlyContinue) ) {
-    if (Test-Path -Path 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\VMware, Inc.\VMware vSphere PowerCLI' ) {
-        $Regkey = 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\VMware, Inc.\VMware vSphere PowerCLI'
-
-    } else {
-        $Regkey = 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\VMware, Inc.\VMware vSphere PowerCLI'
-    }
-    . (join-path -path (Get-ItemProperty  $Regkey).InstallPath -childpath 'Scripts\Initialize-PowerCLIEnvironment.ps1')
-}
-if ( !(Get-Module -Name VMware.VimAutomation.Core -ErrorAction SilentlyContinue) ) {
-    Write-Host "VMware modules not loaded/unable to load"
-    Exit 99
-}
-
+param (
+    [switch]$EnableIpDetection,
+    [switch]$StartMinimised,
+    [string]$DocumentPath
+)
 # Empty Hash-tables for use with Hyperlinks
 $services_ht = @{}
 $vmaddressing_ht = @{}
+$ipsets_ht = @{}
+$secgrp_ht = @{}
+########################################################
+# Cleanup Excel application object
+# We Need to call this for EVERY VARIABLE that references
+# an excel object.  __EVERY VARIABLE__
+########################################################
+function ReleaseObject {
+    param (
+        $Obj
+    )
+
+    Try {
+        $intRel = 0
+        Do { 
+            $intRel = [System.Runtime.InteropServices.Marshal]::ReleaseComObject($Obj)
+        } While ($intRel -gt  0)
+    }
+    Catch {
+        throw "Error releasing object: $_"
+    }
+    Finally {
+        [System.GC]::Collect()
+       
+    }
+}
+
+########################################################
+# Cleanup Excel application object
+# We Need to call this for EVERY VARIABLE that references
+# an excel object.  __EVERY VARIABLE__
+########################################################
+function ReleaseObject {
+    param (
+        $Obj
+    )
+
+    Try {
+        $intRel = 0
+        Do { 
+            $intRel = [System.Runtime.InteropServices.Marshal]::ReleaseComObject($Obj)
+        } While ($intRel -gt  0)
+    }
+    Catch {
+        throw "Error releasing object: $_"
+    }
+    Finally {
+        [System.GC]::Collect()
+       
+    }
+}
 
 ########################################################
 #  Formatting/Functions Options for Excel Spreadsheet
@@ -54,7 +115,7 @@ $vmaddressing_ht = @{}
 #    Global Parameters
 ########################################################
 
-New-VIProperty -Name VMIPAddress -ObjectType VirtualMachine `
+$null = New-VIProperty -Name VMIPAddress -ObjectType VirtualMachine `
     -ValueFromExtensionProperty 'Summary.Guest.IPAddress' `
     -Force
 
@@ -64,7 +125,9 @@ New-VIProperty -Name VMIPAddress -ObjectType VirtualMachine `
 function startExcel(){
 
     $Excel = New-Object -Com Excel.Application
-    $Excel.visible = $True
+    if ( -not $StartMinimised ) { 
+        $Excel.visible = $True
+    }
     $Excel.DisplayAlerts = $false
     $wb = $Excel.Workbooks.Add()
 
@@ -76,7 +139,8 @@ function startExcel(){
         $ws0.Name = "VM_Info"
         vm_ip_addresses_ws($ws0)
         $usedRange = $ws0.UsedRange
-        $usedRange.EntireColumn.Autofit()
+        $null = $usedRange.EntireColumn.Autofit()
+        ReleaseObject -Obj $ws0
     }
 
     Write-Host "`nRetrieving Services configured in NSX-v." -foregroundcolor "magenta"
@@ -84,56 +148,77 @@ function startExcel(){
     $ws1.Name = "Services"
     services_ws($ws1)
     $usedRange = $ws1.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving Service Groups configured in NSX-v." -foregroundcolor "magenta"
     $ws2 = $wb.WorkSheets.Add()
     $ws2.Name = "Service_Groups"
     service_groups_ws($ws2)
     $usedRange = $ws2.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving MACSETS configured in NSX-v." -foregroundcolor "magenta"
     $ws3 = $wb.WorkSheets.Add()
     $ws3.Name = "MACSETS"
     macset_ws($ws3)
     $usedRange = $ws3.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving IPSETS configured in NSX-v." -foregroundcolor "magenta"
     $ws4 = $wb.WorkSheets.Add()
     $ws4.Name = "IPSETS"
     ipset_ws($ws4)
     $usedRange = $ws4.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving Security Groups configured in NSX-v." -foregroundcolor "magenta"
     $ws5 = $wb.WorkSheets.Add()
     $ws5.Name = "Security_Groups"
     sg_ws($ws5)
     $usedRange = $ws5.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving Security Tags configured in NSX-v." -foregroundcolor "magenta"
     $ws6 = $wb.Worksheets.Add()
     $ws6.Name = "Security_Tags"
     sec_tags_ws($ws6)
     $usedRange = $ws6.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving VMs in DFW Exclusion List" -foregroundcolor "magenta"
     $ws7 = $wb.Worksheets.Add()
     $ws7.Name = "DFW Exclusion list"
     ex_list_ws($ws7)
     $usedRange = $ws7.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving DFW Layer 3 FW Rules" -foregroundcolor "magenta"
     $ws8 = $wb.Worksheets.Add()
     $ws8.Name = "Layer 3 Firewall"
     dfw_ws($ws8)
     $usedRange = $ws8.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
+
+    # Must cleanup manually or excel process wont quit.
+    ReleaseObject -Obj $ws1    
+    ReleaseObject -Obj $ws2
+    ReleaseObject -Obj $ws3    
+    ReleaseObject -Obj $ws4    
+    ReleaseObject -Obj $ws5    
+    ReleaseObject -Obj $ws6    
+    ReleaseObject -Obj $ws7
+    ReleaseObject -Obj $ws8    
+    ReleaseObject -Obj $usedRange
+    
+    if ( $DocumentPath -and (test-path (split-path -parent $DocumentPath))) { 
+        $wb.SaveAs($DocumentPath)
+        $wb.close(0)
+        $Excel.Quit()
+        ReleaseObject -Obj $Excel
+        ReleaseObject -Obj $wb
+        
+    }
+
 }
 
 ########################################################
@@ -250,9 +335,65 @@ function l3_rules($sheet){
 
                     if($source.type -eq "Ipv4Address"){
                         $sheet.Cells.Item($srcRow,8) = $source.value
-                    } elseif($source.type -eq "Ipv6Address") {
+                    } 
+                    elseif($source.type -eq "Ipv6Address") {
                         $sheet.Cells.Item($srcRow,8) = $source.value
-                    } else {
+                    } 
+                    elseif ($source.type -eq "IPSet") {
+                        $result = $ipsets_ht[$source.value]        
+                        if([string]::IsNullOrWhiteSpace($result))
+                        {
+                            $sheet.Cells.Item($srcRow,8) = $source.name
+                            $sheet.Cells.Item($srcRow,9) = $source.value
+                        }
+                        else 
+                        {
+                            $link = $sheet.Hyperlinks.Add(
+                            $sheet.Cells.Item($srcRow,8),
+                            "",
+                            $result,
+                            $source.value,
+                            $source.name)  
+                           $sheet.Cells.Item($srcRow,9) = $source.value
+                        }
+                     }
+                    elseif ($source.type -eq "SecurityGroup") {
+                        $result = $secgrp_ht[$source.value]        
+                        if([string]::IsNullOrWhiteSpace($result))
+                        {
+                            $sheet.Cells.Item($srcRow,8) = $source.name
+                            $sheet.Cells.Item($srcRow,9) = $source.value
+                        }
+                        else 
+                        {
+                            $link = $sheet.Hyperlinks.Add(
+                            $sheet.Cells.Item($srcRow,8),
+                            "",
+                            $result,
+                            $source.value,
+                            $source.name)  
+                           $sheet.Cells.Item($srcRow,9) = $source.value
+                        }
+                     }
+                    elseif ($source.type -eq "VirtualMachine") {
+                        $result = $vmaddressing_ht[$source.value]        
+                        if([string]::IsNullOrWhiteSpace($result))
+                        {
+                            $sheet.Cells.Item($srcRow,8) = $source.name
+                            $sheet.Cells.Item($srcRow,9) = $source.value
+                        }
+                        else 
+                        {
+                            $link = $sheet.Hyperlinks.Add(
+                            $sheet.Cells.Item($srcRow,8),
+                            "",
+                            $result,
+                            $source.value,
+                            $source.name)  
+                           $sheet.Cells.Item($srcRow,9) = $source.value
+                        }
+                     }
+                     else {
                         $sheet.Cells.Item($srcRow,8) = $source.name
                         $sheet.Cells.Item($srcRow,9) = $source.value
                     }
@@ -279,9 +420,65 @@ function l3_rules($sheet){
                     $sheet.Cells.Item($dstRow,11) = $destination.type
                     if($destination.type -eq "Ipv4Address"){
                         $sheet.Cells.Item($dstRow,12) = $destination.value
-                        } elseif($destination.type -eq "Ipv6Address") {
+                        } 
+                    elseif($destination.type -eq "Ipv6Address") {
                             $sheet.Cells.Item($dstRow,12) = $destination.value
-                        } else {
+                        } 
+                    elseif ($destination.type -eq "IPSet") {
+                        $result = $ipsets_ht[$destination.value]        
+                        if([string]::IsNullOrWhiteSpace($result))
+                        {
+                            $sheet.Cells.Item($dstRow,12) = $destination.name
+                            $sheet.Cells.Item($dstRow,13) = $destination.value
+                        }
+                        else 
+                        {
+                            $link = $sheet.Hyperlinks.Add(
+                            $sheet.Cells.Item($dstRow,12),
+                            "",
+                            $result,
+                            $destination.value,
+                            $destination.name)  
+                           $sheet.Cells.Item($dstRow,13) = $destination.value
+                        }
+                     }
+                    elseif ($destination.type -eq "VirtualMachine") {
+                        $result = $vmaddressing_ht[$destination.value]        
+                        if([string]::IsNullOrWhiteSpace($result))
+                        {
+                            $sheet.Cells.Item($dstRow,12) = $destination.name
+                            $sheet.Cells.Item($dstRow,13) = $destination.value
+                        }
+                        else 
+                        {
+                            $link = $sheet.Hyperlinks.Add(
+                            $sheet.Cells.Item($dstRow,12),
+                            "",
+                            $result,
+                            $destination.value,
+                            $destination.name)  
+                           $sheet.Cells.Item($dstRow,13) = $destination.value
+                        }
+                     }
+                    elseif ($destination.type -eq "SecurityGroup") {
+                        $result = $secgrp_ht[$destination.value]        
+                        if([string]::IsNullOrWhiteSpace($result))
+                        {
+                            $sheet.Cells.Item($dstRow,12) = $destination.name
+                            $sheet.Cells.Item($dstRow,13) = $destination.value
+                        }
+                        else 
+                        {
+                            $link = $sheet.Hyperlinks.Add(
+                            $sheet.Cells.Item($dstRow,12),
+                            "",
+                            $result,
+                            $destination.value,
+                            $destination.name)  
+                           $sheet.Cells.Item($dstRow,13) = $destination.value
+                        }
+                     }                     
+                     else {
                             $sheet.Cells.Item($dstRow,12) = $destination.name
                             $sheet.Cells.Item($dstRow,13) = $destination.value
                         }
@@ -303,7 +500,23 @@ function l3_rules($sheet){
                         $sheet.Cells.Item($svcRow,14) = $service.protocolName + "/" + $service.destinationPort
                     }
                     else {
-                        $sheet.Cells.Item($svcRow,14) = $service.name
+                        # $sheet.Cells.Item($svcRow,14) = $service.name
+                        $result = $services_ht[$service.value]        
+                        if([string]::IsNullOrWhiteSpace($result))
+                        {
+                             $sheet.Cells.Item($svcRow,14) = $service.name
+                             # $svcRow++ # Increment Rows
+                        }
+                        else 
+                        {
+                            $link = $sheet.Hyperlinks.Add(
+                            $sheet.Cells.Item($svcRow,14),
+                            "",
+                            $result,
+                            $service.value,
+                            $service.name)  
+                            # $svcRow++ # Increment Rows
+                        }
                     }
                     $svcRow++
                 }
@@ -351,6 +564,7 @@ function sg_ws($sheet){
     $sheet.Cells.Item(2,7) = "Dynamic Query Operator"
     $sheet.Cells.Item(2,8) = "Dynamic Query Criteria"
     $sheet.Cells.Item(2,9) = "Dynamic Query Value"
+    $sheet.Cells.Item(2,10) = "Object-ID"
     $range2 = $sheet.Range("a2", "j2")
     $range2.Font.Bold = $subTitleFontBold
     $range2.Interior.ColorIndex = $subTitleInteriorColor
@@ -363,6 +577,17 @@ function pop_sg_ws($sheet){
     $row = 3
     $sg = Get-NSXSecurityGroup -scopeID 'globalroot-0'
     foreach ($member in $sg){
+        try 
+        {
+            $link_ref = "Security_Groups!" + ($sheet.Cells.Item($row,1)).address($false,$false)
+            if($secgrp_ht.ContainsKey($member.objectID) -eq $false)
+            {
+                $secgrp_ht.Add($member.objectID, $link_ref)
+            }
+        }
+        catch [Exception]{
+            Write-Warning $member.objectID + "already exists, manually create hyperlink reference"
+        }
 
         if($member.dynamicMemberDefinition){
 
@@ -370,7 +595,7 @@ function pop_sg_ws($sheet){
             $sheet.Cells.Item($row,2) = $member.scope.name
             $sheet.Cells.Item($row,3) = $member.isUniversal
             $sheet.Cells.Item($row,4) = $member.inhertianceAllowed
-
+            $sheet.Cells.Item($row,10) = $member.objectId
             $sheet.Cells.Item($row,5) = "Dynamic"
 
             foreach ($entity in $member.dynamicMemberDefinition.dynamicSet.dynamicCriteria){
@@ -386,21 +611,31 @@ function pop_sg_ws($sheet){
             $sheet.Cells.Item($row,2) = $member.scope.name
             $sheet.Cells.Item($row,3) = $member.isUniversal
             $sheet.Cells.Item($row,4) = $member.inhertianceAllowed
-
+            $sheet.Cells.Item($row,10) = $member.objectId
             $sheet.Cells.Item($row,5) = "Static"
             $row++
         }
     }
     $sgu = Get-NSXSecurityGroup -scopeID 'universalroot-0'
     foreach ($member in $sgu){
-
+        try 
+        {
+            $link_ref = "Security_Groups!" + ($sheet.Cells.Item($row,1)).address($false,$false)
+            if($secgrp_ht.ContainsKey($member.objectID) -eq $false)
+            {
+                $secgrp_ht.Add($member.objectID, $link_ref)
+            }
+        }
+        catch [Exception]{
+            Write-Warning $member.objectID + "already exists, manually create hyperlink reference"
+        }
         if($member.dynamicMemberDefinition){
 
             $sheet.Cells.Item($row,1) = $member.name
             $sheet.Cells.Item($row,2) = $member.scope.name
             $sheet.Cells.Item($row,3) = $member.isUniversal
             $sheet.Cells.Item($row,4) = $member.inhertianceAllowed
-
+            $sheet.Cells.Item($row,10) = $member.objectId
             $sheet.Cells.Item($row,5) = "Dynamic"
 
             foreach ($entity in $member.dynamicMemberDefinition.dynamicSet.dynamicCriteria){
@@ -416,7 +651,7 @@ function pop_sg_ws($sheet){
             $sheet.Cells.Item($row,2) = $member.scope.name
             $sheet.Cells.Item($row,3) = $member.isUniversal
             $sheet.Cells.Item($row,4) = $member.inhertianceAllowed
-
+            $sheet.Cells.Item($row,10) = $member.objectId
             $sheet.Cells.Item($row,5) = "Static"
             $row++
         }
@@ -454,14 +689,14 @@ function pop_sg_ws($sheet){
             $sheet.Cells.Item($row,2) = $vm.vmID
             $sheet.Cells.Item($row,3) = $vm.vmName
 
-            $result = $vmaddressing_ht[$vm.vmName]        
+            $result = $vmaddressing_ht[$vm.vmID]        
             if([string]::IsNullOrWhiteSpace($result))
             {
                  $sheet.Cells.Item($row,3) = $vm.vmName
             }
             else 
             {
-                Write-Host $vm.vmName
+                # Write-Host $vm.vmName
                 $link = $sheet.Hyperlinks.Add(
                 $sheet.Cells.Item($row,3),
                 "",
@@ -492,8 +727,9 @@ function ipset_ws($sheet){
     $sheet.Cells.Item(2,1) = "Name"
     $sheet.Cells.Item(2,2) = "Value"
     $sheet.Cells.Item(2,3) = "Universal"
-    $sheet.Cells.Item(2,4) = "Description"
-    $range2 = $sheet.Range("a2", "d2")
+    $sheet.Cells.Item(2,4) = "Object-ID"
+    $sheet.Cells.Item(2,5) = "Description"
+    $range2 = $sheet.Range("a2", "e2")
     $range2.Font.Bold = $subTitleFontBold
     $range2.Interior.ColorIndex = $subTitleInteriorColor
     $range2.Font.Name = $subTitleFontName
@@ -510,10 +746,22 @@ function pop_ipset_ws($sheet){
         $sheet.Cells.Item($row,1) = $ip.name
         $sheet.Cells.Item($row,2) = $ip.value
         $sheet.Cells.Item($row,3) = $ip.isUniversal
-        if(!$ip.description){
-            $sheet.Cells.Item($row,4) = $valueNotDefined
+        $sheet.Cells.Item($row,4) = $ip.objectId
+        try 
+        {
+            $link_ref = "IPSETS!" + ($sheet.Cells.Item($row,1)).address($false,$false)
+            if($ipsets_ht.ContainsKey($ip.objectID) -eq $false)
+            {
+                $ipsets_ht.Add($ip.objectID, $link_ref)
+            }
         }
-        else {$sheet.Cells.Item($row,4) = $ip.description}
+        catch [Exception]{
+            Write-Warning $ip.objectID + "already exists, manually create hyperlink reference"
+        }
+        if(!$ip.description){
+            $sheet.Cells.Item($row,5) = $valueNotDefined
+        }
+        else {$sheet.Cells.Item($row,5) = $ip.description}
 
         $row++ # Increment Rows
     }
@@ -525,10 +773,23 @@ function pop_ipset_ws($sheet){
         $sheet.Cells.Item($row,1) = $ip.name
         $sheet.Cells.Item($row,2) = $ip.value
         $sheet.Cells.Item($row,3) = $ip.isUniversal
-        if(!$ip.description){
-            $sheet.Cells.Item($row,4) = $valueNotDefined
+        $sheet.Cells.Item($row,4) = $ip.objectId
+        try 
+        {
+            $link_ref = "IPSETS!" + ($sheet.Cells.Item($row,1)).address($false,$false)
+            if($ipsets_ht.ContainsKey($ip.objectID) -eq $false)
+            {
+                $ipsets_ht.Add($ip.objectID, $link_ref)
+            }
         }
-        else {$sheet.Cells.Item($row,4) = $ip.description}
+        catch [Exception]{
+            Write-Warning $ip.objectID + "already exists, manually create hyperlink reference"
+        }
+
+        if(!$ip.description){
+            $sheet.Cells.Item($row,5) = $valueNotDefined
+        }
+        else {$sheet.Cells.Item($row,5) = $ip.description}
         $row++ # Increment Rows
     }
 }
@@ -698,6 +959,19 @@ function pop_service_groups_ws($sheet){
         $sheet.Cells.Item($row,2) = $svc_mem.isUniversal
         $sheet.Cells.Item($row,3) = $svc_mem.scope.name
         $sheet.Cells.Item($row,5) = $svc_mem.objectId
+       
+        try 
+        {
+            $link_ref = "Service_Groups!" + ($sheet.Cells.Item($row,1)).address($false,$false)
+            if($services_ht.ContainsKey($svc_mem.objectID) -eq $false)
+            {
+                $services_ht.Add($svc_mem.objectID, $link_ref)
+            }
+        }
+        catch [Exception]{
+            Write-Warning $svc_mem.objectID + "already exists, manually create hyperlink reference"
+        }
+
         if (!$svc_mem.member)
         {
             $row++ # Increment Rows
@@ -735,6 +1009,19 @@ function pop_service_groups_ws($sheet){
         $sheet.Cells.Item($row,2) = $svc_mem.isUniversal
         $sheet.Cells.Item($row,3) = $svc_mem.scope.name
         $sheet.Cells.Item($row,5) = $svc_mem.objectId
+        
+        try 
+        {
+            $link_ref = "Service_Groups!" + ($sheet.Cells.Item($row,1)).address($false,$false)
+            if($services_ht.ContainsKey($svc_mem.objectID) -eq $false)
+            {
+                $services_ht.Add($svc_mem.objectID, $link_ref)
+            }
+        }
+        catch [Exception]{
+            Write-Warning $svc_mem.objectID + "already exists, manually create hyperlink reference"
+        }
+
         if (!$svc_mem.member) 
         {
                 $row++ # Increment Rows
@@ -841,7 +1128,8 @@ function ex_list_ws($sheet){
     $range1.merge() | Out-Null
 
     $sheet.Cells.Item(2,1) = "VM Name"
-    $range2 = $sheet.Range("a2", "a2")
+    $sheet.Cells.Item(2,2) = "VM ID"
+    $range2 = $sheet.Range("a2", "b2")
     $range2.Font.Bold = $subTitleFontBold
     $range2.Interior.ColorIndex = $subTitleInteriorColor
     $range2.Font.Name = $subTitleFontName
@@ -854,21 +1142,22 @@ function pop_ex_list_ws($sheet){
     $guests = Get-NsxFirewallExclusionListMember
 
     foreach ($vm in $guests) {
-        $sheet.Cells.Item($row,1) = $vm.name
-        $result = $vmaddressing_ht[$vm.name]        
+        # $sheet.Cells.Item($row,1) = $vm.name
+        $result = $vmaddressing_ht[$vm.id.TrimStart("VirtualMachine-")]        
         if([string]::IsNullOrWhiteSpace($result))
         {
              $sheet.Cells.Item($row,1) = $vm.name
+             $sheet.Cells.Item($row,2) = $vm.id.TrimStart("VirtualMachine-")
         }
         else 
         {
-            Write-Host $vm.name
             $link = $sheet.Hyperlinks.Add(
             $sheet.Cells.Item($row,1),
             "",
             $result,
             "Virtual Machine Information",
-            $vm.name)  
+            $vm.name)
+            $sheet.Cells.Item($row,2) = $vm.id.TrimStart("VirtualMachine-")
         }
         $row++ # Increment Rows
     }
@@ -891,7 +1180,8 @@ function vm_ip_addresses_ws($sheet){
 
     $sheet.Cells.Item(2,1) = "VM Name"
     $sheet.Cells.Item(2,2) = "Guest IP Address"
-    $range2 = $sheet.Range("a2", "B2")
+    $sheet.Cells.Item(2,3) = "VM ID"
+    $range2 = $sheet.Range("a2", "c2")
     $range2.Font.Bold = $subTitleFontBold
     $range2.Interior.ColorIndex = $subTitleInteriorColor
     $range2.Font.Name = $subTitleFontName
@@ -901,17 +1191,19 @@ function vm_ip_addresses_ws($sheet){
 function pop_ip_address_ws($sheet){
 
     $row=3
-    $guests = Get-VM | Select Name, VMIPAddress
+    $guests = Get-VM | Select Name, VMIPAddress, id
 
     foreach ($vm in $guests) {
         $sheet.Cells.Item($row,1) = $vm.name
         $sheet.Cells.Item($row,2) = $vm.VMIPAddress
+        $vm_id = $vm.id.TrimStart("VirtualMachine-")
+        $sheet.Cells.Item($row,3) = $vm_id
         try 
         {
             $link_ref = "VM_Info!" + ($sheet.Cells.Item($row,1)).address($false,$false)
-            if($vmaddressing_ht.ContainsKey($vm.name) -eq $false)
+            if($vmaddressing_ht.ContainsKey($vm_id) -eq $false)
             {
-                $vmaddressing_ht.Add($vm.name, $link_ref)
+                $vmaddressing_ht.Add($vm_id, $link_ref)
             }
         }
         catch [Exception]{
@@ -937,7 +1229,7 @@ function user_input_vm_ips(){
 
 If (-not $DefaultNSXConnection) 
 {
-    Write-Warning "`nConnect to NSX Manager and vCenter Server needs to be establised"
+    Write-Warning "`nConnect to NSX Managersestablised"
     $nsx_mgr = Read-Host "`nIP or FQDN of NSX Manager? "
     Connect-NSXServer -NSXServer $nsx_mgr
 }
@@ -950,7 +1242,15 @@ $minor_version = $version.versionInfo.minorVersion
 
 if($major_version -eq 6){
 
-    $collect_vm_ips = user_input_vm_ips
+    if ( $EnableIpDetection ) {
+        $collect_vm_ips = "y"
+    } 
+    elseif (-not $PSBoundParameters.ContainsKey("EnableIpDetection")) { 
+        $collect_vm_ips = user_input_vm_ips        
+    }
+    else { 
+        $collect_vm_ips = "n"
+    }
 
     if ($collect_vm_ips -eq "y") {
         Write-Host "Collection of IP Addresses Enabled"

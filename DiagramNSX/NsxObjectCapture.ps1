@@ -1,27 +1,30 @@
+<#
+Copyright © 2017 VMware, Inc. All Rights Reserved. 
+SPDX-License-Identifier: MIT
+
 #NSX Object Capture Script
 #Nick Bradford
 #nbradford@vmware.com
 #Version 0.1
 
+NSX Power Operations
 
-<#
-Copyright © 2015 VMware, Inc. All Rights Reserved.
+Copyright 2017 VMware, Inc.  All rights reserved				
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License version 2, as published by the Free Software Foundation.
+The MIT license (the ìLicenseî) set forth below applies to all parts of the NSX Power Operations project.  You may not use this file except in compliance with the License.†
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTIBILITY or FITNESS
-FOR A PARTICULAR PURPOSE. See the GNU General Public License version 2 for more details.
+MIT License
 
-You should have received a copy of the General Public License version 2 along with this program.
-If not, see https://www.gnu.org/licenses/gpl-2.0.html.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
+to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-The full text of the General Public License 2.0 is provided in the COPYING file.
-Some files may be comprised of various open source software components, each of which
-has its own license that is located in the source code of the respective component.
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #>
-
 
 #Requires -Version 3.0
 #Requires -Modules PowerNSX
@@ -32,7 +35,8 @@ has its own license that is located in the source code of the respective compone
 
 param (
 
-    [pscustomobject]$Connection=$DefaultNsxConnection
+    [pscustomobject]$Connection=$DefaultNsxConnection,
+    [string]$ExportFile
 )
 
 If ( (-not $Connection) -and ( -not $Connection.ViConnection.IsConnected ) ) {
@@ -45,8 +49,13 @@ Set-StrictMode -Off
 
 #########################
 $TempDir = "$($env:Temp)\VMware\NSXObjectCapture"
-$ExportPath = "$([system.Environment]::GetFolderPath('MyDocuments'))\VMware\NSXObjectCapture"
-$ExportFile = "$ExportPath\NSX-ObjectCapture-$($Connection.Server)-$(get-date -format "yyyy_MM_dd_HH_mm_ss").zip"
+if ( -not ( $exportFile )) { 
+    $ExportPath = "$([system.Environment]::GetFolderPath('MyDocuments'))\VMware\NSXObjectCapture"
+    $ExportFile = "$ExportPath\NSX-ObjectCapture-$($Connection.Server)-$(get-date -format "yyyy_MM_dd_HH_mm_ss").zip"
+}
+else { 
+    $ExportPath = split-path -parent $ExportFile
+}
 
 $maxdepth = 5
 $maxCaptures = 10
@@ -81,15 +90,13 @@ $VmHash = @{}
 $CtrlHash = @{}
 $MacHash = @{}
 
-write-host -ForeGroundColor Green "PowerNSX Object Capture Script"
-
-write-host -ForeGroundColor Green "`nGetting NSX Objects"
-write-host "  Getting LogicalSwitches"
+write-progress -Activity "Generating NSX Capture Bundle"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting LogicalSwitches"
 Get-NsxLogicalSwitch -connection $connection | % {
     $LsHash.Add($_.objectId, $_.outerXml)
 }
 
-write-host "  Getting DV PortGroups"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting DV PortGroups"
 Get-VDPortGroup -server $connection.ViConnection | % {
 
     if ( $_.VlanConfiguration ) {
@@ -107,31 +114,31 @@ Get-VDPortGroup -server $connection.ViConnection | % {
 
 }
 
-write-host "  Getting VSS PortGroups"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting VSS PortGroups"
 Get-VirtualPortGroup -server $connection.ViConnection | ? { $_.key -match 'key-vim.host.PortGroup'} | Sort-Object -Unique | % {
     $StdPgHash.Add( $_.Name, [pscustomobject]@{ "Name" = $_.Name; "VlanId" = $VlanId } )
 
 }
 
-write-host "  Getting Logical Routers"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting Logical Routers"
 $LogicalRouters = Get-NsxLogicalRouter -connection $connection
 $LogicalRouters | % {
     $LrHash.Add($_.Id, $_.outerXml)
 }
-write-host "  Getting Edges"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting Edges"
 $edges = Get-NsxEdge -connection $connection
 $edges | % {
     $EdgeHash.Add($_.id, $_.outerxml)
 }
 
-write-host "  Getting NSX Controllers"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting NSX Controllers"
 $Controllers = Get-NsxController -connection $connection
 $Controllers | % {
     $CtrlHash.Add($_.id, $_.outerxml)
 }
 
 
-write-host "  Getting VMs"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting VMs"
 Get-Vm -server $connection.ViConnection| % {
 
     $IsManager = $false
@@ -193,7 +200,7 @@ Get-Vm -server $connection.ViConnection| % {
         "ToolsIp" = $_.Guest.Ipaddress })
 }
 
-write-host "  Getting IP and MAC details from Spoofguard"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting IP and MAC details from Spoofguard"
 Get-NsxSpoofguardPolicy -connection $connection | Get-NsxSpoofguardNic -connection $connection | % {
     if ($MacHash.ContainsKey($_.detectedmacAddress)) {
         write-warning "Duplicate MAC ($($_.detectedMacAddress) - $($_.nicname)) found.  Skipping NIC!"
@@ -204,7 +211,7 @@ Get-NsxSpoofguardPolicy -connection $connection | Get-NsxSpoofguardNic -connecti
 }
 
 
-write-host  -ForeGroundColor Green "`nCreating Object Export Bundle"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Creating Object Export Bundle"
 
 #Export files
 $LsHash | export-clixml -depth $maxdepth $LsExportFile
@@ -224,8 +231,7 @@ while ( ( $Captures | measure ).count -ge $maxCaptures ) {
     write-warning "Maximum number of captures reached.  Removing oldest capture."
     $captures | sort-object -property LastWriteTime | select-object -first 1 | remove-item -confirm:$false
     $Captures = Get-ChildItem $ExportPath
-
 }
 
-write-host -ForeGroundColor Green "`nCapture Bundle created at $ExportFile"
+write-progress -Activity "Generating NSX Capture Bundle" -Completed
 return $ExportFile

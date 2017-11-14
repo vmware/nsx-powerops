@@ -1,28 +1,30 @@
+<#
+Copyright © 2017 VMware, Inc. All Rights Reserved. 
+SPDX-License-Identifier: MIT
+
 #NSX Object Diagramming Script
 #Nick Bradford
 #nbradford@vmware.com
 #Version 0.2
 
+NSX Power Operations
 
-#Copyright © 2015 VMware, Inc. All Rights Reserved.
+Copyright 2017 VMware, Inc.  All rights reserved				
 
-#Permission is hereby granted, free of charge, to any person obtaining a copy of
-#this software and associated documentation files (the "Software"), to deal in
-#the Software without restriction, including without limitation the rights to
-#use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-#of the Software, and to permit persons to whom the Software is furnished to do
-#so, subject to the following conditions:
+The MIT license (the ìLicenseî) set forth below applies to all parts of the NSX Power Operations project.  You may not use this file except in compliance with the License.†
 
-#The above copyright notice and this permission notice shall be included in all
-#copies or substantial portions of the Software.
+MIT License
 
-#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#SOFTWARE.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
+to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#>
 
 #Requires -Version 3.0
 #Requires -Modules PowerNSX
@@ -57,6 +59,26 @@ Param (
 	[Parameter (Mandatory = $False)]
 		[switch]$EyeCandy = $false
 )
+
+function ReleaseObject {
+    param (
+        $Obj
+    )
+
+    Try {
+        $intRel = 0
+        Do { 
+            $intRel = [System.Runtime.InteropServices.Marshal]::ReleaseComObject($Obj)
+        } While ($intRel -gt  0)
+    }
+    Catch {
+        throw "Error releasing object: $_"
+    }
+    Finally {
+        [System.GC]::Collect()
+       
+    }
+}
 
 
 Function Get-NicIpAddresses {
@@ -104,8 +126,6 @@ Function VisConnectTo-LogicalSwitch {
 		$DrawnLogicalSwitchHash.add($LogicalSwitch.objectid, $VisioLs)
 
 	}
-
-
 	$VisioConnection = Connect-VisioObject $VisioObj $DrawnLogicalSwitchHash.Item($LogicalSwitch.objectid) $ConnectionText
 }
 
@@ -166,7 +186,6 @@ Function VisConnectTo-StdPortGroup {
 	$VisioConnection = Connect-VisioObject $VisioObj $DrawnStdPortGroupHash.Item($StdPortGroup.Name) $ConnectionText
 }
 
-
 function connect-visioobject {
 	param (
 		[object]$firstObj,
@@ -175,7 +194,7 @@ function connect-visioobject {
 		[System.Collections.Hashtable]$shapedata
 	)
 
-	Write-Host "  Connecting $($FirstObj.Name) with $($SecondObj.Name) with text: $text"
+	Write-Progress -Activity "Generating Visio Diagram" -CurrentOperation "Connecting $($FirstObj.Name) with $($SecondObj.Name) with text: $text"
 	$Connector = $FirstPage.Drop($FirstPage.Application.ConnectorToolDataObject, 0, 0)
 
 	$Connector.Text = $text
@@ -194,6 +213,8 @@ function connect-visioobject {
 		$Connector.Cells("Prop.$cell").Formula = [char]34 + $ShapeData.Item($cell) + [char]34
 
 	}
+	Write-Progress -Activity "Generating Visio Diagram" -CurrentOperation "Connecting $($FirstObj.Name) with $($SecondObj.Name) with text: $text" -completed
+	
 }
 
 function add-visioobject{
@@ -205,7 +226,7 @@ function add-visioobject{
 		[System.Collections.Hashtable]$shapedata
 
 	)
-	Write-Host "  Adding $item to diagram with stencil $($mastObj.Name)"
+	Write-Progress -Activity "Generating Visio Diagram" -CurrentOperation "Adding $item to diagram with stencil $($mastObj.Name)"
 	# Drop the selected stencil on the active page at 0,0
 	$shape = $FirstPage.Drop($mastObj, 0,0)
 	# Enter text for the object
@@ -220,7 +241,7 @@ function add-visioobject{
 
 		if ( $value -match  "`"") {
 			#if config string contains double quotes (such as in a CN) then we have to swallow it...
-			Write-Warning "Removed `" characters from xmlconfig for object $item"
+			write-warning "Removed `" characters from xmlconfig for object $item"
 
 			$value = $value -replace "`"", ""
 		}
@@ -228,11 +249,13 @@ function add-visioobject{
 		$shape.Cells("Prop.$cell").Formula = [char]34 + $value + [char]34
 	}
 
+	Write-Progress -Activity "Generating Visio Diagram" -CurrentOperation "Adding $item to diagram with stencil $($mastObj.Name)" -Completed
+	
 	#Return the visioobject to be used
 	return $shape
 }
 
-write-host -ForeGroundColor Green "PowerNSX Object Diagram Script"
+Write-Progress -Activity "Generating Visio Diagram" 
 
 ###################
 # Init and Validate
@@ -313,8 +336,6 @@ if ( -not (test-path $NSXShapeFile) ) { throw "Visio Shape file not found.  Ensu
 #######################
 # Launch Visio and ensure we can get the required template.
 
-write-host -ForeGroundColor Green "`nLaunching Microsoft Visio."
-
 # Create an instance of Visio and create a document based on the Basic Diagram template.
 
 try {
@@ -384,12 +405,10 @@ catch {
 ###################################
 # Build the diagram now.
 
-write-host -ForeGroundColor Green "`nBuilding Diagram"
+Write-Progress -Activity "Generating Visio Diagram" -CurrentOperation "Building Diagram"
 
 [System.Xml.XmlDocument[]]$CtrlDoc = $CtrlHash.Values
 $Controllers = $CtrlDoc.controller
-
-
 
 #Add all dlr.
 ForEach ($LrId in $LrHash.Keys){
@@ -433,7 +452,7 @@ ForEach ($LrId in $LrHash.Keys){
 		}
 	}
 	else {
-		write-host -ForegroundColor DarkGray "Skipping DLR $($logicalrouter.Name) with tenant property $($logicalrouter.Tenant)"
+		write-host -ForegroundColor Gray "Skipping DLR $($logicalrouter.Name) with tenant property $($logicalrouter.Tenant)"
 	}
 }
 
@@ -481,7 +500,7 @@ ForEach ($EdgeId in $EdgeHash.Keys){
 		}
 	}
 	else {
-		write-host -ForegroundColor DarkGray "Skipping Edge $($Edge.Name) with tenant property $($edge.Tenant)"
+		write-host -ForegroundColor Gray "Skipping Edge $($Edge.Name) with tenant property $($edge.Tenant)"
 	}
 }
 
@@ -575,12 +594,11 @@ if ( $IncludeVms ) {
 			}
 		}
 		else {
-			write-host -ForegroundColor DarkGray "Skipping VM $($vmhash.Item($vmid).Name) as it has no NICs connected to already drawn Logical Switches or Port Groups."
+			write-host -ForegroundColor Gray "Skipping VM $($vmhash.Item($vmid).Name) as it has no NICs connected to already drawn Logical Switches or Port Groups."
 
 		}
 	}
 }
-
 
 
 # Final Layout and Resize to fit page
@@ -589,9 +607,29 @@ $FirstPage.ResizeToFitContents()
 
 # Save the diagram
 try {
-	$Document.SaveAs("$OutputFile") | out-null
-	write-host -ForeGroundColor Green "`nSaved diagram at $OutputFile"
+	$Document.SaveAs($OutputFile) | out-null
+	$Document.Close()
+	$appVisio.Quit()
+	ReleaseObject -Obj $AppVisio
+	ReleaseObject -Obj $Document
+	ReleaseObject -Obj $Documents
+	ReleaseObject -Obj $Pages
+	ReleaseObject -Obj $FirstPage
+	ReleaseObject -Obj $NSXStencil
+	ReleaseObject -Obj $lsStencil
+	ReleaseObject -Obj $vmStencil
+	ReleaseObject -Obj $esgStencil
+	ReleaseObject -Obj $dlrStencil
+	ReleaseObject -Obj $dvpgStencil 
+	ReleaseObject -Obj $stdpgStencil
+	ReleaseObject -Obj $mgrStencil
+	ReleaseObject -Obj $ctrlstencil
+	write-host "Saved diagram at $OutputFile"
 }
 catch {
-	write-warning "Unable to save output file, please re-run this script to try again.  $_"
+	write-warning "Unable to save output file:  $_"
 }
+
+
+
+Write-Progress -Activity "Generating Visio Diagram" -Completed
