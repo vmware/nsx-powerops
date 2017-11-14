@@ -345,6 +345,7 @@ try {
 		#Lets not draw all the stuff as its placed on the screen
 		$AppVisio.ScreenUpdating = $False
 		$AppVisio.EventsEnabled = $False
+		$AppVisio.Visible = $false
 	}
 
 	$Documents = $AppVisio.Documents
