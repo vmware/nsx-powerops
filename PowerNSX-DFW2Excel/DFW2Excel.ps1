@@ -64,6 +64,31 @@ function ReleaseObject {
 }
 
 ########################################################
+# Cleanup Excel application object
+# We Need to call this for EVERY VARIABLE that references
+# an excel object.  __EVERY VARIABLE__
+########################################################
+function ReleaseObject {
+    param (
+        $Obj
+    )
+
+    Try {
+        $intRel = 0
+        Do { 
+            $intRel = [System.Runtime.InteropServices.Marshal]::ReleaseComObject($Obj)
+        } While ($intRel -gt  0)
+    }
+    Catch {
+        throw "Error releasing object: $_"
+    }
+    Finally {
+        [System.GC]::Collect()
+       
+    }
+}
+
+########################################################
 #  Formatting/Functions Options for Excel Spreadsheet
 ########################################################
 
