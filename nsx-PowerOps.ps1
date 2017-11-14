@@ -145,6 +145,7 @@ function checkDependancies {
         foreach ( $module in $requiredModules ) { 
             write-progress -Activity "Checking dependancies" -Status $module
             if ( -not ( Get-Module -ListAvailable:$ListAvailable -name $module )) { 
+                write-progress -Activity "Checking dependancies" -Status $module -Completed        
                 return $false
             }
         }
