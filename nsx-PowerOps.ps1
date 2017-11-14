@@ -465,7 +465,12 @@ function runNSXVISIOTool {
     $ObjectDiagram = "$MyDirectory\DiagramNSX\NsxObjectDiagram.ps1"
     $ObjectCapture = "$MyDirectory\DiagramNSX\NsxObjectCapture.ps1"
     $null = &$ObjectCapture -ExportFile $capturePath
-    &$ObjectDiagram -NoVms -CaptureBundle $capturePath -outputDir $DocumentLocation   
+    if ( [type]::GetTypeFromProgID("Visio.Application") ) { 
+        &$ObjectDiagram -NoVms -CaptureBundle $capturePath -outputDir $DocumentLocation
+    }
+    else {
+        out-event -entrytype warning "Visio not installed.  Visio diagram generation is disabled (capture bundle is still created in report directory)"
+    }
 }
 
 #Get Routing info here
@@ -1099,20 +1104,20 @@ Output Directory: $DocumentLocation
             "Script" = { Show-MenuV2 -menu $DocumentationMenu }
             "HelpText" = "Displays a menu of PowerOps documentation tools."
             "Name" = "PowerOps Documentation Tools"
-            "Status" = { if ((checkDependancies -ListAvailable $true) -and ($DefaultNSXConnection)) { "MenuEnabled" } else { "Disabled" } }
+            "Status" = { if ((checkDependancies -ListAvailable $true) ) { "MenuEnabled" } else { "Disabled" } }
             "Footer" = $footer
             "MainHeader" = $MainHeader
             "Subheader" = $Subheader
             "Items" = @( 
                 @{ 
                     "Name" = "Document All NSX Components"
-                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = { getNSXComponents }
                 },
                 @{ 
                     "Name" = "Document ESXi Host(s) Info"
-                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Status" = { if ($DefaultNSXConnection  -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  getHostInformation }
                 },
@@ -1124,13 +1129,13 @@ Output Directory: $DocumentLocation
                 },
                 @{ 
                     "Name" = "Document Routing information"
-                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  getRoutingInformation }
                 },
                 @{ 
                     "Name" = "Document NSX DFW info to Excel via DFW2Excel"
-                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runDFW2Excel }
                 }
