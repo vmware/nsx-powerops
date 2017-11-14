@@ -1294,7 +1294,7 @@ Output Directory: $DocumentLocation
             "Name" = "Configure Scheduled Tasks"
             "HelpText" = "Contains configuration to automate periodic Configuration Capture."
             "Status" = { 
-                if ((checkDependancies -ListAvailable $true) -and ( @($Config.Profiles).count -gt 0 )) { 
+                if ((checkDependancies -ListAvailable $true) -and ( $Config.Profiles.count -gt 0 )) { 
                     "MenuEnabled" 
                 } 
                 else { 
