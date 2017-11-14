@@ -550,13 +550,30 @@ function New-ConnectionProfile {
     $nsxserver = read-hostwithdefault -default $default_nsxserver "Enter NSX server address"
     $nsxusername = read-hostwithdefault -default $default_nsxusername "Enter NSX username"
     $nsxpassword = read-host -assecurestring "Enter NSX password"
-    $viusername = read-hostwithdefault -default $default_viusername "Enter vCenter username"
-    $vipassword = read-host -assecurestring "Enter vCenter Password"
     $nsxcred = New-Object System.Management.Automation.PSCredential $nsxusername, $nsxpassword
+    
+    try { 
+        $vc = ""
+        $vcinfo = Invoke-NsxRestMethod -cred $nsxcred -server $nsxserver -method "get" -URI "/api/2.0/services/vcconfig" -ValidateCertificate $false -port 443 -protocol "https"
+        if ( -not $vcinfo.vcinfo.ipaddress ) { 
+            throw "No vCenter registration found."
+        }
+        $vc = $vcinfo.vcinfo.ipaddress
+    }
+    catch {
+        throw "Unable to determine connected vCenter from NSX.  $_."
+    }
+
+
+    $viusername = read-hostwithdefault -default $default_viusername "Enter vCenter username ($vc)"
+    $vipassword = read-host -assecurestring "Enter vCenter Password"
     $vicred = New-Object System.Management.Automation.PSCredential $viusername, $vipassword
 
     try { 
-        $NsxConnection  = Connect-NsxServer -nsxserver $nsxserver -Credential $nsxcred -viCred $vicred -VIDefaultConnection:$false -DefaultConnection:$false -erroraction Stop -ViWarningAction ignore
+
+        # Do a per connect to VC so we get a connection failure if something goes wrong
+        $VCConnection = Connect-VIServer -Credential $vicred -Server $vc -ErrorAction stop -NotDefault
+        $NsxConnection  = Connect-NsxServer -nsxserver $nsxserver -Credential $nsxcred -viCred $vicred -VIDefaultConnection:$false -DefaultConnection:$false -ViWarningAction ignore
 
         #Get NSX details.
         $NewProfile = @{
@@ -628,7 +645,7 @@ function New-ConnectionProfile {
     }
     catch {
 
-        "Failed creating connection profile.  $_"
+        throw "Failed creating connection profile:  $_"
     }
 }
 

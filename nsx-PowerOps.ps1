@@ -1239,7 +1239,17 @@ Output Directory: $DocumentLocation
                     "Name" = "Create Connection Profile"
                     "Status" = { "MenuEnabled" }
                     "HelpText" = "Creates a new connection profile that is saved to disk and can be used for operations that require access to NSX/VC."
-                    "Script" = { New-ConnectionProfile; if ( $Config.DefaultProfile -and (-not ($DefaultNSXConnection))) { connectProfile -ProfileName $Config.DefaultProfile } }
+                    "Interactive" = $true
+                    "Script" = { 
+                        try { 
+                            New-ConnectionProfile
+                            if ( $Config.DefaultProfile -and (-not ($DefaultNSXConnection))) { connectProfile -ProfileName $Config.DefaultProfile } 
+                        }
+                        catch { 
+                            # Make error here non terminating...
+                            write-warning "Profile creation failed.  Please try again : $_"
+                        }
+                    }
                 },
                 @{
                     "Name" = "Delete Connection Profile"
