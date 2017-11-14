@@ -774,7 +774,7 @@ function New-PowerOpsScheduledJob {
     $CurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
 
     if ( -not ( ([Security.Principal.WindowsPrincipal]$CurrentUser).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))) { 
-        Write-Event -EntryType warning "Scheduled tasks can only be created when running as Administrator.  Run PowerOps in an elevated PowerShell host to create a scheduled task."
+        out-Event -EntryType warning "Scheduled tasks can only be created when running as Administrator.  Run PowerOps in an elevated PowerShell host to create a scheduled task."
         return
     }
 
