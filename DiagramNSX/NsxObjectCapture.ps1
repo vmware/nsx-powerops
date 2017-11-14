@@ -35,7 +35,8 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 param (
 
-    [pscustomobject]$Connection=$DefaultNsxConnection
+    [pscustomobject]$Connection=$DefaultNsxConnection,
+    [string]$ExportFile
 )
 
 If ( (-not $Connection) -and ( -not $Connection.ViConnection.IsConnected ) ) {
@@ -48,8 +49,13 @@ Set-StrictMode -Off
 
 #########################
 $TempDir = "$($env:Temp)\VMware\NSXObjectCapture"
-$ExportPath = "$([system.Environment]::GetFolderPath('MyDocuments'))\VMware\NSXObjectCapture"
-$ExportFile = "$ExportPath\NSX-ObjectCapture-$($Connection.Server)-$(get-date -format "yyyy_MM_dd_HH_mm_ss").zip"
+if ( -not ( $exportFile )) { 
+    $ExportPath = "$([system.Environment]::GetFolderPath('MyDocuments'))\VMware\NSXObjectCapture"
+    $ExportFile = "$ExportPath\NSX-ObjectCapture-$($Connection.Server)-$(get-date -format "yyyy_MM_dd_HH_mm_ss").zip"
+}
+else { 
+    $ExportPath = split-path -parent $ExportFile
+}
 
 $maxdepth = 5
 $maxCaptures = 10
@@ -84,15 +90,13 @@ $VmHash = @{}
 $CtrlHash = @{}
 $MacHash = @{}
 
-write-host -ForeGroundColor Green "PowerNSX Object Capture Script"
-
-write-host -ForeGroundColor Green "`nGetting NSX Objects"
-write-host "  Getting LogicalSwitches"
+write-progress -Activity "Generating NSX Capture Bundle"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting LogicalSwitches"
 Get-NsxLogicalSwitch -connection $connection | % {
     $LsHash.Add($_.objectId, $_.outerXml)
 }
 
-write-host "  Getting DV PortGroups"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting DV PortGroups"
 Get-VDPortGroup -server $connection.ViConnection | % {
 
     if ( $_.VlanConfiguration ) {
@@ -110,31 +114,31 @@ Get-VDPortGroup -server $connection.ViConnection | % {
 
 }
 
-write-host "  Getting VSS PortGroups"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting VSS PortGroups"
 Get-VirtualPortGroup -server $connection.ViConnection | ? { $_.key -match 'key-vim.host.PortGroup'} | Sort-Object -Unique | % {
     $StdPgHash.Add( $_.Name, [pscustomobject]@{ "Name" = $_.Name; "VlanId" = $VlanId } )
 
 }
 
-write-host "  Getting Logical Routers"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting Logical Routers"
 $LogicalRouters = Get-NsxLogicalRouter -connection $connection
 $LogicalRouters | % {
     $LrHash.Add($_.Id, $_.outerXml)
 }
-write-host "  Getting Edges"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting Edges"
 $edges = Get-NsxEdge -connection $connection
 $edges | % {
     $EdgeHash.Add($_.id, $_.outerxml)
 }
 
-write-host "  Getting NSX Controllers"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting NSX Controllers"
 $Controllers = Get-NsxController -connection $connection
 $Controllers | % {
     $CtrlHash.Add($_.id, $_.outerxml)
 }
 
 
-write-host "  Getting VMs"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting VMs"
 Get-Vm -server $connection.ViConnection| % {
 
     $IsManager = $false
@@ -196,7 +200,7 @@ Get-Vm -server $connection.ViConnection| % {
         "ToolsIp" = $_.Guest.Ipaddress })
 }
 
-write-host "  Getting IP and MAC details from Spoofguard"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Getting IP and MAC details from Spoofguard"
 Get-NsxSpoofguardPolicy -connection $connection | Get-NsxSpoofguardNic -connection $connection | % {
     if ($MacHash.ContainsKey($_.detectedmacAddress)) {
         write-warning "Duplicate MAC ($($_.detectedMacAddress) - $($_.nicname)) found.  Skipping NIC!"
@@ -207,7 +211,7 @@ Get-NsxSpoofguardPolicy -connection $connection | Get-NsxSpoofguardNic -connecti
 }
 
 
-write-host  -ForeGroundColor Green "`nCreating Object Export Bundle"
+write-progress -Activity "Generating NSX Capture Bundle" -CurrentOperation "Creating Object Export Bundle"
 
 #Export files
 $LsHash | export-clixml -depth $maxdepth $LsExportFile
@@ -227,8 +231,7 @@ while ( ( $Captures | measure ).count -ge $maxCaptures ) {
     write-warning "Maximum number of captures reached.  Removing oldest capture."
     $captures | sort-object -property LastWriteTime | select-object -first 1 | remove-item -confirm:$false
     $Captures = Get-ChildItem $ExportPath
-
 }
 
-write-host -ForeGroundColor Green "`nCapture Bundle created at $ExportFile"
+write-progress -Activity "Generating NSX Capture Bundle" -Completed
 return $ExportFile

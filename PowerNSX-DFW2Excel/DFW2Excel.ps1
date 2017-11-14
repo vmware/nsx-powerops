@@ -28,29 +28,66 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 # PowerNSX v3.0
 # Purpose: Document NSX for vSphere Distributed Firewall
 
-# Import PowerNSX Module
-import-module PowerNSX
-
-# Import PowerCLI modules, PowerCLI must be installed
-if ( !(Get-Module -Name VMware.VimAutomation.Core -ErrorAction SilentlyContinue) ) {
-    if (Test-Path -Path 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\VMware, Inc.\VMware vSphere PowerCLI' ) {
-        $Regkey = 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\VMware, Inc.\VMware vSphere PowerCLI'
-
-    } else {
-        $Regkey = 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\VMware, Inc.\VMware vSphere PowerCLI'
-    }
-    . (join-path -path (Get-ItemProperty  $Regkey).InstallPath -childpath 'Scripts\Initialize-PowerCLIEnvironment.ps1')
-}
-if ( !(Get-Module -Name VMware.VimAutomation.Core -ErrorAction SilentlyContinue) ) {
-    Write-Host "VMware modules not loaded/unable to load"
-    Exit 99
-}
-
+param (
+    [switch]$EnableIpDetection,
+    [switch]$StartMinimised,
+    [string]$DocumentPath
+)
 # Empty Hash-tables for use with Hyperlinks
 $services_ht = @{}
 $vmaddressing_ht = @{}
 $ipsets_ht = @{}
 $secgrp_ht = @{}
+########################################################
+# Cleanup Excel application object
+# We Need to call this for EVERY VARIABLE that references
+# an excel object.  __EVERY VARIABLE__
+########################################################
+function ReleaseObject {
+    param (
+        $Obj
+    )
+
+    Try {
+        $intRel = 0
+        Do { 
+            $intRel = [System.Runtime.InteropServices.Marshal]::ReleaseComObject($Obj)
+        } While ($intRel -gt  0)
+    }
+    Catch {
+        throw "Error releasing object: $_"
+    }
+    Finally {
+        [System.GC]::Collect()
+       
+    }
+}
+
+########################################################
+# Cleanup Excel application object
+# We Need to call this for EVERY VARIABLE that references
+# an excel object.  __EVERY VARIABLE__
+########################################################
+function ReleaseObject {
+    param (
+        $Obj
+    )
+
+    Try {
+        $intRel = 0
+        Do { 
+            $intRel = [System.Runtime.InteropServices.Marshal]::ReleaseComObject($Obj)
+        } While ($intRel -gt  0)
+    }
+    Catch {
+        throw "Error releasing object: $_"
+    }
+    Finally {
+        [System.GC]::Collect()
+       
+    }
+}
+
 ########################################################
 #  Formatting/Functions Options for Excel Spreadsheet
 ########################################################
@@ -78,7 +115,7 @@ $secgrp_ht = @{}
 #    Global Parameters
 ########################################################
 
-New-VIProperty -Name VMIPAddress -ObjectType VirtualMachine `
+$null = New-VIProperty -Name VMIPAddress -ObjectType VirtualMachine `
     -ValueFromExtensionProperty 'Summary.Guest.IPAddress' `
     -Force
 
@@ -88,7 +125,9 @@ New-VIProperty -Name VMIPAddress -ObjectType VirtualMachine `
 function startExcel(){
 
     $Excel = New-Object -Com Excel.Application
-    $Excel.visible = $True
+    if ( -not $StartMinimised ) { 
+        $Excel.visible = $True
+    }
     $Excel.DisplayAlerts = $false
     $wb = $Excel.Workbooks.Add()
 
@@ -100,7 +139,8 @@ function startExcel(){
         $ws0.Name = "VM_Info"
         vm_ip_addresses_ws($ws0)
         $usedRange = $ws0.UsedRange
-        $usedRange.EntireColumn.Autofit()
+        $null = $usedRange.EntireColumn.Autofit()
+        ReleaseObject -Obj $ws0
     }
 
     Write-Host "`nRetrieving Services configured in NSX-v." -foregroundcolor "magenta"
@@ -108,56 +148,77 @@ function startExcel(){
     $ws1.Name = "Services"
     services_ws($ws1)
     $usedRange = $ws1.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving Service Groups configured in NSX-v." -foregroundcolor "magenta"
     $ws2 = $wb.WorkSheets.Add()
     $ws2.Name = "Service_Groups"
     service_groups_ws($ws2)
     $usedRange = $ws2.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving MACSETS configured in NSX-v." -foregroundcolor "magenta"
     $ws3 = $wb.WorkSheets.Add()
     $ws3.Name = "MACSETS"
     macset_ws($ws3)
     $usedRange = $ws3.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving IPSETS configured in NSX-v." -foregroundcolor "magenta"
     $ws4 = $wb.WorkSheets.Add()
     $ws4.Name = "IPSETS"
     ipset_ws($ws4)
     $usedRange = $ws4.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving Security Groups configured in NSX-v." -foregroundcolor "magenta"
     $ws5 = $wb.WorkSheets.Add()
     $ws5.Name = "Security_Groups"
     sg_ws($ws5)
     $usedRange = $ws5.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving Security Tags configured in NSX-v." -foregroundcolor "magenta"
     $ws6 = $wb.Worksheets.Add()
     $ws6.Name = "Security_Tags"
     sec_tags_ws($ws6)
     $usedRange = $ws6.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving VMs in DFW Exclusion List" -foregroundcolor "magenta"
     $ws7 = $wb.Worksheets.Add()
     $ws7.Name = "DFW Exclusion list"
     ex_list_ws($ws7)
     $usedRange = $ws7.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
 
     Write-Host "`nRetrieving DFW Layer 3 FW Rules" -foregroundcolor "magenta"
     $ws8 = $wb.Worksheets.Add()
     $ws8.Name = "Layer 3 Firewall"
     dfw_ws($ws8)
     $usedRange = $ws8.UsedRange
-    $usedRange.EntireColumn.Autofit()
+    $null = $usedRange.EntireColumn.Autofit()
+
+    # Must cleanup manually or excel process wont quit.
+    ReleaseObject -Obj $ws1    
+    ReleaseObject -Obj $ws2
+    ReleaseObject -Obj $ws3    
+    ReleaseObject -Obj $ws4    
+    ReleaseObject -Obj $ws5    
+    ReleaseObject -Obj $ws6    
+    ReleaseObject -Obj $ws7
+    ReleaseObject -Obj $ws8    
+    ReleaseObject -Obj $usedRange
+    
+    if ( $DocumentPath -and (test-path (split-path -parent $DocumentPath))) { 
+        $wb.SaveAs($DocumentPath)
+        $wb.close(0)
+        $Excel.Quit()
+        ReleaseObject -Obj $Excel
+        ReleaseObject -Obj $wb
+        
+    }
+
 }
 
 ########################################################
@@ -635,7 +696,7 @@ function pop_sg_ws($sheet){
             }
             else 
             {
-                Write-Host $vm.vmName
+                # Write-Host $vm.vmName
                 $link = $sheet.Hyperlinks.Add(
                 $sheet.Cells.Item($row,3),
                 "",
@@ -1168,7 +1229,7 @@ function user_input_vm_ips(){
 
 If (-not $DefaultNSXConnection) 
 {
-    Write-Warning "`nConnect to NSX Manager and vCenter Server needs to be establised"
+    Write-Warning "`nConnect to NSX Managersestablised"
     $nsx_mgr = Read-Host "`nIP or FQDN of NSX Manager? "
     Connect-NSXServer -NSXServer $nsx_mgr
 }
@@ -1181,7 +1242,15 @@ $minor_version = $version.versionInfo.minorVersion
 
 if($major_version -eq 6){
 
-    $collect_vm_ips = user_input_vm_ips
+    if ( $EnableIpDetection ) {
+        $collect_vm_ips = "y"
+    } 
+    elseif (-not $PSBoundParameters.ContainsKey("EnableIpDetection")) { 
+        $collect_vm_ips = user_input_vm_ips        
+    }
+    else { 
+        $collect_vm_ips = "n"
+    }
 
     if ($collect_vm_ips -eq "y") {
         Write-Host "Collection of IP Addresses Enabled"

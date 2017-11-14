@@ -28,168 +28,202 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 # and help build the env networking documents   #
 # ********************************************* #
 # *-------------------------------------------* #
-#                 Version: DEMO                 #
-# *-------------------------------------------* #
+
+[CmdletBinding(DefaultParameterSetName = "Default")]
+param (
+    # Flag that we are running without UI, menu system and prompts are disabled. 
+    [Parameter(Mandatory = $true, ParameterSetName = "NonInteractive")]
+        [switch]$NonInteractive,
+    # When running non-interactive, the connection profile to use.
+    [Parameter(Mandatory = $true, ParameterSetName = "NonInteractive")]
+        [string]$ConnectionProfile,
+    # When running non-interactive, what task to execute.
+    [Parameter(ParameterSetName = "NonInteractive")]
+        [ValidateSet("All")]
+        [string]$Task = "All",
+    [Parameter(ParameterSetName = "NonInteractive")]
+        [ValidateNotNullOrEmpty()]
+        [string]$DocumentLocation = ("{0}\Report\{1:yyyy}-{1:MM}-{1:dd}_{1:HH}-{1:mm}" -f (split-path -parent $MyInvocation.MyCommand.Path), (get-date))
+    
+)
+
+$global:PowerOps = $MyInvocation.MyCommand.Path
+$global:MyDirectory = split-path -parent $MyInvocation.MyCommand.Path
+$version = "0.1"
+$requiredModules = @("PowerNSX", "Pester", "Posh-SSH")
+
+#Setup default menu colours.
+$global:PSDefaultParameterValues["Show-MenuV2:HeaderColor"] = "DarkGreen"
+$global:PSDefaultParameterValues["Show-MenuV2:SubheaderColor"] = "DarkGreen"
+$global:PSDefaultParameterValues["Show-MenuV2:FooterColor"] = "DarkGreen"
+$global:PSDefaultParameterValues["Show-MenuV2:FooterTextColor"] = "White"
+$global:PSDefaultParameterValues["Disabled"] = $false
+
+#Default usernames for vc/nsx
+$default_viusername = "administrator@vsphere.local"
+$default_nsxusername = "admin"
+
+#ScheduledTask details.
+$TaskTimeOfDay = "6am"
+$TaskDayOfWeek = "Sunday"
+$EventLogSource = "PowerOps"
+$MaxReports = 20
+
+#dot source our utils script.
+. $myDirectory\util.ps1
 
 #Setting up max window size and max buffer size
-invoke-expression -Command .\maxWindowSize.ps1
+# NB 11/17 - Commented out - this is a seriously annoying 'feature'.  Why are
+# we not allowing the user to choose their window size?
+# invoke-expression -Command $mydirectory\maxWindowSize.ps1
 
-# Import PowerNSX Module
-import-module PowerNSX
-import-module Posh-SSH
-import-module Pester
-##Import-Module PesterNew-SSHSession
-#Import-Module pscx
 
 ########################################################
 #    Formatting Options for Excel Spreadsheet
 ########################################################
 
-    $titleFontSize = 13
-    $titleFontBold = $True
-    $titleFontColorIndex = 2
-    $titleFontName = "Calibri (Body)"
-    $titleInteriorColor = 10
+$titleFontSize = 13
+$titleFontBold = $True
+$titleFontColorIndex = 2
+$titleFontName = "Calibri (Body)"
+$titleInteriorColor = 10
 
-    $subTitleFontSize = 10
-    $subTitleFontBold = $True
-    $subTitleFontName = "Calibri (Body)"
-    $subTitleInteriorColor = 42
+$subTitleFontSize = 10
+$subTitleFontBold = $True
+$subTitleFontName = "Calibri (Body)"
+$subTitleInteriorColor = 42
 
-    $valueFontName = "Calibri (Body)"
-    $valueFontSize = 10
+$valueFontName = "Calibri (Body)"
+$valueFontSize = 10
 
-    $subSetInteriorColor = 22
+$subSetInteriorColor = 22
 
-    $global:myRow = 1
-    $global:myColumn = 1
+$global:myRow = 1
+$global:myColumn = 1
 
-    $global:ConsoleWidth = (Get-host).ui.RawUI.windowsize.width
-    $global:listOfNSXPrepHosts=@()
-    $global:nsxManagerAuthorization = ''
+$global:ConsoleWidth = (Get-host).ui.RawUI.windowsize.width
+$global:listOfNSXPrepHosts=@()
+$global:nsxManagerAuthorization = ''
 
-#Install Dependencies here
-function installDependencies($sectionNumber){
-    $userSelection = "Install Dependencies"
-    Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now executing '$userSelection'..."\
-    Install-Module -Name PowerNSX
-    Write-Host -ForegroundColor DarkGreen "Finished installing PowerNSX. Now installing Pester."
-    Install-Module -Name Pester
-    Write-Host -ForegroundColor DarkGreen "Finished installing Pester. Now Installing Posh-SSH."
-    Install-Module -Name Posh-SSH
-    Write-Host -ForegroundColor DarkGreen "Finished installing Posh-SSH."
-    printMainMenu
+function init {
+    #Need to read in saved config prior to defining menus.
+    Read-Config 
+    loadDependancies
+
+    #Create document location
+    if (-not ( test-path $DocumentLocation )) { 
+        $null = new-item -ItemType Directory -Path $DocumentLocation
+    }
+
+    $ExistingReports = Get-ChildItem (split-path -parent $DocumentLocation) -Directory
+    while ( ( $ExistingReports | measure ).count -gt $maxReports ) {
+        $oldest = $ExistingReports | sort-object -property LastWriteTime | select-object -first 1
+        $oldest | remove-item -confirm:$false -Recurse -Force
+        out-event -entrytype warning "Maximum number of reports reached.  Removed $oldest."
+        $ExistingReports = Get-ChildItem (split-path -parent $DocumentLocation) -Directory
+    }
+}
+function loadDependancies {
+    if ( checkDependancies -ListAvailable $true ) {
+        write-progress -Activity "Loading dependancies"        
+        foreach ( $module in $requiredModules ) {
+            write-progress -Activity "Loading dependancies" -Status $module            
+            import-module $module -Global
+        }
+        write-progress -Activity "Loading dependancies" -Completed
+    }
+}   
+
+function checkDependancies {
+    param(
+        [bool]$ListAvailable = $false
+    )
+    # returns bool based on required dependancies for script being installed.
+    write-progress -Activity "Checking dependancies"
+    if ( -not $script:DependanciesSatisfied) { 
+        foreach ( $module in $requiredModules ) { 
+            write-progress -Activity "Checking dependancies" -Status $module
+            if ( -not ( Get-Module -ListAvailable:$ListAvailable -name $module )) { 
+                return $false
+            }
+        }
+        $script:DependanciesSatisfied = $true
+    }
+    write-progress -Activity "Checking dependancies" -Completed    
+    return $true
+}
+
+function installDependencies {
+
+    if ( -not (get-module -listavailable PowerShellGet )) { 
+        write-error "Unable to perform dependancy installation, PowerShellGet is not installed.  Install from https://www.powershellgallery.com/packages/PowerShellGet/ and try again."
+    }
+    else { 
+        Write-Progress -Activity "Installing module dependancies."
+        
+        foreach ( $module in $requiredModules )  {
+            if ( -not (Get-Module -ListAvailable $Module )) { 
+                Install-Module -Name $Module -Scope CurrentUser
+                Write-Progress -Activity "Installing module dependancies." -CurrentOperation "Install module $module."
+            }
+        }
+        Write-Progress -Activity "Installing module dependancies." -Completed        
+    }
+
+    #Force Load the deps now
+    loadDependancies
 }
 
 #Connect to NSX Manager and vCenter. Save the credentials.
-function connectNSXManager($sectionNumber){
-    Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now executing Connect with Hosts..."
+function connectProfile {
+
+    param ( 
+        $ProfileName
+    )
+
+    out-event "Connecting to NSX manager $($Config.Profiles["$ProfileName"].NSXServer) defined in connection profile $ProfileName"
+    if ( -not ( $Config.Profiles["$ProfileName"] )) { 
+        throw "Profile $Profile not defined."
+    }
+    if ( 
+        $global:DefaultNsxConnection.Server -eq $Config.Profiles["$ProfileName"].NSXServer -and
+        $global:DefaultNsxConnection.Credential.Username -eq $Config.Profiles["$ProfileName"].nsxusername -and
+        $global:DefaultNsxConnection.ViConnection.IsConnected
+    ) { 
+        return "Using existing connection to $($global:DefaultNsxConnection.Server)"
+    }
     
-    $global:vCenterHost = Read-Host -Prompt " Enter vCenter IP"
-    $vCenterCredentials = Get-Credential -Message "Credentials for vCenter $vCenterHost"
-    ####$vCenterUser = Read-Host -Prompt " Enter vCenter User"
-    ####$vCenterPass = Read-Host -Prompt " Enter vCenter Password"
-
-    $global:nsxManagerHost = Read-Host -Prompt "`n Enter NSX Manager IP"
-    $NSXManagerCredentials = Get-Credential -Message "Credentials for NSX Manager $nsxManagerHost" -UserName "admin"
-    ####$nsxManagerUser = Read-Host -Prompt " Enter NSX Manager User"
-    ####$nsxManagerPasswd = Read-Host -Prompt " Enter NSX Manager Password"
-    ####$nsxManagerSecurepasswd = ConvertTo-SecureString $nsxManagerPasswd -AsPlainText -Force
-    ####$global:nsxManagerPSCredential = New-Object System.Management.Automation.PSCredential ($nsxManagerUser, $nsxManagerSecurepasswd)
-
-    ####elseif ($global:vCenterHost -eq '' -or $vCenterUser -eq '' -or $vCenterPass -eq ''){
-    if ($global:vCenterHost -eq '' -or $vCenterCredentials.username -eq '' -or $vCenterCredentials.password -eq ''){
-        " vCenter information not provided. Can't connect to NSX Manager or vCenter!"
-    }elseif ($global:nsxManagerHost -eq '' -or $NSXManagerCredentials.username -eq '' -or $NSXManagerCredentials.password -eq ''){
-        " NSX Manager information not provided. Can't connect to NSX Manager or vCenter!"
-    }else{
-        Write-Host -ForegroundColor Yellow "`n Connecting with vCenter..."
-        ####Connect-VIServer -Server $global:vCenterHost -User $vCenterUser -Password $vCenterPass
-        $global:vCenterConnection = Connect-VIServer -Server $global:vCenterHost -Credential $vCenterCredentials
-        if ($global:vCenterConnection -eq $None){
-            Write-Host -ForegroundColor Yellow "`n ERROR: Connecting with vCenter!"
-            exit
-        }
-
-        Write-Host -ForegroundColor Yellow "`n Connecting with NSX Manager..."
-        ####$global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost -User $nsxManagerUser -Password $nsxManagerPasswd -viusername $vCenterUser -vipassword $vCenterPass -ViWarningAction "Ignore"
-        $global:NsxConnection = Connect-NsxServer -Server $global:nsxManagerHost  -Credential $NSXManagerCredentials -VICred $vCenterCredentials -ViWarningAction "Ignore"
-        if ($global:NsxConnection -eq $None){
-            Write-Host -ForegroundColor Yellow "`n ERROR: Connecting with NSX Manager!"
-            exit
-        }
+    try { 
+        $vCenterCredentials = New-Object System.Management.Automation.PSCredential (
+            $Config.Profiles["$ProfileName"].viusername, 
+            ($Config.Profiles["$ProfileName"].vipassword | ConvertTo-SecureString)
+        )
         
-        ##"`n Establishing SSH connection with NSX Manager..."
-        #$nsxManagerSecurePass = $nsxManagerPass | ConvertTo-SecureString -AsPlainText -Force
-        #$myNSXManagerSecureCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $nsxManagerUser, $nsxManagerSecurePass
-        ##$global:NsxSSHConnection = startSSHSession -serverToConnectTo $nsxManagerHost -credentialsToUse $nsxManagerPSCredential
-        ##$global:NsxSSHConnection
+        $NSXManagerCredentials =  New-Object System.Management.Automation.PSCredential (
+            $Config.Profiles["$ProfileName"].nsxusername, 
+            ($Config.Profiles["$ProfileName"].nsxpassword | ConvertTo-SecureString)
+        )
 
-        ####Write-Host -ForegroundColor Yellow "`n Connecting NSX Manager to vCenter..."
-        ####Set-NsxManager -vCenterServer $global:vCenterHost -vCenterUserName $vCenterUser -vCenterPassword $vCenterPass
-        Write-Host -ForegroundColor Green "Done!"
+        Connect-NsxServer -NSXServer $Config.Profiles["$ProfileName"].NSXServer -Credential $NSXManagerCredentials -VICred $vCenterCredentials -ViWarningAction "Ignore" | out-null
+    }
+    catch {
+        out-event -entrytype error "Error connecting to NSX using connection profile $ProfileName.  $_.  Please try again."
     }
 }
 
-#---- Get Documentation Menu here ----#
-function documentationkMenu($sectionNumber){    
-    if ($sectionNumber -eq 3){clx | printDocumentationMenu}
-    Write-Host "`n>> Please select a Documentation Menu option: " -ForegroundColor Darkyellow -NoNewline 
-    $documentationSectionNumber = Read-Host
+function disconnectDefaultNsxConnection {
 
-    if ($documentationSectionNumber -eq 0 -or $documentationSectionNumber -eq "exit"){
-        Write-Host -ForeGroundColor Darkyellow "Exit Documentation Menu`n"
-        clx | printMainMenu}
-    elseif ($documentationSectionNumber -eq 1){$allNSXComponentData = getNSXComponents($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 2){getHostInformation($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 3){runNSXVISIOTool($documentationSectionNumber)}
-#    elseif ($documentationSectionNumber -eq 4){importLogInSightDashBoard($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 4){getRoutingInformation($documentationSectionNumber)}
-    elseif ($documentationSectionNumber -eq 5){runDFW2Excel($documentationSectionNumber)}
-    #elseif ($documentationSectionNumber -eq 7){runDFWVAT($documentationSectionNumber)}
-    
-    elseif ($documentationSectionNumber -eq "help"){documentationkMenu(3)}
-    elseif ($documentationSectionNumber -eq "clear"){documentationkMenu(3)}
-    elseif ($documentationSectionNumber -eq ''){documentationkMenu(22)}
-    else { Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
-    documentationkMenu(22)}
+    if ( $DefaultNsxConnection ) { 
+        if ( $DefaultNsxConnection.ViConnection.isConnected ) { 
+            Disconnect-VIServer $DefaultNsxConnection.ViConnection -Confirm:$false
+        }
+        Remove-Variable -Scope Global -name DefaultNsxConnection
+    }
 }
-
-#---- Get Health Check Menu here ----#
-function healthCheckMenu($sectionNumber){    
-    if ($sectionNumber -eq 4){clx | printHealthCheckMenu}
-    Write-Host "`n>> Please select a Health Check Menu option: " -ForegroundColor Darkyellow -NoNewline
-    $healthCheckSectionNumber = Read-Host
-
-    if ($healthCheckSectionNumber -eq 0 -or $healthCheckSectionNumber -eq "exit"){
-        Write-Host -ForeGroundColor Darkyellow "Exit Health Check Menu`n"
-        clx | printMainMenu}
-    elseif ($healthCheckSectionNumber -eq 1){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXConnections"}
-    elseif ($healthCheckSectionNumber -eq 2){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXManager"}
-    elseif ($healthCheckSectionNumber -eq 3){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXControllers"}
-    elseif ($healthCheckSectionNumber -eq 4){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXLogicalSwitch"}
-    elseif ($healthCheckSectionNumber -eq 5){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXDistributedFirewallHeap"}
-    elseif ($healthCheckSectionNumber -eq 6){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXVDR"}
-    elseif ($healthCheckSectionNumber -eq 7){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXVIBVersion"}
-    elseif ($healthCheckSectionNumber -eq 8){runNSXTest -sectionNumber $healthCheckSectionNumber -testModule "testNSXMTUUnderlay"}
-
-    elseif ($healthCheckSectionNumber -eq "help"){healthCheckMenu(4)}
-    elseif ($healthCheckSectionNumber -eq "clear"){healthCheckMenu(4)}
-    elseif ($healthCheckSectionNumber -eq ''){healthCheckMenu(22)}
-    else { Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
-    healthCheckMenu(22)}
-}
-
-
-#---- Get Health Check Menu here - currently not using this function ----#
-function nsxUpdateCheckReport($sectionNumber){
-    Write-Host -ForegroundColor DarkGreen "You have selected # '$sectionNumber'. Now collecting NSX upgrade info..."
-}
-
 
 #Get NSX Component info here
-function getNSXComponents($sectionNumber){
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now getting NSX Components info..."
+function getNSXComponents {
+
     #### Call other functions to get NSX Components info here...
 
     #### Save NSX Components info on local variable here
@@ -214,9 +248,9 @@ function getNSXComponents($sectionNumber){
     #>
     $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"}
     
-    #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
-    $excelName = "NSX-Components-Excel"
-    $nsxComponentExcelWorkBook = createNewExcel($excelName)
+    #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel
+    $currentdocumentpath = "$documentlocation\NSX-Components.xlsx" 
+    $nsxComponentExcelWorkBook = createNewExcel
     
     ####plotDynamicExcel one workBook at a time
     $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Manager" -listOfDataToPlot $allNSXComponentExcelDataMgr
@@ -247,26 +281,23 @@ function getNSXComponents($sectionNumber){
     }
     
     #$nsxComponentExcelWorkBook.SaveAs()
-    $global:newExcel.ActiveWorkbook.SaveAs()
-    $global:newExcel.Workbooks.Close()
+    $nsxComponentExcelWorkBook.SaveAs($currentdocumentpath)
+    $nsxComponentExcelWorkBook.Close()
     $global:newExcel.Quit()
-    Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
-    #Loop back to document Menu
-    documentationkMenu(22) #Keep in Documentation Menu
+    releaseObject -obj $nsxComponentExcelWorkBook
+    releaseObject -obj $newExcel
 }
 
 #Get Host info here
-function getHostInformation($sectionNumber){
-    $userSelection = "Get List of Hosts"
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now executing '$userSelection'..."
+function getHostInformation {
     #$vmHosts = get-vmhost
-    getNSXPrepairedHosts
+    getNSXPreparedHosts
     $vmHosts = $global:listOfNSXPrepHosts
-    Write-Host " Number of NSX Prepaired vmHosts are:" $vmHosts.length
+    # out-event "Number of NSX Prepared vmHosts are: $($vmHosts.length)"
 
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
-    $excelName = "ESXi-Hosts-Excel"
-    $nsxHosttExcelWorkBook = createNewExcel($excelName)
+    $currentdocumentpath = "$documentlocation\ESXi-Hosts.xlsx" 
+    $nsxHostExcelWorkBook = createNewExcel
     foreach ($eachVMHost in $vmHosts){
         $esxcli = $eachVMHost | Get-EsxCli -v2
         $sshCommandOutputDataLogicalSwitch = @{}
@@ -293,42 +324,51 @@ function getHostInformation($sectionNumber){
         $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
         $sshCommandOutputDataLogicalSwitch = parseSSHOutput -fileToParse "logical-switch-info.txt" -findElements $findElements -direction "Row"
         #>
-        get-cluster -Server $NSXConnection.ViConnection | %{ if ($_.id -eq $myParentClusterID){
-            get-cluster $_ | Get-NsxClusterStatus | %{ if($_.featureId -eq "com.vmware.vshield.vsm.vxlan" -And $_.installed -eq "true"){
-                    try{
-                        $vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
-                        $myVDSName = $vdsInfo.VDSName
-                        $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
-                        $sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
-                        $sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
-                        $sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
+        get-cluster -Server $DefaultNSXConnection.ViConnection | % {
+            if ($_.id -eq $myParentClusterID){
+                get-cluster $_ | Get-NsxClusterStatus | % {
+                    if($_.featureId -eq "com.vmware.vshield.vsm.vxlan" -And $_.installed -eq "true"){
+                        try{
+                            $vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
+                            $myVDSName = $vdsInfo.VDSName
+                            $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
+                            $sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
+                            $sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
+                            $sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
 
-                        $vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
-                        $myVmknicName = $vmknicInfo.VmknicName
-                        $sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
-                        $tempCountVMKnic = 0
-                        if ($vdsInfo.VmknicCount -gt 1){
-                            $myVmknicName | %{
-                                $sshCommandOutputDataVMKNIC.Add("VmknicName$tempCountVMKnic", $myVmknicName[$tempCountVMKnic])
-                                $sshCommandOutputDataVMKNIC.Add("IP$tempCountVMKnic", $vmknicInfo.IP[$tempCountVMKnic])
-                                $sshCommandOutputDataVMKNIC.Add("Netmask$tempCountVMKnic", $vmknicInfo.Netmask[$tempCountVMKnic])
-                                $tempvmknicLableList = $tempvmknicLableList + ("VmknicName$tempCountVMKnic", "IP$tempCountVMKnic", "Netmask$tempCountVMKnic")
-                                $tempCountVMKnic ++
+                            $vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
+                            $myVmknicName = $vmknicInfo.VmknicName
+                            $sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
+                            $tempCountVMKnic = 0
+                            if ($vdsInfo.VmknicCount -gt 1){
+                                $myVmknicName | %{
+                                    $sshCommandOutputDataVMKNIC.Add("VmknicName$tempCountVMKnic", $myVmknicName[$tempCountVMKnic])
+                                    $sshCommandOutputDataVMKNIC.Add("IP$tempCountVMKnic", $vmknicInfo.IP[$tempCountVMKnic])
+                                    $sshCommandOutputDataVMKNIC.Add("Netmask$tempCountVMKnic", $vmknicInfo.Netmask[$tempCountVMKnic])
+                                    $tempvmknicLableList = $tempvmknicLableList + ("VmknicName$tempCountVMKnic", "IP$tempCountVMKnic", "Netmask$tempCountVMKnic")
+                                    $tempCountVMKnic ++
+                                }
+                            }else{
+                                $sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
+                                $sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
+                                $sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
                             }
-                        }else{
-                            $sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
-                            $sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
-                            $sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
+                            $gotVXLAN = $true
                         }
-                        $gotVXLAN = $true
-                    }catch{$ErrorMessage = $_.Exception.Message
-                        if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
-                            Write-Host " Warning: No VxLAN data found on this Host $myHostName" -ForegroundColor Red
-                            $gotVXLAN = $false
-                        }else{Write-Host $ErrorMessage}
+                        catch{
+                            $ErrorMessage = $_.Exception.Message
+                            if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
+                                out-event -entrytype warning "No VxLAN data found on this Host $myHostName"
+                                $gotVXLAN = $false
+                            }
+                            else{
+                                out-event -entrytype error $ErrorMessage
+                            }
+                        }
                     }
-            }}
-        }}
+                }
+            }
+        }
         if($gotVXLAN -eq $false){
             $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "False")
             $sshCommandOutputDataVMKNIC.Add("VmknicCount", "0")}
@@ -394,53 +434,46 @@ function getHostInformation($sectionNumber){
         if ($myHostName.length -gt 31){ $hostWorkSheetName = $myHostName.substring(0,30) }else{$hostWorkSheetName = $myHostName}
 
         ####plotDynamicExcel one workBook at a time
-        $plotHostInformationExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxHosttExcelWorkBook -workSheetName $hostWorkSheetName -listOfDataToPlot $allVmHostsExcelData
+        $plotHostInformationExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxHostExcelWorkBook -workSheetName $hostWorkSheetName -listOfDataToPlot $allVmHostsExcelData
         ####writeToExcel -eachDataElementToPrint $sshCommandOutputDataLogicalSwitch -listOfAllAttributesToPrint $sshCommandOutputLable
         Remove-Item ./$nsxMgrCommandRouteTable
     }
     #invokeNSXCLICmd(" show logical-switch host host-31 verbose ")
-    #$nsxHosttExcelWorkBook.SaveAs()
-    $global:newExcel.ActiveWorkbook.SaveAs()
-    $global:newExcel.Workbooks.Close()
+    #$nsxHostExcelWorkBook.SaveAs()
+    $nsxHostExcelWorkBook.SaveAs($currentdocumentpath)
+    $nsxHostExcelWorkBook.Close()
     $global:newExcel.Quit()
-    Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
-    documentationkMenu(22)
+    releaseObject -obj $nsxHostExcelWorkBook
+    releaseObject -obj $newExcel
+    
 }
 
 #Run visio tool
-function runNSXVISIOTool($sectionNumber){
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now starting VISIO tool..."
-    $capturePath = invoke-expression -Command .\DiagramNSX\NsxObjectCapture.ps1
-    ##Write-Host "`n Capture Path is: $capturePath"
-    #$pathVISIO = Read-Host -Prompt " Please provide the above .zip file path to generate the VISIO file"
-    #$visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -CaptureBundle " + $pathVISIO
-    $visioDiagramCommand = ".\DiagramNSX\NsxObjectDiagram.ps1 -NoVms -CaptureBundle " + $capturePath
-    ##Write-Host "DiagramCommand is: $visioDiagramCommand"
-    invoke-expression -Command $visioDiagramCommand
-    documentationkMenu(22)
-}
-
-#Download Log Insite's Dashboard
-function importLogInSightDashBoard($sectionNumber){
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now starting VISIO tool..."
-    Write-Host "`n Currently this feature is disabled."
-    ##$lisVersion = Read-Host -Prompt " Please provide your Log Insite Version"
-    ##Write-Host "`n Downloading custom Dashboard for your Log Insite version..."
+function runNSXVISIOTool {
+    
+    $capturePath = "$DocumentLocation\NSX-CaptureBundle.zip"
+    $ObjectDiagram = "$MyDirectory\DiagramNSX\NsxObjectDiagram.ps1"
+    $ObjectCapture = "$MyDirectory\DiagramNSX\NsxObjectCapture.ps1"
+    $null = &$ObjectCapture -ExportFile $capturePath
+    &$ObjectDiagram -NoVms -CaptureBundle $capturePath -outputDir $DocumentLocation   
 }
 
 #Get Routing info here
-function getRoutingInformation($sectionNumber){
+function getRoutingInformation {
     $tempTXTFileNamesList = @()
     $userSelection = "Get Routing Information"
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now executing '$userSelection'..."
-    
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel 
-    $excelName = "NSX-Routing-Excel"
-    $nsxRoutingExcelWorkBook = createNewExcel($excelName)
+    
+    $currentdocumentpath = "$documentlocation\NSX-Routing.xlsx"
+    $nsxRoutingExcelWorkBook = createNewExcel
 
+    Write-Progress -Activity "Documenting Routing Information"
+    
     # Getting Edge Routing Info here
     $numberOfEdges = Get-NsxEdge
     foreach ($eachEdge in $numberOfEdges){
+        Write-Progress -Activity "Documenting Routing Information" -CurrentOperation "Processing Edge $($eachedge.name)"
+    
         $allEdgeRoutingExcelData = @{}
         $edgeName = $eachEdge.Name
         $edgeID = $eachEdge.id
@@ -523,11 +556,15 @@ function getRoutingInformation($sectionNumber){
 
         if ($edgeID.length -gt 13){ $nsxEdgeWorkSheetName = "NSX Edge Routing-$($edgeID.substring(0,13))" }else{$nsxEdgeWorkSheetName = "NSX Edge Routing-$edgeID"}
         $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxEdgeWorkSheetName -listOfDataToPlot $allEdgeRoutingExcelData
+        Write-Progress -Activity "Documenting Routing Information" -CurrentOperation "Processing Edge $($eachedge.name)" -Completed
     }
 
     # Getting DLR routing Info here
     $numberOfDLRs = Get-NsxLogicalRouter
     foreach($eachDLR in $numberOfDLRs){
+
+        Write-Progress -Activity "Documenting Routing Information" -CurrentOperation "Processing DLR $($eachdlr.name)"
+
         $allDLRRoutingExcelData = @{}
         $dlrID = $eachDLR.id
         $dlrName = $eachDLR.Name
@@ -630,14 +667,19 @@ function getRoutingInformation($sectionNumber){
         if ($dlrID.length -gt 14){ $nsxDLRWorkSheetName = "NSX DLR Routing-$($dlrID.substring(0,13))" }else{$nsxDLRWorkSheetName = "NSX DLR Routing-$dlrID"}
         #Plot the NSX Route final
         $plotNSXRoutingExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxRoutingExcelWorkBook -workSheetName $nsxDLRWorkSheetName -listOfDataToPlot $allDLRRoutingExcelData
+        Write-Progress -Activity "Documenting Routing Information" -CurrentOperation "Processing DLR $($eachdlr.name)" -Completed
     }
     #$nsxRoutingExcelWorkBook.SaveAs()
-    $global:newExcel.ActiveWorkbook.SaveAs()
-    $global:newExcel.Workbooks.Close()
+    $nsxRoutingExcelWorkBook.SaveAs($currentdocumentpath)
+    $nsxRoutingExcelWorkBook.Close()
     $global:newExcel.Quit()
+    releaseObject -obj $nsxRoutingExcelWorkBook
+    releaseObject -obj $newExcel
+
     $tempTXTFileNamesList | %{ Remove-Item ./$_}
-    Write-Host -ForegroundColor Green "`n Done Working on the Excel Sheet."
-    documentationkMenu(22)
+
+    Write-Progress -Activity "Documenting Routing Information" -Completed
+    
 }
 
 <#
@@ -662,22 +704,13 @@ function getVXLANInformation($sectionNumber){
 #>
 
 #Run DFW2Excel
-function runDFW2Excel($sectionNumber){
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now documenting DFW to excel file..."
-    invoke-expression -Command .\PowerNSX-DFW2Excel\DFW2Excel.ps1
-    documentationkMenu(22)
+function runDFW2Excel {
+    
+    $Dfw2Excel = "$myDirectory\PowerNSX-DFW2Excel\DFW2Excel.ps1"
+    $DocumentPath = "$DocumentLocation\DfwToExcel.xlsx"    
+    &$Dfw2Excel -EnableIpDetection -StartMinimised -DocumentPath $DocumentPath
+    
 }
-
-
-#Run DFW-VAT
-function runDFWVAT($sectionNumber){
-    Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Now Exicuting DFW VATool..."
-    Write-Host "Need python2.7 to run DFW-VAT. Currently disabled."
-    #invoke DFW_VAT subgit folder here...
-    #invoke-expression -Command .\PowerNSX-Scripts\DFW2Excel.ps1
-    documentationkMenu(22)
-}
-
 
 function getMemberWithProperty($tempListOfAllAttributesInFunc){
     #$listOfAllAttributesWithCorrectProperty = New-Object System.Collections.ArrayList
@@ -690,9 +723,8 @@ function getMemberWithProperty($tempListOfAllAttributesInFunc){
     return ,$listOfAllAttributesWithCorrectProperty
 }
 
-
 function invokeNSXCLICmd($commandToInvoke, $fileName){
-    Write-Host -ForeGroundColor Yellow "`n Note: CLI Command Invoked:" $commandToInvoke
+    write-progress -activity "Executing NSX CLI Command: $commandToInvoke"
     <#
     if ($nsxManagerAuthorization -eq ''){
             $nsxManagerUser = Read-Host -Prompt " Enter NSX Manager $nsxManagerHost User"
@@ -715,8 +747,9 @@ function invokeNSXCLICmd($commandToInvoke, $fileName){
     $AdditionalHeaders = @{"Accept"="text/plain"; "Content-type"="Application/xml"}
     $nsxCLIResponceweb = Invoke-NsxWebRequest -URI "/api/1.0/nsx/cli?action=execute" -method post -extraheader $AdditionalHeaders -body $xmlBody
     $nsxCLIResponceweb.content > $fileName
+    write-progress -activity "Executing NSX CLI Command: $commandToInvoke" -Completed
+    
 }
-
 
 function startSSHSession($serverToConnectTo, $credentialsToUse){
     #$myNSXManagerCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $mySecurePass
@@ -724,9 +757,8 @@ function startSSHSession($serverToConnectTo, $credentialsToUse){
     return $newSSHSession
 }
 
-
-function getNSXPrepairedHosts() {
-    $allEnvClusters = get-cluster -Server $NSXConnection.ViConnection | %{
+function getNSXPreparedHosts() {
+    $allEnvClusters = get-cluster -Server $DefaultNSXConnection.ViConnection | %{
         $nsxCluster = $_
         get-cluster $_ | Get-NsxClusterStatus | %{
             if($_.featureId -eq "com.vmware.vshield.vsm.nwfabric.hostPrep" -And $_.installed -eq "true"){
@@ -764,9 +796,12 @@ function parseSSHOutput ($fileToParse, $findElements, $direction) {
     return $sshCommandOutputParsedDic
 }
 
-function clx {
-    [System.Console]::SetWindowPosition(0,[System.Console]::CursorTop)
-}
+# NB 11/17 - As per above - why are we not letting the user choose the size of
+# their windows!!!
+
+# function clx {
+#     [System.Console]::SetWindowPosition(0,[System.Console]::CursorTop)
+# }
 
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
@@ -774,16 +809,21 @@ function clx {
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- # 
 
 
-function runNSXTest ($sectionNumber, $testModule){
-  Write-Host -ForegroundColor Darkyellow "You have selected # '$sectionNumber'. Testing $testModule..."
-  $startTime = Get-Date
-  $outputFileName = $testModule +"-"+ $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xml"
-  $result = Invoke-Pester -Script @{ Path = './HealthCheck/'+$testModule+'.Tests.ps1'; Parameters = @{ testModule = $testModule} } -OutputFile ./HealthCheck/testResult-$outputFileName
-  Write-Host "`nSave the result in an XML file? Y or N [default Y]: " -ForegroundColor Darkyellow -NoNewline
-  $saveHCResult = Read-Host
-  if ($saveHCResult -eq 'n'-or $saveHCResult -eq "N") {Remove-Item ./HealthCheck/testResult-$outputFileName}else{
-      Write-Host "Saved XML file at:" ./HealthCheck/testResult-$outputFileName -ForegroundColor Green}
-  healthCheckMenu(22)
+function runNSXTest ($testModule){
+    $startTime = Get-Date
+    $outputFileName = $testModule +"-"+ $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xml"
+    
+    #Todo: Change connection handling to suit connection profiles.
+    $global:NsxConnection = $DefaultNSXConnection
+
+    $result = Invoke-Pester -Script @{ Path = './HealthCheck/'+$testModule+'.Tests.ps1'; Parameters = @{ testModule = $testModule} } -OutputFile ./HealthCheck/testResult-$outputFileName -OutputFormat NUnitXML 
+
+    # NB 11/17 Removing redundant prompt (we will manage old files separately, so write out by default.)
+    # Write-Host "`nSave the result in an XML file? Y or N [default Y]: " -ForegroundColor Darkyellow -NoNewline
+    # $saveHCResult = Read-Host
+    # if ($saveHCResult -eq 'n'-or $saveHCResult -eq "N") {Remove-Item ./HealthCheck/testResult-$outputFileName}else{
+    #     Write-Host "Saved XML file at:" ./HealthCheck/testResult-$outputFileName -ForegroundColor Green
+    # }
 }
 
 
@@ -791,12 +831,13 @@ function runNSXTest ($sectionNumber, $testModule){
 #---- ---- Excel Functions start here ---- ----#
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- # 
 
-#Create empty excel sheet here w/ correct name 
-function createNewExcel($newExcelName){
-    $startTime = Get-Date
-    $newExcelNameWithDate = $newExcelName +"-"+ $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xlsx"
-    Write-Host -ForeGroundColor Green "`n Creating Excel File:" $newExcelNameWithDate
-    
+#Create empty excel sheet here 
+
+function createNewExcel{ 
+    # param (
+    #     $Path
+    # )
+    Write-Progress -Activity "Creating Excel Document" -Status "Create new Excel document"    
     #$xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
     $global:newExcel = New-Object -Com Excel.Application
     $global:newExcel.visible = $false
@@ -807,7 +848,8 @@ function createNewExcel($newExcelName){
     
     # Save the excel with provided Name
     #$newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate, $xlFixedFormat)
-    $global:newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate)
+    # $global:newExcel.ActiveWorkbook.SaveAs($Path)
+    Write-Progress -Activity "Creating Excel Document" -Status "Create new Excel document" -Completed    
     return $wb
 } # End of function createNewExcel
 
@@ -815,7 +857,8 @@ function createNewExcel($newExcelName){
 # Call this function seperatelly for multiple Work Sheets.
 function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfDataToPlot){
     $listOfAllAttributes =@()
-    Write-Host -ForeGroundColor Green "`n Creating WorkSheet: $workSheetName. This can take upto 10 mins..."
+    Write-Progress -Activity "Populate Excel Document" -Status "Populating worksheet $workSheetName" -CurrentOperation "Creating worksheet in document"
+    
     $global:myRow =1
     $global:myColumn=1
     $sheet = $myOpenExcelWBReturn.WorkSheets.Add()
@@ -825,7 +868,8 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
     #Use this loop for nonsorted dic data: foreach($eachDataSetKey in $listOfDataToPlot.Keys){
     foreach($eachsortedDataSetKey in $listOfDataToPlot.GetEnumerator() | Sort Name){
         $eachDataSetKey = $eachsortedDataSetKey.name
-        Write-Host " =>Plotting data for:" $eachDataSetKey
+        Write-Progress -Activity "Populate Excel Document" -Status "Populating worksheet $workSheetName" -CurrentOperation "Writing data for $eachdatasetKey"
+    
         $global:myRow++
         $global:myRow++
         $global:myColumn = 1
@@ -837,6 +881,8 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
         $sheet.Cells.Item($global:myRow,$global:myColumn).Interior.ColorIndex = $titleInteriorColor
         $sheet.Cells.Item($global:myRow,$global:myColumn).HorizontalAlignment = -4108
         foreach ($eachDataElement in $listOfDataToPlot.Item($eachDataSetKey)[0]){
+            Write-Progress -Activity "Populate Excel Document" -Status "Populating worksheet $workSheetName" -CurrentOperation "Processing element $($eachdataElement.name)"
+        
             #Write-Host "  listOfDataToPlot[0] eachDataElement is:" $eachDataElement.name
             $listOfAllAttributes = @()
             $global:myRow++
@@ -867,10 +913,8 @@ function plotDynamicExcelWorkBook($myOpenExcelWBReturn, $workSheetName, $listOfD
     $usedRange = $sheet.UsedRange
     $usedRange.EntireColumn.Autofit()
 
-#    foreach($appliedTo in $rule.appliedToList.appliedTo){
-#                $sheet.Cells.Item($appRow,18) = $appliedTo.name
-#                $appRow++
-#            }
+    Write-Progress -Activity "Populating Excel Document" -Completed
+
 } # End Function plotDynamicExcelWorkBook
 
 
@@ -956,166 +1000,319 @@ function writeToExcel($eachDataElementToPrint, $listOfAllAttributesToPrint){
 } # End function writeToExcel
 
 
-# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- #
-#---- ---- Test Function for development use only ---- ----#
-# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 
-function testFunction(){
-    runNSXTest -sectionNumber 22 -testModule "get-helloworld"
+
+Switch ( $PSCmdlet.ParameterSetName )  {
+
+    "NonInteractive" {
+        # Running non-interactively.
+        $global:PSDefaultParameterValues["Write-EventLog:LogName"] = "Application"
+        $global:PSDefaultParameterValues["Write-EventLog:Source"] = $EventLogSource
+        $global:PSDefaultParameterValues["Write-EventLog:EntryType"] = "Information"
+        $global:PSDefaultParameterValues["Write-EventLog:Category"] = 0
+        $global:PSDefaultParameterValues["Write-EventLog:EventId"] = 1000
+        $global:PSDefaultParameterValues["Out-Event:WriteToEventLog"] = $true
+        
+        init
+
+        trap { 
+            #Default error handler that dumps an error event log and bails.
+            $LogMessage = "An unhandled exception occured in PowerOps.  $_`n"
+            $LogMessage += "ScriptStackTrace: $($_.scriptstacktrace)"
+            Write-EventLog -EntryType Error -EventId 1001 -Message $LogMessage
+            break
+        }
+        Out-Event -entrytype information "Invoked with profile $ConnectionProfile and document location $documentlocation"
+        
+        if ( ($Config.Profiles[$ConnectionProfile]) -and (checkDependancies) ) { 
+            connectProfile -ProfileName $ConnectionProfile
+        }
+        Out-Event -entrytype information "Executing NSX component documentation task"
+        getNSXComponents
+        Out-Event -entrytype information "Executing host information documentation task"
+        getHostInformation
+        Out-Event -entrytype information "Executing Visio diagramming task"
+        runNSXVISIOTool
+        Out-Event -entrytype information "Executing routing information task"
+        getRoutingInformation
+        Out-Event -entrytype information "Executing DFW2Excel documentation task"
+        runDFW2Excel
+        Out-Event -entrytype information "Invocation complete."
+    }
+    
+    "Default" {
+        
+        init
+
+        # Running interactively - Setup the menu system.
+        # Header/Footer.
+        $MainHeader = @"
+
+__/\\\\\\\\\\\__________________________________________________________________/\\\\\________________________________        
+ _\/\\\///////\\\______________________________________________________________/\\\///\\\______________________________       
+  _\/\\\_____\/\\\____________________________________________________________/\\\/__\///\\\____/\\\\\\\\\______________      
+   _\/\\\\\\\\\\\/___/\\\\\_____/\\ __ /\\ _ /\\____/\\\\\\\\\__/\\/\\\\\\___/\\\______\//\\\__/\\\/___/\\\__/\\\\\\\\\\_     
+    _\/\\\///////___/\\\///\\\__\/\\\  /\\\\ /\\\__/\\\///\\//__\/\\\////\\\_\/\\\_______\/\\\_\/\\\___\\\\__\/\\\/___//__    
+     _\/\\\_________/\\\__\//\\\_\//\\ /\\\\ /\\\__/\\\\\\\\\____\/\\\  \///__\//\\\______/\\\__\/\\\//////___\/\\\\\\\\\\_   
+      _\/\\\________\//\\\__/\\\___\//\\\\\/\\\\\__\//\\/////_____\/\\\_________\///\\\__/\\\____\/\\\_________\///___//\\\_  
+        _\/\\\_________\///\\\\\/_____\//\\\\//\\\____\//\\\\\\\\\__\/\\\___________\///\\\\\/_____\/\\\__________/\\\\\\\\\\_ 
+         _\///____________\/////________\///__\///______\/////////___\///______________\/////_______\///__________\//////////__
+
+"@
+
+        $Subheader = "NSX PowerOps v$version.`nA project by the NSBU SA team.`n"
+
+        # Footer is a script block that is executed each time the menu is rendered.  We can use it to display status.
+        $Footer = { 
+@"
+Default Connection Profile: $($Config.DefaultProfile)
+Connected : $($DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected)
+Output Directory: $DocumentLocation
+"@
+        }
+
+        # Dependancies menu definition.
+        $DependanciesMenu = @{ 
+            "Script" = { installDependencies }
+            "Interactive" = "True"
+            "HelpText" = "Installs the required dependancies for PowerOps.  The following modules will be installed: $($requiredmodules -join ', ')"
+            "Name" = "Install NSX PowerOps Dependancies"
+            "Status" = { if ( checkDependancies -ListAvailable $true) { "Disabled" } else { "MenuEnabled" } }
+            "StatusText" = { if ( checkDependancies -ListAvailable $true) { "Installed" } else { "Not Installed" } }
+            "Footer" = $footer
+            "MainHeader" = $MainHeader
+            "Subheader" = $Subheader
+        }
+
+        # Doc menu definition.
+        $DocumentationMenu = @{    
+            "Script" = { Show-MenuV2 -menu $DocumentationMenu }
+            "HelpText" = "Displays a menu of PowerOps documentation tools."
+            "Name" = "PowerOps Documentation Tools"
+            "Status" = { if ((checkDependancies -ListAvailable $true) -and ($DefaultNSXConnection)) { "MenuEnabled" } else { "Disabled" } }
+            "Footer" = $footer
+            "MainHeader" = $MainHeader
+            "Subheader" = $Subheader
+            "Items" = @( 
+                @{ 
+                    "Name" = "Document All NSX Components"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = { getNSXComponents }
+                },
+                @{ 
+                    "Name" = "Document ESXi Host(s) Info"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  getHostInformation }
+                },
+                @{ 
+                    "Name" = "Document NSX Environment via Visio Diagramming Tool"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXVISIOTool }
+                },
+                @{ 
+                    "Name" = "Document Routing information"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  getRoutingInformation }
+                },
+                @{ 
+                    "Name" = "Document NSX DFW info to Excel via DFW2Excel"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runDFW2Excel }
+                }
+            )
+        }
+
+        # Healthcheck menu definition.
+        $HealthCheckMenu = @{    
+            "Script" = { Show-MenuV2 -menu $HealthCheckMenu }
+            "HelpText" = "Displays a menu of PowerOps Healthchecks."
+            "Name" = "PowerOps HealthChecks"
+            "Status" = { if ((checkDependancies -ListAvailable $true) -and ($DefaultNSXConnection)) { "MenuEnabled" } else { "Disabled" } }
+            "Footer" = $footer
+            "MainHeader" = $MainHeader
+            "Subheader" = $Subheader
+            "Items" = @( 
+                @{ 
+                    "Name" = "NSX Connectivity Test"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXConnections" }
+                },
+                @{ 
+                    "Name" = "NSX Manager Test"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXManager" }
+                },
+                @{ 
+                    "Name" = "NSX Controllers Appliance Test"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {   runNSXTest -testModule "testNSXControllers" }
+                },
+                @{ 
+                    "Name" = "NSX Logical Switch Test"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXLogicalSwitch" }
+                },
+                @{ 
+                    "Name" = "NSX Distributed Firewall Heap Test"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXDistributedFirewallHeap" }
+                },
+                @{ 
+                    "Name" = "Check DLR Instance"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXVDR" }
+                },
+                @{ 
+                    "Name" = "Check VIB Version"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXVIBVersion" }
+                },
+                @{ 
+                    "Name" = "Check vTEP to vTEP connectivity"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXMTUUnderlay" }
+                }
+            )
+        }
+
+        # Authentication profile menu definition.
+        $AuthConfigMenu = @{
+            
+            "Name" = "Configure Connection Profiles"
+            "Status" = { 
+                if ( -not (checkDependancies -ListAvailable $true) ) {
+                    "Disabled"
+                } 
+                elseif ( -not ($Config.DefaultProfile )) { 
+                    "MenuEnabled"
+                }
+                else {
+                    "SelectedValid"
+                }
+            }
+            "StatusText" = { 
+                if ( -not (checkDependancies -ListAvailable $true) ) {
+                    "DISABLED"
+                } 
+                elseif ( -not ($Config.DefaultProfile )) { 
+                    "SELECT"
+                }
+                else {
+                    "Default: $($Config.DefaultProfile)"
+                }
+            }
+            "HelpText" = "Configures connection profiles for NSX and vCenter."
+            "Script" = { Show-Menuv2 -menu $AuthConfigMenu }
+            "MainHeader" = $MainHeader
+            "Subheader" = $Subheader
+            "Footer" = $footer
+            "Items" = @(
+                @{
+                    "Name" = "Create Connection Profile"
+                    "Status" = { "MenuEnabled" }
+                    "HelpText" = "Creates a new connection profile that is saved to disk and can be used for operations that require access to NSX/VC."
+                    "Script" = { New-ConnectionProfile; if ( $Config.DefaultProfile -and (-not ($DefaultNSXConnection))) { connectProfile -ProfileName $Config.DefaultProfile } }
+                },
+                @{
+                    "Name" = "Delete Connection Profile"
+                    "Status" = { If ( $Config.Profiles -and ($Config.Profiles.Count -gt 0) ) { "MenuEnabled" } else { "Disabled" } }
+                    "StatusText" = { If ( $Config.Profiles -and ($Config.Profiles.Count -gt 0)) { "ENABLED" } else { "No Connection Profiles Defined" } }
+                    "HelpText" = "Deletes an existing connection profile."
+                    "Script" = { Remove-ConnectionProfile; if ((-not ($Config.DefaultProfile)) -and ($DefaultNSXConnection)) { disconnectDefaultNsxConnection } }
+                },
+                @{
+                    "Name" = "Select Default Connection Profile"
+                    "Status" = { 
+                        If ( $Config.DefaultProfile ) {
+                            "SelectedValid" 
+                        } 
+                        elseif ( $Config.Profiles -and ($Config.Profiles.Count -gt 0) ) {
+                            "MenuValid"
+                        }
+                        else {
+                            "Disabled" 
+                        }
+                    }
+                    "StatusText" = {
+                        If ( $Config.DefaultProfile ) {
+                            $Config.DefaultProfile 
+                        } 
+                        elseif ( $Config.Profiles -and ($Config.Profiles.Count -gt 0) ) {
+                            "SELECT"
+                        }
+                        else {
+                            "No Connection Profiles Defined" 
+                        }
+                    }
+                    "HelpText" = "Selects the connection profile used for interactive operations that require access to NSX/VC."
+                    "Script" = { Set-DefaultConnectionProfile }
+                }       
+            )
+        }
+
+        # ScheduledTask menu definition.
+        $ScheduledTasksMenu = @{ 
+            "Script" = { Show-MenuV2 -menu $ScheduledTasksMenu }
+            "Name" = "Configure Scheduled Tasks"
+            "HelpText" = "Contains configuration to automate periodic Configuration Capture."
+            "Status" = { 
+                if ((checkDependancies -ListAvailable $true) -and ( @($Config.Profiles).count -gt 0 )) { 
+                    "MenuEnabled" 
+                } 
+                else { 
+                    "Disabled"
+                }
+            }
+            "Footer" = $footer
+            "MainHeader" = $MainHeader
+            "Subheader" = $Subheader
+            "Items" = @( 
+                @{
+                    "Name" = "Enable/Disable PowerOps Scheduled Documentation Task"
+                    "HelpText" = "Enables a scheduled task for periodic documentation capture for any configured connection profile."
+                    "Status" = { "MenuEnabled" }
+                    "Script" = { Get-EnableScheduledTaskMenu }
+                }
+            )
+        }
+
+        # Root menu definition.
+        $rootmenu = @{ 
+            "Name" = "NSX PowerOps Main Menu"
+            "Status" = { "MenuValid" }
+            "Footer" = $footer
+            "MainHeader" = $MainHeader
+            "Subheader" = $Subheader
+            "Items" = @( 
+                $DependanciesMenu,
+                $AuthConfigMenu,
+                $ScheduledTasksMenu,
+                $DocumentationMenu,
+                $HealthcheckMenu
+            )
+        }
+
+        # Display the root menu.  Menu system blocks until exited.
+        
+        if ( $Config.DefaultProfile -and (checkDependancies) ) { 
+            connectProfile -ProfileName $Config.DefaultProfile
+        }
+        show-menuv2 -menu $rootmenu 
+    }
 }
-<#
-function testFunction(){
-    $vmHosts = get-vmhost
-    Write-Host " Number of vmHosts are:" $vmHosts.length
-    foreach ($eachHost in $vmHosts){Write-Host "Each Host is: "$eachHost.id}
-    #
-    #invokeNSXCLICmd -commandToInvoke "show logical-switch host host-31 verbose" -fileName "test.txt"
-    ##invokeNSXCLICmd -commandToInvoke "show cluster all" -fileName "test.txt"
-    #$findElements= @("Out-Of-Sync", "MTU", "VXLAN vmknic")
-    #foreach ($eachElement in $findElements){
-    #    $indx = ''
-    #    $indx = Select-String $eachElement "test.txt" | ForEach-Object {$_.LineNumber}
-    #    if ($indx -ne '') {Write-Host "Found Object" (Get-Content "test.txt")[$indx-1]}
-    #}
-    #
-}
-#>
 
-
-# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- #
-#---- ---- Welcome Logo & Menus start here ---- ----#
-# ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- # 
-
-#Function to show Main Menu
-function printMainMenu{
-    $ScreenSize = [math]::Round($ConsoleWidth-39)/2
-    Write-Host "`n"
-    Write-Host (" " * $ScreenSize) "*******************|*******************"
-    Write-Host (" " * $ScreenSize) "**        PowerOps Main Menu         **"
-    Write-Host (" " * $ScreenSize) "***************************************"
-    Write-Host (" " * $ScreenSize) "*                                     *"
-    Write-Host (" " * $ScreenSize) "* 1) Install Dependencies             *"
-    Write-Host (" " * $ScreenSize) "* 2) Connect NSX Manager & vCenter    *"
-    Write-Host (" " * $ScreenSize) "* 3) Show Documentation Menu          *"
-    Write-Host (" " * $ScreenSize) "* 4) Show Health Check Menu           *"
-#    Write-Host (" " * $ScreenSize) "* 5) Check NSX Upgrade Prerequisites  *"
-    Write-Host (" " * $ScreenSize) "*                                     *"
-    Write-Host (" " * $ScreenSize) "* 0) Exit PowerOps                    *"
-    Write-Host (" " * $ScreenSize) "***************************************"
-}
-
-
-#Function to show Documentation Menu
-function printDocumentationMenu{
-    $ScreenSize = [math]::Round($ConsoleWidth-58)/2
-    Write-Host "`n"
-    Write-Host (" " * $ScreenSize) "****************************|*****************************"
-    Write-Host (" " * $ScreenSize) "**             PowerOps Documentation Menu              **"
-    Write-Host (" " * $ScreenSize) "**********************************************************"
-    Write-Host (" " * $ScreenSize) "*                                                        *"
-    Write-Host (" " * $ScreenSize) "* Environment Documentation                              *"
-    Write-Host (" " * $ScreenSize) "* |-> 1) Document all NSX Components                     *"
-    Write-Host (" " * $ScreenSize) "* |-> 2) Document ESXi Host(s) Info                      *"
-    Write-Host (" " * $ScreenSize) "* |-> 3) Document NSX Environment Diagram via VISIO Tool *"
-#    Write-Host (" " * $ScreenSize) "* |-> 4) Import vRealize Log Insight Dashboard           *"
-    Write-Host (" " * $ScreenSize) "*                                                        *"
-    Write-Host (" " * $ScreenSize) "* Networking Documentation                               *"
-    Write-Host (" " * $ScreenSize) "* |-> 4) Document Routing info                           *"
-#    Write-Host (" " * $ScreenSize) "* |-> 6) Document VxLAN info                             *"
-    Write-Host (" " * $ScreenSize) "*                                                        *"
-    Write-Host (" " * $ScreenSize) "* Security Documentation                                 *"
-    Write-Host (" " * $ScreenSize) "* |-> 5) Document NSX DFW info to Excel - DFW2Excel      *"
-#    Write-Host (" " * $ScreenSize) "* |-> 7) Document DFW-VAT                                *"
-    Write-Host (" " * $ScreenSize) "*                                                        *"
-    Write-Host (" " * $ScreenSize) "* 0) Exit Documentation Menu                             *"
-    Write-Host (" " * $ScreenSize) "**********************************************************"
-}
-
-
-#Function to show Health Check Menu
-function printHealthCheckMenu{
-    $ScreenSize = [math]::Round($ConsoleWidth-41)/2
-    Write-Host "`n"
-    Write-Host (" " * $ScreenSize) "********************|********************"
-    Write-Host (" " * $ScreenSize) "**      PowerOps Health Check Menu     **"
-    Write-Host (" " * $ScreenSize) "*****************************************"
-    Write-Host (" " * $ScreenSize) "*                                       *"
-    Write-Host (" " * $ScreenSize) "* 1) NSX Connectivity Test              *"
-    Write-Host (" " * $ScreenSize) "* 2) NSX Manager Test                   *"
-    Write-Host (" " * $ScreenSize) "* 3) NSX Controllers Appliance Test     *"
-    Write-Host (" " * $ScreenSize) "* 4) NSX Logical Switch Test            *"
-    Write-Host (" " * $ScreenSize) "* 5) NSX Distributed Firewall Heap Test *"
-    Write-Host (" " * $ScreenSize) "*                                       *"
-    Write-Host (" " * $ScreenSize) "* 6) Check DLR Instance                 *"
-    Write-Host (" " * $ScreenSize) "* 7) Check VIB Version                  *"
-    Write-Host (" " * $ScreenSize) "* 8) Check vTEP to vTEP connectivity    *"
-    Write-Host (" " * $ScreenSize) "*                                       *"
-    Write-Host (" " * $ScreenSize) "* 0) Exit Health Check Menu             *"
-    Write-Host (" " * $ScreenSize) "*****************************************"
-}
-
-
-clx
-$ScreenSize = [math]::Round($ConsoleWidth-127)/2
-Write-Host "`n"
-Write-Host (" " * $ScreenSize) "  __/\\\\\\\\\\\_______________________________________________|__________________/\\\\\________________________________        "  -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "   _\/\\\///////\\\______________________________________________________________/\\\///\\\______________________________       "  -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "    _\/\\\_____\/\\\____________________________________________________________/\\\/__\///\\\____/\\\\\\\\\______________      "  -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "     _\/\\\\\\\\\\\/___/\\\\\_____/\\ __ /\\ _ /\\____/\\\\\\\\\__/\\/\\\\\\___/\\\______\//\\\__/\\\/___/\\\__/\\\\\\\\\\_     "  -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "      _\/\\\///////___/\\\///\\\__\/\\\  /\\\\ /\\\__/\\\///\\//__\/\\\////\\\_\/\\\_______\/\\\_\/\\\___\\\\__\/\\\/___//__    "  -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "       _\/\\\_________/\\\__\//\\\_\//\\ /\\\\ /\\\__/\\\\\\\\\____\/\\\  \///__\//\\\______/\\\__\/\\\//////___\/\\\\\\\\\\_   "  -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "        _\/\\\________\//\\\__/\\\___\//\\\\\/\\\\\__\//\\/////_____\/\\\_________\///\\\__/\\\____\/\\\_________\///___//\\\_  "  -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "         _\/\\\_________\///\\\\\/_____\//\\\\//\\\____\//\\\\\\\\\__\/\\\___________\///\\\\\/_____\/\\\__________/\\\\\\\\\\_ "  -ForegroundColor Blue
-Write-Host (" " * $ScreenSize) "          _\///____________\/////________\///__\///______\/////////___\///______________\/////_______\///__________\//////////__"  -ForegroundColor Blue
-
-$ScreenSize = [math]::Round($ConsoleWidth-59)/2
-Write-Host "`n"
-Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-Write-Host (" " * $ScreenSize) "~~                 Welcome to PowerOps                   ~~"
-Write-Host (" " * $ScreenSize) "~~                A project by SA Team                   ~~"
-Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-Write-Host (" " * $ScreenSize) "~ Note: Please run this script in VMware PowerCLI.        ~"
-Write-Host (" " * $ScreenSize) "~       To get the list of available commands type 'help' ~"
-Write-Host (" " * $ScreenSize) "~       To exit the program type 'exit' or '0'.           ~"
-Write-Host (" " * $ScreenSize) "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" 
-
-#"`n                    What would you like to do today?" 
-printMainMenu
-
-while($true)
-{
-    Write-Host "`n>> Please select an PowerOps option: " -ForegroundColor DarkGreen -NoNewline
-    $sectionNumber = Read-Host
-
-    if ($sectionNumber -eq 0 -or $sectionNumber -eq "exit"){
-        if ($global:nsxManagerHost -ne $None){
-            Write-Host -ForegroundColor Yellow "Disconnecting NSX Server $($global:nsxManagerHost)"
-            Disconnect-NsxServer}
-        if ($global:vCenterHost -ne $None){
-            Write-Host -ForegroundColor Yellow "Disconnecting VIServer $($global:vCenterHost)"
-            Disconnect-VIServer -Server * -Force}
-        try{
-        remove-variable -scope global myRow
-        remove-variable -scope global myColumn
-        #remove-variable -scope global listOfNSXClusterName
-        }catch{}
-        break}
-
-    elseif ($sectionNumber -eq "help"){printMainMenu}
-    #elseif ($sectionNumber -eq "clear"){clear-host | printMainMenu}
-    elseif ($sectionNumber -eq "clear"){clx | printMainMenu}
-
-    elseif ($sectionNumber -eq 1){installDependencies($sectionNumber)}
-    elseif ($sectionNumber -eq 2){connectNSXManager($sectionNumber)}
-    elseif ($sectionNumber -eq 3){documentationkMenu($sectionNumber)}
-    elseif ($sectionNumber -eq 4){healthCheckMenu($sectionNumber)}
-    elseif ($sectionNumber -eq 5){nsxUpdateCheckReport($sectionNumber)}
-    #elseif ($sectionNumber -eq 'test'){testFunction}
-    elseif ($sectionNumber -eq ''){}
-    #elseif ($sectionNumber -eq 5){runNSXVisualTool($sectionNumber)}
-    else { Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"}
-
-}# Infinite while loop ends here 
-####start-sleep -s 1
+# User has exited gracefully, disconnect from NSX/VC
+disconnectDefaultNsxConnection
