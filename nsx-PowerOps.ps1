@@ -1482,6 +1482,8 @@ Switch ( $PSCmdlet.ParameterSetName )  {
         getRoutingInformation
         Out-Event -entrytype information "Executing DFW2Excel documentation task"
         runDFW2Excel
+        Out-Event -entrytype information "Executing Load Balancer documentation task"
+        runLB2Excel
         Out-Event -entrytype information "Invocation complete."
     }
     
@@ -1564,16 +1566,16 @@ Output Directory: $DocumentLocation
                     "Script" = {  getRoutingInformation }
                 },
                 @{
-                    "Name" = "Document NSX DFW info to Excel via DFW2Excel"
-                    "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
-                    "Interactive" = $true
-                    "Script" = {  runDFW2Excel }
-                },
-                @{
                     "Name" = "Document Load Balancing Information"
                     "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runLB2Excel }
+                },
+                @{
+                    "Name" = "Document NSX DFW info to Excel via DFW2Excel"
+                    "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runDFW2Excel }
                 }
             )
         }
