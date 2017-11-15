@@ -1256,12 +1256,18 @@ function runLB2Excel($sectionNumber){
 
 function runNSXTest ($testModule){
     $startTime = Get-Date
-    $outputFileName = $testModule +"-"+ $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xml"
+    $outputFileName = "$testModule-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xml" -f (get-date)
     
     #Todo: Change connection handling to suit connection profiles.
     $global:NsxConnection = $DefaultNSXConnection
 
-    $result = Invoke-Pester -Script @{ Path = './HealthCheck/'+$testModule+'.Tests.ps1'; Parameters = @{ testModule = $testModule} } -OutputFile ./HealthCheck/testResult-$outputFileName -OutputFormat NUnitXML 
+    $result = Invoke-Pester -Script @{ 
+        Path = './HealthCheck/'+$testModule+'.Tests.ps1'
+        Parameters = @{ 
+            testModule = $testModule
+        }
+    } `
+    -OutputFile $documentlocation/$outputFileName -OutputFormat NUnitXML 
 
     # NB 11/17 Removing redundant prompt (we will manage old files separately, so write out by default.)
     # Write-Host "`nSave the result in an XML file? Y or N [default Y]: " -ForegroundColor Darkyellow -NoNewline
