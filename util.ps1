@@ -549,6 +549,8 @@ function Read-Config {
             throw "An error occured loading config from $configfile.  $_"
         }
     }
+    write-progress -Activity "Loading from Config $($inobj._configdate) in file $configfile" -Completed
+    
 }
 
 function New-ConnectionProfile {
