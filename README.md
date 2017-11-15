@@ -1,9 +1,9 @@
 Copyright © 2017 VMware, Inc. All Rights Reserved.
 SPDX-License-Identifier: MIT
-# NSX PowerOps - An NSX-v Operationalization Project </h1>
+# NSX Power Operations - An NSX-v Operationalization Project </h1>
 
 ### Overview
-NSX Power Operations (nsx-powerops) is a platform that provides NSX users a way to document their NSX-v environment in Microsoft Excel and Visio files that are easily consumable and referable. The documentation not only captures the Desired State (configuration) but also the Realized State (for example: routing & forwarding tables) across the distributed environment. The platform also embeds rich healthcheck tools.
+NSX Power Operations is a platform that provides NSX users a way to document their NSX-v environment in Microsoft Excel and Visio files that are easily consumable and referable. The documentation not only captures the Desired State (configuration) but also the Realized State (for example: routing & forwarding tables) across the distributed environment. The platform also embeds rich healthcheck tools.
 
 ### Releases & Major Branches
 Current version: BETA
@@ -26,9 +26,9 @@ Required Pre-Requisites:
 
 * Prereq 5: Access to vSphere Web Client and Privileges (min Read)
 
-* Prereq 6: VMware PowerNSX 3.0.1012 (NSX PowerOps automatically install this module)
+* Prereq 6: VMware PowerNSX 3.0.1012 (NSX Power Operations automatically install this module)
 
-* Prereq 7: Pester (NSX PowerOps automatically install this module)
+* Prereq 7: Pester (NSX Power Operations automatically install this module)
 
         Pester - PowerShell's Testing Framework Module - Manual Install Steps:
         [http://www.powershellmagazine.com/2014/03/12/get-started-with-pester-powershell-unit-testing-framework/]
@@ -40,7 +40,7 @@ Required Pre-Requisites:
                 * Import-Module Pester
                 * Get-Module -Name Pester | Select -ExpandProperty ExportedCommands
 
-* Prereq 8: Posh-SSH (NSX PowerOps automatically install this module)
+* Prereq 8: Posh-SSH (NSX Power Operations automatically install this module)
 
         Posh-SSH - PowerShell's SSH Module - Manual Install Steps:
         * Option 1:
@@ -57,8 +57,8 @@ Required Pre-Requisites:
 
 Optional Pre-Requisites:
 
-* MS VISIO 2013 activated (optional - some feature wont work if not installed) [https://products.office.com/en-us/microsoft-visio-2013]
-NOTE: NOT supported with VISIO Trial or 365 activated version
+* MS VISIO 2016 activated as Standard or Professional (optional - some feature wont work if not installed) [https://products.office.com/en-us/microsoft-visio-2013]
+NOTE: NOT supported with VISIO Trial or 365 version
 * GIT (optional) [https://git-scm.com/]
 
 ### Download via git
@@ -74,7 +74,7 @@ Step 2: When in nsx-PowerOps.ps1:
 * To return to previous menu type 'x'
 * To quit the program type 'q'
 
-Step 3: Install NSX PowerOps depedency (PowerNSX, Pester, Posh-SSH) by selecting option # 1
+Step 3: Install NSX Power Operations depedency (PowerNSX, Pester, Posh-SSH) by selecting option # 1
 
 Step 4: Connect with NSX Manager and vCenter by selecting option # 2
 
