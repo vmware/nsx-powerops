@@ -99,6 +99,17 @@ $valueFontSize = 10
 
 $subSetInteriorColor = 22
 
+$fontColorGood = 4
+$fontColorBad = 3
+$fontColorUnknownState = 46
+
+$horizontalAlignmentCenter = -4108
+
+$verticalAlignmentTop = -4160
+
+$borderLineStyle = 1
+$borderWeight = 2
+
 $global:myRow = 1
 $global:myColumn = 1
 
@@ -818,6 +829,425 @@ function parseSSHOutput ($fileToParse, $findElements, $direction) {
 #     [System.Console]::SetWindowPosition(0,[System.Console]::CursorTop)
 # }
 
+function runLB2Excel($sectionNumber){
+
+    $DocumentPath = "$documentlocation\LBToExcel-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
+
+    $nsxEdges = Get-NsxEdge | ? {$_.features.loadBalancer.enabled -eq "true"}
+    $allNSXComponentExcelDataEdge =@{}
+
+    #Some variables we will use to populate the summary page
+    $counterVIPs = 0
+    $counterVIPsOpen = 0
+    $counterVIPsClosed = 0
+    $counterPools = 0
+    $counterPoolsUp = 0
+    $counterPoolsDown = 0
+    $counterMembers = 0
+    $counterMembersUp = 0
+    $counterMembersDown = 0
+    $counterMembersUnknown = 0
+
+    $summaryEdgeStats = [ordered]@{}
+
+    # Create the new excel workbook that we will be working on
+    $nsxLBExcelWorkBook = createNewExcel
+
+    # Creating seperate worksheet for each edge lb
+    foreach ($edge in $nsxEdges) {
+
+        Write-Progress -Activity "Procesing $($edge.name)"
+
+        $lbconf = $edge | Get-NsxLoadBalancer
+        $lbStats = $lbconf | Get-NsxLoadBalancerStats
+
+        # Create a hash table to store summary information about this edge
+        $summary = @{}
+        $summary.Add("id", $edge.id)
+
+        # Store the VIP counters
+        $edgeVips = ($lbconf.virtualserver | measure).count
+        $edgeVIPsOpen = ($lbstats.virtualserver | ? {$_.status -eq "OPEN"} | measure).count
+        $edgeVIPsClosed = ($lbstats.virtualserver | ? {$_.status -ne "OPEN"} | measure).count
+
+        $counterVIPs += $edgeVips
+        $counterVIPsOpen += $edgeVIPsOpen
+        $counterVIPsClosed += $edgeVIPsClosed
+
+        $summary.Add("vips", $edgeVips)
+        $summary.Add("vipsOpen", $edgeVIPsOpen)
+        $summary.Add("vipsClosed", $edgeVIPsClosed)
+
+        # Store the Pool counters
+        $edgePools = ($lbconf.pool | measure).count
+        $edgePoolsUp = ($lbstats.pool | ? {$_.status -eq "UP"} | measure).count
+        $edgePoolsDown = ($lbstats.pool | ? {$_.status -ne "Up"} | measure).count
+
+        $counterPools += $edgePools
+        $counterPoolsUp += $edgePoolsUp
+        $counterPoolsDown += $edgePoolsDown
+
+        $summary.Add("pools", $edgePools)
+        $summary.Add("poolsUp", $edgePoolsUp)
+        $summary.Add("poolsDown", $edgePoolsDown)
+        $summary.Add("poolMembers", $edgePoolMembers)
+
+        # Store the member details
+        $edgePoolMembers = ($lbstats.pool.member | measure).count
+        $edgePoolMembersUp = ($lbstats.pool.member | ? { $_.status -eq "UP"} | measure).count
+        $edgePoolMembersDown = ($lbstats.pool.member | ? { $_.status -eq "DOWN"} | measure).count
+        $edgePoolMembersUnknown = ($lbstats.pool.member | ? { ($_.status -ne "DOWN") -and ($_.status -ne "UP")} | measure).count
+
+        $counterMembers += $edgePoolMembers
+        $counterMembersUp += $edgePoolMembersUp
+        $counterMembersDown += $edgePoolMembersDown
+        $counterMembersUnknown += $edgePoolMembersUnknown
+
+        $summary.Add("members", $edgePoolMembers)
+        $summary.Add("membersUp", $edgePoolMembersUp)
+        $summary.Add("membersDown", $edgePoolMembersDown)
+        $summary.Add("membersUnknown", $edgePoolMembersUnknown)
+
+        # Add the summary information for this edge to the main hash table
+        $summaryEdgeStats.Add($edge.name,$summary)
+
+        # Add a new worksheet (after the last worksheet) for the Edge with load
+        # balancer enabled.
+        $wsStats = $nsxLBExcelWorkBook.WorkSheets.Add([System.Reflection.Missing]::Value,$nsxLBExcelWorkBook.Worksheets.Item($nsxLBExcelWorkBook.Worksheets.count))
+        $wsStats.Name = $edge.name
+
+        if (($edgePoolsDown -ge 1) -or ($edgePoolMembersDown -ge 1)) {
+            $wsStats.tab.ColorIndex = $fontColorBad
+        } else {
+            $wsStats.tab.ColorIndex = $fontColorGood
+        }
+
+        $summaryRowTitle = 2
+        $summaryRowHeader = $summaryRowTitle + 1
+        $summaryRowDetail = $summaryRowHeader + 1
+        $summaryColTitleVips = 2
+        $summaryColTitlePools = $summaryColTitleVips + 4
+        $summaryColTitleMembers = $summaryColTitlePools + 4
+
+        $wsStats.Cells.Item($summaryRowTitle,$summaryColTitleVips)  = "VIPs"
+        $wsStats.Cells.Item($summaryRowTitle,$summaryColTitlePools)  = "Pools"
+        $wsStats.Cells.Item($summaryRowTitle,$summaryColTitleMembers)  = "Members"
+
+        $wsStats.Cells.Item($summaryRowHeader,$summaryColTitleVips)  = "Total"
+        $wsStats.Cells.Item($summaryRowHeader,($summaryColTitleVips + 1))  = "OPEN"
+        $wsStats.Cells.Item($summaryRowHeader,($summaryColTitleVips + 2))  = "CLOSED"
+
+        $wsStats.Cells.Item($summaryRowDetail,$summaryColTitleVips)  = $edgeVips
+        $wsStats.Cells.Item($summaryRowDetail,($summaryColTitleVips + 1))  = $edgeVIPsOpen
+        $wsStats.Cells.Item($summaryRowDetail,($summaryColTitleVips + 2))  = $edgeVIPsClosed
+
+        $wsStats.Cells.Item($summaryRowHeader,$summaryColTitlePools)  = "Total"
+        $wsStats.Cells.Item($summaryRowHeader,($summaryColTitlePools + 1))  = "UP"
+        $wsStats.Cells.Item($summaryRowHeader,($summaryColTitlePools + 2))  = "DOWN"
+
+        $wsStats.Cells.Item($summaryRowDetail,$summaryColTitlePools)  = $edgePools
+        $wsStats.Cells.Item($summaryRowDetail,($summaryColTitlePools + 1))  = $edgePoolsUp
+        $wsStats.Cells.Item($summaryRowDetail,($summaryColTitlePools + 2))  = $edgePoolsDown
+
+        $wsStats.Cells.Item($summaryRowHeader,$summaryColTitleMembers)  = "Total"
+        $wsStats.Cells.Item($summaryRowHeader,($summaryColTitleMembers + 1))  = "UP"
+        $wsStats.Cells.Item($summaryRowHeader,($summaryColTitleMembers + 2))  = "DOWN"
+        $wsStats.Cells.Item($summaryRowHeader,($summaryColTitleMembers + 3))  = "UNKNOWN"
+
+        $wsStats.Cells.Item($summaryRowDetail,$summaryColTitleMembers)  = $edgePoolMembers
+        $wsStats.Cells.Item($summaryRowDetail,($summaryColTitleMembers + 1))  = $edgePoolMembersUp
+        $wsStats.Cells.Item($summaryRowDetail,($summaryColTitleMembers + 2))  = $edgePoolMembersDown
+        $wsStats.Cells.Item($summaryRowDetail,($summaryColTitleMembers + 3))  = $edgePoolMembersUnknown
+
+        # Format VIP Summary table
+        $vipSummaryHeaderRange = $wsStats.range($wsStats.cells.item($summaryRowTitle,$summaryColTitleVips),$wsStats.cells.item($summaryRowTitle,($summaryColTitleVips +2)))
+        $vipSummaryHeaderRange.Font.Size = $titleFontSize
+        $vipSummaryHeaderRange.Font.Bold = $titleFontBold
+        $vipSummaryHeaderRange.Font.ColorIndex = $titleFontColorIndex
+        $vipSummaryHeaderRange.Font.Name = $titleFontName
+        $vipSummaryHeaderRange.Interior.ColorIndex = $subSetInteriorColor
+        $vipSummaryHeaderRange.merge() | Out-Null
+        $vipSummaryHeaderRange.HorizontalAlignment = $horizontalAlignmentCenter
+
+        $vipSummaryRange = $wsStats.range($wsStats.cells.item($summaryRowHeader,$summaryColTitleVips),$wsStats.cells.item($summaryRowDetail,($summaryColTitleVips +2)))
+        $vipSummaryRange.Borders.linestyle = $borderLineStyle
+        $vipSummaryRange.Borders.Weight = $borderWeight
+        $vipSummaryRange.HorizontalAlignment = $horizontalAlignmentCenter
+
+        # Format Pool Summary table
+        $poolSummaryHeaderRange = $wsStats.range($wsStats.cells.item($summaryRowTitle,$summaryColTitlePools),$wsStats.cells.item($summaryRowTitle,($summaryColTitlePools +2)))
+        $poolSummaryHeaderRange.Font.Size = $titleFontSize
+        $poolSummaryHeaderRange.Font.Bold = $titleFontBold
+        $poolSummaryHeaderRange.Font.ColorIndex = $titleFontColorIndex
+        $poolSummaryHeaderRange.Font.Name = $titleFontName
+        $poolSummaryHeaderRange.Interior.ColorIndex = $subSetInteriorColor
+        $poolSummaryHeaderRange.merge() | Out-Null
+        $poolSummaryHeaderRange.HorizontalAlignment = $horizontalAlignmentCenter
+
+        $poolSummaryRange = $wsStats.range($wsStats.cells.item($summaryRowHeader,$summaryColTitlePools),$wsStats.cells.item($summaryRowDetail,($summaryColTitlePools +2)))
+        $poolSummaryRange.Borders.linestyle = $borderLineStyle
+        $poolSummaryRange.Borders.Weight = $borderWeight
+        $poolSummaryRange.HorizontalAlignment = $horizontalAlignmentCenter
+
+        # Format Member Summary table
+        $memberSummaryHeaderRange = $wsStats.range($wsStats.cells.item($summaryRowTitle,$summaryColTitleMembers),$wsStats.cells.item($summaryRowTitle,($summaryColTitleMembers +3)))
+        $memberSummaryHeaderRange.Font.Size = $titleFontSize
+        $memberSummaryHeaderRange.Font.Bold = $titleFontBold
+        $memberSummaryHeaderRange.Font.ColorIndex = $titleFontColorIndex
+        $memberSummaryHeaderRange.Font.Name = $titleFontName
+        $memberSummaryHeaderRange.Interior.ColorIndex = $subSetInteriorColor
+        $memberSummaryHeaderRange.merge() | Out-Null
+        $memberSummaryHeaderRange.HorizontalAlignment = $horizontalAlignmentCenter
+
+        $poolSummaryRange = $wsStats.range($wsStats.cells.item($summaryRowHeader,$summaryColTitleMembers),$wsStats.cells.item($summaryRowDetail,($summaryColTitleMembers +3)))
+        $poolSummaryRange.Borders.linestyle = $borderLineStyle
+        $poolSummaryRange.Borders.Weight = $borderWeight
+        $poolSummaryRange.HorizontalAlignment = $horizontalAlignmentCenter
+
+        # Setup lb details row assignments
+        $lbDetailsRowTitle = 6
+        $lbDetailsRowHeader = 7
+
+        # Setup lb details column assignments
+        $lbdetailsColEdgeId = 1
+        $lbdetailsColEdgeName = 2
+        $lbdetailsColVIPName = 3
+        $lbdetailsColVIPAddress = 4
+        $lbdetailsColVIPStatus = 5
+        $lbdetailsColSI = 6
+        $lbdetailsColEngine = 7
+        $lbdetailsColAppRule = 8
+        $lbdetailsColProtocol = 9
+        $lbdetailsColPort = 10
+        $lbdetailsColAppProfile = 11
+        $lbdetailsColPoolName = 12
+        $lbdetailsColPoolStatus = 13
+        $lbdetailsColPoolMember = 14
+
+        # Format lb details title
+        $wsStats.Cells.Item($lbDetailsRowTitle,$lbdetailsColEdgeId) = "Edge: $($edge.name) - LB VIP Information"
+        $wsStats.Cells.Item($lbDetailsRowTitle,$lbdetailsColEdgeId).Font.Size = $titleFontSize
+        $wsStats.Cells.Item($lbDetailsRowTitle,$lbdetailsColEdgeId).Font.Bold = $titleFontBold
+        $wsStats.Cells.Item($lbDetailsRowTitle,$lbdetailsColEdgeId).Font.ColorIndex = $titleFontColorIndex
+        $wsStats.Cells.Item($lbDetailsRowTitle,$lbdetailsColEdgeId).Font.Name = $titleFontName
+        $wsStats.Cells.Item($lbDetailsRowTitle,$lbdetailsColEdgeId).Interior.ColorIndex = $titleInteriorColor 
+        $range1 = $wsStats.Range($wsStats.cells.item($lbDetailsRowTitle,$lbdetailsColEdgeId),$wsStats.cells.item($lbDetailsRowTitle,$lbdetailsColPoolMember) )
+        $range1.merge() | Out-Null
+
+        # Setup lb details header columns
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColEdgeId) = "Edge ID"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColEdgeName) = "Edge Name"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColVIPName) = "VIP Name"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColVIPAddress) = "VIP Address"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColVIPStatus) = "VIP Status"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColSI) = "Service Insertion"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColEngine) = "L4 Engine"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColAppRule) = "Application Rule"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColProtocol) = "Protocol"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColPort) = "Port"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColAppProfile) = "Application Profile"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColPoolName)  = "Pool Name"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColPoolStatus)  = "Pool Status"
+        $wsStats.Cells.Item($lbDetailsRowHeader,$lbdetailsColPoolMember) = "Pool Member"
+
+        # Format lb details headers
+        $columnHeaderRange = $wsStats.Range($wsStats.cells.item($lbDetailsRowHeader,$lbdetailsColEdgeId), $wsStats.cells.item($lbDetailsRowHeader,$lbdetailsColPoolMember))
+        $columnHeaderRange.Interior.ColorIndex = $subTitleInteriorColor
+        $columnHeaderRange.font.bold = $subTitleFontBold
+        $columnHeaderRange.AutoFilter() | Out-Null
+
+        # # Need to keep a count of the row, and this is the one we start on.
+        $row = $lbDetailsRowHeader + 1
+
+        # # Loop through all the VIP config on the edge
+        foreach ($lbconfvip in ($lbconf.virtualserver)) {
+
+            Write-Progress -Activity "Procesing $($edge.name)" -Status "Documenting VIP - $($lbconfvip.name)"
+
+            # save the pool and vip stats into their own variables
+            $vipstats = $lbStats.virtualserver | ? {$_.virtualServerId -eq $lbconfvip.virtualServerId}
+            $poolstats = $lbStats.pool | ? {$_.poolId -eq $lbconfvip.defaultPoolId}
+
+            # start filling in the basic information
+            $wsStats.Cells.Item($row,$lbdetailsColEdgeId) = $edge.id
+            $wsStats.Cells.Item($row,$lbdetailsColEdgeName) = $edge.name
+            $wsStats.Cells.Item($row,$lbdetailsColVIPName) = $lbconfvip.name
+            $wsStats.Cells.Item($row,$lbdetailsColVIPAddress) = $lbconfvip.ipAddress
+            # VIP Status is fairly easy, except we apply a bit of color
+            $wsStats.Cells.Item($row,$lbdetailsColVIPStatus) = $vipstats.status
+            if ($vipstats.status -eq "OPEN") {
+                $wsStats.Cells.Item($row,$lbdetailsColVIPStatus).Font.ColorIndex = $fontColorGood
+            } else {
+                $wsStats.Cells.Item($row,$lbdetailsColVIPStatus).Font.ColorIndex = $fontColorBad
+            }
+            $wsStats.Cells.Item($row,$lbdetailsColSI) = $lbconfvip.enableServiceInsertion
+            $wsStats.Cells.Item($row,$lbdetailsColEngine) = $lbconfvip.accelerationEnabled
+
+            # There can be multiple application rules applied to a VIP, so we
+            # loop through them all, and replace the object-id with the friendly
+            # name.
+            $appRuleArray = @()
+            foreach ($rule in $lbconfvip.applicationRuleId) {
+                $appRuleArray += ($lbconf.applicationrule | ? {$_.applicationRuleId -eq $rule} ).name
+            }
+            $wsStats.Cells.Item($row,$lbdetailsColAppRule) = $appRuleArray -join "`r`n"
+
+            $wsStats.Cells.Item($row,$lbdetailsColProtocol) = $lbconfvip.protocol
+            $wsStats.Cells.Item($row,$lbdetailsColPort) = $lbconfvip.port
+
+            # We do the same replacement of objectid to friendly names for the
+            # application profile and pools
+            $wsStats.Cells.Item($row,$lbdetailsColAppProfile) = ($lbconf.applicationProfile | ? {$_.applicationProfileId -eq $lbconfvip.applicationProfileId}).name
+            $wsStats.Cells.Item($row,$lbdetailsColPoolName) = ($lbconf.pool | ? {$_.poolId -eq $lbconfvip.defaultPoolId}).name
+            # Apply some color to the pool status
+            $wsStats.Cells.Item($row,$lbdetailsColPoolStatus) = $poolstats.status
+            if ($poolstats.status -eq "UP") {
+                $wsStats.Cells.Item($row,$lbdetailsColPoolStatus).Font.ColorIndex = $fontColorGood
+            } else {
+                $wsStats.Cells.Item($row,$lbdetailsColPoolStatus).Font.ColorIndex = $fontColorBad
+            }
+
+            # Now we do some trickery. We place each pool member on a different
+            # row, and then depending on the member status, we color the text.
+            $rowMember = $row
+            foreach ($member in $poolstats.member) {
+                $wsStats.Cells.Item($rowMember,$lbdetailsColPoolMember) = $member.name
+                if ($member | Get-Member -MemberType Property -Name Status) {
+                    if ($member.status -eq "UP") {
+                        $wsStats.Cells.Item($rowMember,$lbdetailsColPoolMember).Font.ColorIndex = $fontColorGood
+                    } else {
+                        $wsStats.Cells.Item($rowMember,$lbdetailsColPoolMember).Font.ColorIndex = $fontColorBad
+                    }
+                } else {
+                    # If the member doesn't have a status, like when a "cluster"
+                    # object is defined in the pool, but there are no VMs in the
+                    # cluster turned on, then we format the cell differently
+                    $wsStats.Cells.Item($rowMember,$lbdetailsColPoolMember).Font.Italic = $True
+                    $wsStats.Cells.Item($rowMember,$lbdetailsColPoolMember).AddComment() | out-null
+                    $wsStats.Cells.Item($rowMember,$lbdetailsColPoolMember).comment.Visible = $False
+                    $wsStats.Cells.Item($rowMember,$lbdetailsColPoolMember).Comment.text("NSX-PowerOps:`r`nThere doesn't appear to be any underlying members") | out-null
+                }
+
+                # Now we see if the row number we have incremented due to
+                # multiple members has increased from the original row we start
+                # on, and if so, we go back and merge the previous columns to
+                # make it look all nice and spiffy.
+                if ($row -ne $rowMember) {
+                    $lbdetailsColEdgeId..$lbdetailsColPoolStatus | % {
+                        $mergeCells = $wsStats.Range($wsStats.Cells.Item($row,$_),$wsStats.Cells.Item($rowMember,$_))
+                        $MergeCells.Select() | out-null
+                        $MergeCells.MergeCells = $true
+                        $MergeCells.VerticalAlignment = $verticalAlignmentTop
+                    }
+                }
+                $rowMember ++
+            }
+            $row = $rowMember
+        }
+        # Format the lb details table with borders
+        $lbDetailsRange = $wsStats.Range($wsStats.cells.item($lbDetailsRowTitle,$lbdetailsColEdgeId), $wsStats.cells.item(($row - 1),$lbdetailsColPoolMember))
+        $lbDetailsRange.Borders.linestyle = $borderLineStyle
+        $lbDetailsRange.Borders.Weight = $borderWeight
+
+        # Apply autofit to the whole sheet
+        $entireRange = $wsStats.UsedRange
+        $entireRange.EntireColumn.Autofit() | out-null
+
+    }
+
+    # Add a new worksheet for the overall summary pages as the first worksheet.
+    $wsSummary = $nsxLBExcelWorkBook.WorkSheets.Add($nsxLBExcelWorkBook.Worksheets.Item(1))
+    $wsSummary.Name = "Summary"
+
+    $summaryRowTitle = 1
+    $summaryRowHeader = $summaryRowTitle + 1
+    $summaryRowDetail = $summaryRowHeader + 1
+    $summaryColHeaderEdgeName = 1
+    $summaryColHeaderEdgeId = 2
+    $summaryColHeaderVipTotal = 3
+    $summaryColHeaderVipOpen = 4
+    $summaryColHeaderVipClosed = 5
+    $summaryColHeaderPoolTotal = 6
+    $summaryColHeaderPoolUp = 7
+    $summaryColHeaderPoolDown = 8
+    $summaryColHeaderMemberTotal = 9
+    $summaryColHeaderMemberUp = 10
+    $summaryColHeaderMemberDown = 11
+    $summaryColHeaderMemberUnknown = 12
+
+    $wsSummary.Cells.Item($summaryRowTitle,$summaryColHeaderEdgeName) = "NSX Edge Load Balancer - Summary"
+
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderEdgeName) = "Edge Name"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderEdgeId) = "Edge ID"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderVipTotal) = "VIPs"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderVipOpen) = "VIPs Up"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderVipClosed) = "VIPs Closed"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderPoolTotal) = "Pools"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderPoolUp) = "Pools Up"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderPoolDown) = "Pools Down"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderMemberTotal) = "Members"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderMemberUp) = "Members Up"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderMemberDown) = "Members Down"
+    $wsSummary.Cells.Item($summaryRowHeader,$summaryColHeaderMemberUnknown) = "Members Unknown"
+
+
+    $wsSummary.Cells.Item($summaryRowTitle,$summaryColHeaderEdgeName).Font.Size = $titleFontSize
+    $wsSummary.Cells.Item($summaryRowTitle,$summaryColHeaderEdgeName).Font.Bold = $titleFontBold
+    $wsSummary.Cells.Item($summaryRowTitle,$summaryColHeaderEdgeName).Font.ColorIndex = $titleFontColorIndex
+    $wsSummary.Cells.Item($summaryRowTitle,$summaryColHeaderEdgeName).Font.Name = $titleFontName
+    $wsSummary.Cells.Item($summaryRowTitle,$summaryColHeaderEdgeName).Interior.ColorIndex = $titleInteriorColor
+    $summaryTitleRange = $wsSummary.Range($wsSummary.cells.item($summaryRowTitle,$summaryColHeaderEdgeName),$wsSummary.cells.item($summaryRowTitle,$wsSummary.usedRange.columns.count))
+    $summaryTitleRange.merge() | Out-Null
+
+    $summaryHeaderRange = $wsSummary.Range($wsSummary.cells.item($summaryRowHeader,$summaryColHeaderEdgeName), $wsSummary.cells.item($summaryRowHeader,$wsSummary.usedRange.columns.count))
+    $summaryHeaderRange.Interior.ColorIndex = $subTitleInteriorColor
+    $summaryHeaderRange.font.bold = $True
+
+    $row = $summaryRowDetail
+    foreach ($item in $summaryEdgeStats.keys) {
+        $wsSummary.Cells.Item($row,$summaryColHeaderEdgeName) = $item
+        $wsSummary.HyperLinks.Add($wsSummary.cells.item($row,$summaryColHeaderEdgeName),"","'$($item)'!A1") | out-null
+        $wsSummary.Cells.Item($row,$summaryColHeaderEdgeId) = $summaryEdgeStats.item($item).id
+        $wsSummary.Cells.Item($row,$summaryColHeaderVipTotal) = $summaryEdgeStats.item($item).vips
+        $wsSummary.Cells.Item($row,$summaryColHeaderVipOpen) = $summaryEdgeStats.item($item).vipsopen
+        $wsSummary.Cells.Item($row,$summaryColHeaderVipClosed) = $summaryEdgeStats.item($item).vipsclosed
+        if ($summaryEdgeStats.item($item).vipsclosed -ge 1) {
+            $wsSummary.Cells.Item($row,$summaryColHeaderVipClosed).Interior.ColorIndex = $fontColorBad
+        }
+        $wsSummary.Cells.Item($row,$summaryColHeaderPoolTotal) = $summaryEdgeStats.item($item).pools
+        $wsSummary.Cells.Item($row,$summaryColHeaderPoolUp) = $summaryEdgeStats.item($item).poolsup
+        $wsSummary.Cells.Item($row,$summaryColHeaderPoolDown) = $summaryEdgeStats.item($item).poolsdown
+        if ($summaryEdgeStats.item($item).poolsdown -ge 1) {
+            $wsSummary.Cells.Item($row,$summaryColHeaderPoolDown).Interior.ColorIndex = $fontColorBad
+        }
+        $wsSummary.Cells.Item($row,$summaryColHeaderMemberTotal) = $summaryEdgeStats.item($item).members
+        $wsSummary.Cells.Item($row,$summaryColHeaderMemberUp) = $summaryEdgeStats.item($item).membersUp
+        $wsSummary.Cells.Item($row,$summaryColHeaderMemberDown) = $summaryEdgeStats.item($item).membersDown
+        if ($summaryEdgeStats.item($item).membersDown -ge 1) {
+            $wsSummary.Cells.Item($row,$summaryColHeaderMemberDown).Interior.ColorIndex = $fontColorBad
+        }
+        $wsSummary.Cells.Item($row,$summaryColHeaderMemberUnknown) = $summaryEdgeStats.item($item).membersUnknown
+        if ($summaryEdgeStats.item($item).membersUnknown -ge 1) {
+            $wsSummary.Cells.Item($row,$summaryColHeaderMemberUnknown).Interior.ColorIndex = $fontColorUnknownState
+        }
+        $row ++
+    }
+
+    $wsSummaryRange = $wsSummary.usedRange
+    $wsSummaryRange.EntireColumn.Autofit() | out-null
+    $wsSummaryRange.Borders.linestyle = $borderLineStyle
+    $wsSummaryRange.Borders.Weight = $borderWeight
+    $wsSummaryRange.HorizontalAlignment = $horizontalAlignmentCenter
+
+    $global:newExcel.worksheets.item("Sheet1").Delete()
+    $global:newExcel.ActiveWorkbook.SaveAs($DocumentPath)
+    $global:newExcel.Workbooks.Close()
+    $global:newExcel.Quit()
+
+    Write-Progress -Activity "Procesing $($edge.name)" -Completed
+    releaseObject -obj $nsxLBExcelWorkBook
+    releaseObject -obj $newExcel
+}
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- #
 #---- ---- HealthCheck Functions start here ---- ----#
@@ -1052,6 +1482,8 @@ Switch ( $PSCmdlet.ParameterSetName )  {
         getRoutingInformation
         Out-Event -entrytype information "Executing DFW2Excel documentation task"
         runDFW2Excel
+        Out-Event -entrytype information "Executing Load Balancer documentation task"
+        runLB2Excel
         Out-Event -entrytype information "Invocation complete."
     }
     
@@ -1100,7 +1532,7 @@ Output Directory: $DocumentLocation
         }
 
         # Doc menu definition.
-        $DocumentationMenu = @{    
+        $DocumentationMenu = @{
             "Script" = { Show-MenuV2 -menu $DocumentationMenu }
             "HelpText" = "Displays a menu of PowerOps documentation tools."
             "Name" = "PowerOps Documentation Tools"
@@ -1108,32 +1540,38 @@ Output Directory: $DocumentLocation
             "Footer" = $footer
             "MainHeader" = $MainHeader
             "Subheader" = $Subheader
-            "Items" = @( 
-                @{ 
+            "Items" = @(
+                @{
                     "Name" = "Document All NSX Components"
                     "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = { getNSXComponents }
                 },
-                @{ 
+                @{
                     "Name" = "Document ESXi Host(s) Info"
                     "Status" = { if ($DefaultNSXConnection  -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  getHostInformation }
                 },
-                @{ 
+                @{
                     "Name" = "Document NSX Environment via Visio Diagramming Tool"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXVISIOTool }
                 },
-                @{ 
+                @{
                     "Name" = "Document Routing information"
                     "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  getRoutingInformation }
                 },
-                @{ 
+                @{
+                    "Name" = "Document Load Balancing Information"
+                    "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runLB2Excel }
+                },
+                @{
                     "Name" = "Document NSX DFW info to Excel via DFW2Excel"
                     "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
