@@ -1542,36 +1542,42 @@ Output Directory: $DocumentLocation
             "Subheader" = $Subheader
             "Items" = @(
                 @{
+                    "SectionHeader" = "Environment Documentation"
                     "Name" = "Document All NSX Components"
                     "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = { getNSXComponents }
                 },
                 @{
+                    "SectionHeader" = "Environment Documentation"
                     "Name" = "Document ESXi Host(s) Info"
                     "Status" = { if ($DefaultNSXConnection  -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  getHostInformation }
                 },
                 @{
+                    "SectionHeader" = "Networking Documentation"
                     "Name" = "Document NSX Environment via Visio Diagramming Tool"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXVISIOTool }
                 },
                 @{
+                    "SectionHeader" = "Networking Documentation"
                     "Name" = "Document Routing information"
                     "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  getRoutingInformation }
                 },
                 @{
+                    "SectionHeader" = "Networking Documentation"
                     "Name" = "Document Load Balancing Information"
                     "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runLB2Excel }
                 },
                 @{
+                    "SectionHeader" = "Security Documentation"
                     "Name" = "Document NSX DFW info to Excel via DFW2Excel"
                     "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true

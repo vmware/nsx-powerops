@@ -146,7 +146,9 @@ function Show-MenuV2 {
         [string]$MenuItemSelectedColor="DarkGreen",
         [string]$MenuItemIncompleteColor="Yellow",
         [string]$PromptColor="Yellow",
-        [string]$ScriptStatusTextColor = "DarkGreen"
+        [string]$ScriptStatusTextColor = "DarkGreen",
+        [string]$SectionHeaderColor = "DarkCyan"
+        
     )
 
     if ( $memu.items.count -gt 10 ) { throw "Too many items in menu - whinge at bradford. "}
@@ -175,7 +177,13 @@ function Show-MenuV2 {
         write-host -foregroundcolor $HeaderColor ( "*" * $ConsoleWidth + "`n" )  
         write-host -foregroundcolor $MenuTitleColor "$($breadcrumb -join(" > "))`n"
         for ( $index=0; $index -lt ($menu.items.count ); $index++ ) { 
-
+            
+            # If there is a section header defined and different to last, display it...
+            $LastSectionHeader = $CurrentSectionHeader           
+            $CurrentSectionHeader = $menu.items[$index].SectionHeader
+            if ( $CurrentSectionHeader -and ($CurrentSectionHeader -ne $LastSectionHeader)) { 
+                write-host -ForegroundColor $SectionHeaderColor "`n$CurrentSectionHeader"
+            }
             $BaseItemText = $menu.items[$index].Name
             $Column2Width = 40
             $Column1Width = $ConsoleWidth - $Column2Width - 10
@@ -312,7 +320,7 @@ function Show-MenuV2 {
             default {
                 if ( ( 1..$menu.items.count ) -contains $_ ) { 
                     #Valid selection
-                    if ( $menu.items[$($_ - 1)].Status -ne "Disabled" ) { 
+                    if ( $menu.items[$($_ - 1)].Status.invoke() -ne "Disabled" ) { 
                         if ( $menu.items[$($_ - 1)].Interactive ) { 
                             Write-Host -ForegroundColor $ScriptStatusTextColor "You have selected # '$_'. $($menu.items[$($_ - 1)].name)" 
                         }
