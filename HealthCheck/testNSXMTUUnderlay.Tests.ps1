@@ -65,7 +65,7 @@ function createNewExcel($newExcelName){
 # Function to start SSH Session #
 # ***************************** #
 function startSSHSession($serverToConnectTo, $credentialsToUse){
-    $newSSHSession = New-Sshsession -computername $serverToConnectTo -Credential $credentialsToUse
+    $newSSHSession = New-Sshsession -computername $serverToConnectTo -Credential $credentialsToUse -AcceptKey
     return $newSSHSession
 }
 

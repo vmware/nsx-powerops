@@ -41,7 +41,7 @@ Describe "Logical Switches" {
     $NsxControllers = Get-NsxController -connection $NSXConnection
     foreach ( $controller in $NsxControllers) {
         try { 
-            $session = New-SshSession -ErrorAction Stop -credential $ControllerCredential $controller.ipaddress 
+            $session = New-SshSession -ErrorAction Stop -credential $ControllerCredential $controller.ipaddress -AcceptKey
             $ControllerSshConnection.Add($controller.id, $session) | out-null
         }
         catch {

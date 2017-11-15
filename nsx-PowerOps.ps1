@@ -779,7 +779,7 @@ function invokeNSXCLICmd($commandToInvoke, $fileName){
 
 function startSSHSession($serverToConnectTo, $credentialsToUse){
     #$myNSXManagerCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $mySecurePass
-    $newSSHSession = New-Sshsession -computername $serverToConnectTo -Credential $credentialsToUse
+    $newSSHSession = New-Sshsession -computername $serverToConnectTo -Credential $credentialsToUse -AcceptKey
     return $newSSHSession
 }
 
