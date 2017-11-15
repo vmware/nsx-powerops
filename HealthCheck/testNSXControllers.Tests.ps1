@@ -28,9 +28,13 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 #I need... 
 # $NsxConnection in global scope
-# $NsxControllerCredential in global scope
+# $ControllerCredential in global scope
 # $vCenterSSHConnection = startSSHSession -serverToConnectTo $vCenterHost -credentialsToUse $myvCenterSecureCredential
-$NsxControllerCredential = Get-Credential -Message "NSX Controller's Credentails" -UserName "admin"
+
+# Need to avoid prompting if non interactive to avoid scheduled task hanging.
+if ( (-not $global:ControllerCredential ) -and ( -not $nonInteractive)) { 
+    $ControllerCredential = Get-Credential -Message "NSX Controller's Credentials" -UserName "admin"
+}
 
 Describe "NSX Controllers" {
     Write-Host "The NSX controller cluster"
@@ -40,7 +44,7 @@ Describe "NSX Controllers" {
         #Setup... 
         #Get the cluster uuid from controller 0
         try {
-            $sesh = New-SshSession -ErrorAction Ignore -Credential $NsxControllerCredential -computername $nsxcontrollers[0].ipaddress
+            $sesh = New-SshSession -ErrorAction Ignore -Credential $ControllerCredential -computername $nsxcontrollers[0].ipaddress -AcceptKey
             $lines = (Invoke-SSHCommand -SSHSession $sesh "show control-cluster status").output
             $lines | ? { $_ -match "^Cluster ID:\s+(\S+)$" } | out-null
             $clusteruuid = $matches[1]
@@ -50,7 +54,7 @@ Describe "NSX Controllers" {
         It "has the supported number of controller nodes" {$NsxControllers.Count | Should be 3}
         foreach ( $controller in $NsxControllers ) {
             Write-Host "Controller $($Controller.id)"
-            try {$sesh = New-SshSession -ErrorAction Ignore -credential $NsxControllerCredential -computername $controller.ipaddress}
+            try {$sesh = New-SshSession -ErrorAction Ignore -credential $ControllerCredential -computername $controller.ipaddress -AcceptKey}
             catch {}
             
             #Check status in API

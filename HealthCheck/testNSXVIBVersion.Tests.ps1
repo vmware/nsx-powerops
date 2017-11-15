@@ -37,41 +37,39 @@ $global:env_VIBVersionArray=@()
 Write-Host "`nPlease Enter the desired VIB version (eg: 6.0.0-0.0.4249023):" -ForegroundColor Darkyellow -NoNewline
 $desiredVIBVersion = Read-Host
 
-Write-Host "`nProvide one password for all hosts? Y or N [default Y]: " -ForegroundColor Darkyellow -NoNewline
-$singlrHostsPass = Read-Host
-Write-Host "You have Entered: $singlrHostsPass"
-
-if ($singlrHostsPass -eq 'Y' -or $singlrHostsPass -eq 'y' -or $singlrHostsPass -eq ''){
-    $esxicred = Get-Credential -Message "All ESXi Host(s) Credentail" -UserName "root"
-    $HostCredentialHash["ALL"] = $esxicred
-}
-
 Describe "NSX VIB Versions"{
     Write-Host -ForegroundColor Yellow "WARNING: Currently this test checks all clusters including those NOT prepared for NSX."
     Write-Host -ForegroundColor Yellow "Please ignore them as false alerts."
     $vSphereHosts = get-vmhost -Server $NSXConnection.ViConnection
     #Getting all hosts.
     foreach ( $hv in $vSphereHosts ) {
+
+        try { 
+            $esxi_SSH_Session = New-SSHSession -ComputerName $hv -Credential $EsxiHostCredential -AcceptKey -erroraction stop
+        }
+        catch [Renci.SshNet.Common.SshAuthenticationException] {
+            if ( -not $noninteractive ) { 
+                write-warning "Default host credentials were not accepted by $($hv.name)."
+                $EsxiHostCredential = Get-Credential -Message "ESXi Host $hv.name Credentails" -UserName "root" -ErrorAction ignore    
+                $esxi_SSH_Session = New-SSHSession -ComputerName $hv -Credential $EsxiHostCredential -AcceptKey 
+            }
+            else { 
+                throw "Default host credentials were not accepted by $($hv.name) and test is running in non-interactive mode."
+            }
+        }
+        catch {
+            write-warning "An unhandled exception occured connecting to host $($hv.name).  $_"
+        }
+
         $ESXi_VIBVersionArray=@()
-        Write-Host "vSphere Host $($hv.name)"
-        #Test setup
-        #If host has specific credentials, then use them, otherwise, use the default.
-        if ( $HostCredentialHash.Contains($hv) ) {
-            $esxicred = $HostCredentialHash.$hv.Credential
-        }elseif ($HostCredentialHash.Contains("ALL") ) {}
-        else {$esxicred = Get-Credential -Message "ESXi Host $hv.name Credentails" -UserName "root"}
 
-        #Connect
-        $esxi_SSH_Session = New-SSHSession -ComputerName $hv -Credential $esxicred -AcceptKey -ErrorAction Ignore
-
-        it "ESXi is reachable via ssh" {
+        it "Host $($hv.name) is reachable via ssh" {
             $esxi_SSH_Session.Connected | should be $true
         }
         
         if ( $esxi_SSH_Session.Connected -eq $true ) {
 
             #Get VIB info.
-            #$ESXi_VIBInfo = Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "esxcli software vib get --vibname esx-vxlan" -EnsureConnection -ErrorAction Ignore
             $ESXi_VIBInfo = Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "esxcli software vib list | grep esx-v" -EnsureConnection -ErrorAction Ignore
 
             it "SSH returned VIBs info" { 
