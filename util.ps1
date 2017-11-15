@@ -320,7 +320,7 @@ function Show-MenuV2 {
             default {
                 if ( ( 1..$menu.items.count ) -contains $_ ) { 
                     #Valid selection
-                    if ( $menu.items[$($_ - 1)].Status -ne "Disabled" ) { 
+                    if ( $menu.items[$($_ - 1)].Status.invoke() -ne "Disabled" ) { 
                         if ( $menu.items[$($_ - 1)].Interactive ) { 
                             Write-Host -ForegroundColor $ScriptStatusTextColor "You have selected # '$_'. $($menu.items[$($_ - 1)].name)" 
                         }
