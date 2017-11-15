@@ -29,9 +29,10 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 #I need... 
 # $NsxConnection in global scope
-# $NsxControllerCredential in global scope
-$NsxControllerCredential = Get-Credential -Message "NSX Controller's Credentails" -UserName "admin"
-
+# Need to avoid prompting if non interactive to avoid scheduled task hanging.
+if ( (-not $global:ControllerCredential ) -and ( -not $nonInteractive)) { 
+    $ControllerCredential = Get-Credential -Message "NSX Controller's Credentials" -UserName "admin"
+}
 Describe "Logical Switches" {
 
     #Setup - controller connection to all controllers
@@ -40,12 +41,12 @@ Describe "Logical Switches" {
     $NsxControllers = Get-NsxController -connection $NSXConnection
     foreach ( $controller in $NsxControllers) {
         try { 
-            $session = New-SshSession -ErrorAction Stop -credential $NsxControllerCredential $controller.ipaddress 
+            $session = New-SshSession -ErrorAction Stop -credential $ControllerCredential $controller.ipaddress 
             $ControllerSshConnection.Add($controller.id, $session) | out-null
         }
         catch {
 
-            Throw "Test setup failed.  SSH connection to controller $($controller.id) failed.  $_"
+            Throw "Test setup failed.  SSH connection to controller $($controller.ipaddress) failed.  $_"
         }
     }
     #collection of LS from API.

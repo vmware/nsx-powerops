@@ -1260,9 +1260,10 @@ function runNSXTest ($testModule){
     
     #Todo: Change connection handling to suit connection profiles.
     $global:NsxConnection = $DefaultNSXConnection
-
+    $global:EsxiHostCredential = Get-ProfileEsxiCreds -ProfileName $config.defaultprofile
+    $global:ControllerCredential = Get-ProfileControllerCreds -ProfileName $config.defaultprofile
     $result = Invoke-Pester -Script @{ 
-        Path = './HealthCheck/'+$testModule+'.Tests.ps1'
+        Path = "$mydirectory/HealthCheck/$testModule.Tests.ps1"
         Parameters = @{ 
             testModule = $testModule
         }
