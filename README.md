@@ -57,19 +57,22 @@ Required Pre-Requisites:
 
 Optional Pre-Requisites:
 
-* MS VISIO (optional - some feature wont work if not installed) [https://www.microsoft.com/en-us/evalcenter/evaluate-visio-professional-2016]
+* MS VISIO 2013 activated (optional - some feature wont work if not installed) [https://products.office.com/en-us/microsoft-visio-2013]
+NOTE: NOT supported with VISIO Trial or 365 activated version
 * GIT (optional) [https://git-scm.com/]
 
 ### Download via git
     git clone https://github.com/vmware/nsx-powerops.git    
 
 ### Build & Run
-* For PowerCLI to work correctly: 'Set-ExecutionPolicy RemoteSigned' in powercli
+Note: For PowerCLI to work correctly: 'Set-ExecutionPolicy RemoteSigned' in powercli
+
 Step 1: Run the ./nsx-PowerOps.ps1 in PowerShell terminal [tested on VMware PowerCLI 6.5.2]
 
 Step 2: When in nsx-PowerOps.ps1:
-    * To get the list of available commands type 'help'
-    * To exit type 'exit' or '0'
+* To get help type 'h'
+* To return to previous menu type 'x'
+* To quit the program type 'q'
 
 Step 3: Install NSX PowerOps depedency (PowerNSX, Pester, Posh-SSH) by selecting option # 1
 
