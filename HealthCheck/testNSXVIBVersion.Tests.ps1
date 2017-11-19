@@ -38,9 +38,14 @@ Write-Host "`nPlease Enter the desired VIB version (eg: 6.0.0-0.0.4249023):" -Fo
 $desiredVIBVersion = Read-Host
 
 Describe "NSX VIB Versions"{
-    Write-Host -ForegroundColor Yellow "WARNING: Currently this test checks all clusters including those NOT prepared for NSX."
-    Write-Host -ForegroundColor Yellow "Please ignore them as false alerts."
-    $vSphereHosts = get-vmhost -Server $NSXConnection.ViConnection
+    # collect hosts from NSX prepared clusters only
+    $vSphereHosts = @()
+    Get-cluster | %{
+        if((Get-NsxClusterStatus $_ | ?{$_.featureid -eq "com.vmware.vshield.vsm.nwfabric.hostPrep"}).installed -eq "true"){
+            $vSphereHosts += $_ | Get-VMHost -Server $NSXConnection.ViConnection
+        }
+    }
+
     #Getting all hosts.
     foreach ( $hv in $vSphereHosts ) {
 
