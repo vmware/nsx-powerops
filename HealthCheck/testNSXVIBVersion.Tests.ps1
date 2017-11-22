@@ -37,61 +37,60 @@ $global:env_VIBVersionArray=@()
 Write-Host "`nPlease Enter the desired VIB version (eg: 6.0.0-0.0.4249023):" -ForegroundColor Darkyellow -NoNewline
 $desiredVIBVersion = Read-Host
 
+# Get NSX Server version
+[int]$nsxVersion = [convert]::ToInt32($NsxConnection.Version.Replace(".",""),10)
+
 Describe "NSX VIB Versions"{
-    Write-Host -ForegroundColor Yellow "WARNING: Currently this test checks all clusters including those NOT prepared for NSX."
-    Write-Host -ForegroundColor Yellow "Please ignore them as false alerts."
-    $vSphereHosts = get-vmhost -Server $NSXConnection.ViConnection
+    # collect hosts from NSX prepared clusters only
+    $vSphereHosts = @()
+    Get-cluster | %{
+        if((Get-NsxClusterStatus $_ | ?{$_.featureid -eq "com.vmware.vshield.vsm.nwfabric.hostPrep"}).installed -eq "true"){
+            $vSphereHosts += $_ | Get-VMHost -Server $NSXConnection.ViConnection
+        }
+    }
+
     #Getting all hosts.
     foreach ( $hv in $vSphereHosts ) {
 
-        try { 
-            $esxi_SSH_Session = New-SSHSession -ComputerName $hv -Credential $EsxiHostCredential -AcceptKey -erroraction stop
-        }
-        catch [Renci.SshNet.Common.SshAuthenticationException] {
-            if ( -not $noninteractive ) { 
-                write-warning "Default host credentials were not accepted by $($hv.name)."
-                $EsxiHostCredential = Get-Credential -Message "ESXi Host $hv.name Credentails" -UserName "root" -ErrorAction ignore    
-                $esxi_SSH_Session = New-SSHSession -ComputerName $hv -Credential $EsxiHostCredential -AcceptKey 
-            }
-            else { 
-                throw "Default host credentials were not accepted by $($hv.name) and test is running in non-interactive mode."
-            }
-        }
-        catch {
-            write-warning "An unhandled exception occured connecting to host $($hv.name).  $_"
-        }
-
+        # Reset VIB Version array for every host
         $ESXi_VIBVersionArray=@()
-
-        it "Host $($hv.name) is reachable via ssh" {
-            $esxi_SSH_Session.Connected | should be $true
-        }
         
-        if ( $esxi_SSH_Session.Connected -eq $true ) {
+        # Initialise Esxcli
+        $esxcli = Get-EsxCli -VMHost $hv.name -v2
 
-            #Get VIB info.
-            $ESXi_VIBInfo = Invoke-SSHCommand -SshSession $esxi_SSH_Session -Command "esxcli software vib list | grep esx-v" -EnsureConnection -ErrorAction Ignore
+        # Get ESXi server version
+        [int]$esxVersion = [convert]::ToInt32($esxcli.system.version.get.Invoke().version.replace(".",""),10)
 
-            it "SSH returned VIBs info" { 
-                $ESXi_VIBInfo | should not be blank
+        # Get VIB info
+        if (($nsxVersion -ge 633) -and ($esxVersion -ge 600)) {
+            $ESXi_VIBInfo = $esxcli.software.vib.list.Invoke() | ?{$_.name -match "esx-nsxv"}
+            
+            # In case VIBs are not upgraded yet
+            if(!$ESXi_VIBInfo){
+                $ESXi_VIBInfo = $esxcli.software.vib.list.Invoke() | ?{$_.name -match "esx-v"}
             }
-
-            if ( $ESXi_VIBInfo ) {
-                foreach ($vib in $ESXi_VIBInfo.output) {
-                    $cleanvib = $vib -replace '\s+', ' '
-                    $a,$b,$c = $cleanvib.split(' ')
-                    $ESXi_VIBVersion =  $b
-                    $ESXi_VIBVersionArray = $ESXi_VIBVersionArray+$ESXi_VIBVersion
-                    $global:env_VIBVersionArray = $global:env_VIBVersionArray+$ESXi_VIBVersion
-                    it "$a VIB Version same as desired VIB version" { 
-                        $ESXi_VIBVersion | Should BeExactly $desiredVIBVersion
-                    }
-                }
-                $uniqueVIBVersionArray=$ESXi_VIBVersionArray | select -unique
-                it "All VIB Versions are same accross the host $hv.name" {$uniqueVIBVersionArray.count -eq 1 | Should Be $true}
-            }
-                Remove-SshSession -SshSession $esxi_SSH_Session | out-null
         }
+        else{
+            $ESXi_VIBInfo = $esxcli.software.vib.list.Invoke() | ?{$_.name -match "esx-v"}
+        }
+            
+        it "Esxcli returned VIBs info" { 
+            $ESXi_VIBInfo | should not be blank
+        }
+
+        if ($ESXi_VIBInfo) {
+            foreach ($vib in $ESXi_VIBInfo) { 
+                $ESXi_VIBVersionArray = $ESXi_VIBVersionArray+$vib.version
+                $global:env_VIBVersionArray = $global:env_VIBVersionArray+$vib.version
+                it "$($vib.name) VIB Version same as desired VIB version" { 
+                    $vib.version | Should BeExactly $desiredVIBVersion
+                }
+            }
+            $uniqueVIBVersionArray=$ESXi_VIBVersionArray | select -unique
+            it "All VIB Versions are same accross the host $hv.name" {$uniqueVIBVersionArray.count -eq 1 | Should Be $true}
+        }
+
+        write-host
     }
     Write-Host "NSX Environment - All Hosts"
     if ( $global:env_VIBVersionArray.count -gt 1 ) {
