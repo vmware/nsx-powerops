@@ -4,7 +4,7 @@ SPDX-License-Identifier: MIT
 
 NSX Power Operations
 
-Copyright 2017 VMware, Inc.  All rights reserved				
+Copyright 2017 VMware, Inc.  All rights reserved                
 
 The MIT license (the ìLicenseî) set forth below applies to all parts of the NSX Power Operations project.  You may not use this file except in compliance with the License.†
 
@@ -251,14 +251,14 @@ function getNSXComponents {
 
     $nsxManagerSummary = Get-NsxManagerSystemSummary
     $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
-	$nsxManagerRole = Get-NsxManagerRole
-	$nsxManagerBackup = Get-NsxManagerBackup
-	$nsxManagerNetwork = Get-NsxManagerNetwork
-	$nsxManagerSsoConfig = Get-NsxManagerSsoConfig
-	$nsxManagerSyslogServer = Get-NsxManagerSyslogServer
-	$nsxManagerTimeSettings = Get-NsxManagerTimeSettings
-	$vCenterVersionInfo = $global:DefaultVIServer.ExtensionData.Content.About
-	
+    $nsxManagerRole = Get-NsxManagerRole
+    $nsxManagerBackup = Get-NsxManagerBackup
+    $nsxManagerNetwork = Get-NsxManagerNetwork
+    $nsxManagerSsoConfig = Get-NsxManagerSsoConfig
+    $nsxManagerSyslogServer = Get-NsxManagerSyslogServer
+    $nsxManagerTimeSettings = Get-NsxManagerTimeSettings
+    $vCenterVersionInfo = $global:DefaultVIServer.ExtensionData.Content.About
+    
     #Write-Host "Controller ID is:"$nsxControllers[0].id
     <# Example of the code to cherrypick dic elements to plot on documentation excel.
     $allNSXComponentExcelData = @{"NSX Controllers Info" = $nsxControllers, "objectTypeName", "revision", "clientHandle", "isUniversal", "universalRevision", "id", "ipAddress", "status", "upgradeStatus", "version", "upgradeAvailable", "virtualMachineInfo", "hostInfo", "resourcePoolInfo", "clusterInfo", "managedBy", "datastoreInfo", "controllerClusterStatus", "diskLatencyAlertDetected", "vmStatus"; 
@@ -268,7 +268,7 @@ function getNSXComponents {
     "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
     #>
     $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"; "NSX Manager Backup" = $nsxManagerBackup, "all"; "NSX Manager Network" = $nsxManagerNetwork, "all"; "NSX Manager SSO Config" = $nsxManagerSsoConfig, "all"; "NSX Manager Syslog Server" = $nsxManagerSyslogServer, "all"; "NSX Manager Time Settings" =  $nsxManagerTimeSettings, "all"; "vCenter Version" = $vCenterVersionInfo, "all"}
-	
+    
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel
     
     $currentdocumentpath = "$documentlocation\NSX-Components-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
@@ -731,10 +731,18 @@ function getVXLANInformation($sectionNumber){
 
 #Run DFW2Excel
 function runDFW2Excel {
-    
+    param(
+        [switch]$all
+        )
     $Dfw2Excel = "$myDirectory\PowerNSX-DFW2Excel\DFW2Excel.ps1"
     $DocumentPath = "$documentlocation\DfwToExcel-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
-    &$Dfw2Excel -EnableIpDetection -StartMinimised -DocumentPath $DocumentPath
+    if ( $all ){
+        &$Dfw2Excel -GetSecTagMembers -GetSecGrpMembers -EnableIpDetection -StartMinimised -DocumentPath $DocumentPath    
+    }
+    else {
+        &$Dfw2Excel -StartMinimised -DocumentPath $DocumentPath
+    }
+    
     
 }
 
@@ -1585,7 +1593,14 @@ Output Directory: $DocumentLocation
                 },
                 @{
                     "SectionHeader" = "Security Documentation"
-                    "Name" = "Document NSX DFW info to Excel via DFW2Excel"
+                    "Name" = "Document NSX DFW info to Excel via DFW2Excel (small environments)"
+                    "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runDFW2Excel -all }
+                },
+                @{
+                    "SectionHeader" = "Security Documentation"
+                    "Name" = "Document NSX DFW info to Excel via DFW2Excel (large environments)"
                     "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runDFW2Excel }
