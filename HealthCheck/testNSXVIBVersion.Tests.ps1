@@ -31,23 +31,65 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 # $NsxConnection in global scope
 # Use this test to confirm connectivity / readiness of system to run test suite.
 
-$ESXi_VIBVersionArray=@()
-$global:env_VIBVersionArray=@()
-[pscustomobject]$HostCredentialHash=@{}
-Write-Host "`nPlease Enter the desired VIB version (eg: 6.0.0-0.0.4249023):" -ForegroundColor Darkyellow -NoNewline
-$desiredVIBVersion = Read-Host
 
-# Get NSX Server version
-[int]$nsxVersion = [convert]::ToInt32($NsxConnection.Version.Replace(".",""),10)
+# Collecting the VIB versions from the NSX Manager
+
+## ignore certificate validation - temp, until Trust Relationship for SSL/TLS is resolved
+if (-not ([System.Management.Automation.PSTypeName]'ServerCertificateValidationCallback').Type)
+{
+$certCallback = @"
+    using System;
+    using System.Net;
+    using System.Net.Security;
+    using System.Security.Cryptography.X509Certificates;
+    public class ServerCertificateValidationCallback
+    {
+        public static void Ignore()
+        {
+            if(ServicePointManager.ServerCertificateValidationCallback ==null)
+            {
+                ServicePointManager.ServerCertificateValidationCallback += 
+                    delegate
+                    (
+                        Object obj, 
+                        X509Certificate certificate, 
+                        X509Chain chain, 
+                        SslPolicyErrors errors
+                    )
+                    {
+                        return true;
+                    };
+            }
+        }
+    }
+"@
+    Add-Type $certCallback
+ }
+[ServerCertificateValidationCallback]::Ignore()
+
+## get web page with VIB versions
+$URL = "https://$($nsxconnection.server)/bin/vdn/nwfabric.properties"
+$webResponse = Invoke-WebRequest -Method get -uri $URL
+
+## Processing the web response
+$processedWebResponse = (Select-String \d[.]\d[-]\d+ -input $webResponse.RawContent -AllMatches | Foreach {$_.matches}).Value
+$vibMatrix = @{}
+foreach($row in $processedWebResponse){
+        $vibMatrix[$row.Split("-",2)[0]] = $row.Split("-",2)[0] + ".0-0.0."+ $row.Split("-",2)[1]
+}
+
 
 Describe "NSX VIB Versions"{
+    $ESXi_VIBVersionArray=@()
+    $env_VIBVersionArray=@()
+
     # collect hosts from NSX prepared clusters only
     $vSphereHosts = @()
     Get-cluster | %{
         if((Get-NsxClusterStatus $_ | ?{$_.featureid -eq "com.vmware.vshield.vsm.nwfabric.hostPrep"}).installed -eq "true"){
             $vSphereHosts += $_ | Get-VMHost -Server $NSXConnection.ViConnection
         }
-    }
+    }    
 
     #Getting all hosts.
     foreach ( $hv in $vSphereHosts ) {
@@ -59,31 +101,29 @@ Describe "NSX VIB Versions"{
         $esxcli = Get-EsxCli -VMHost $hv.name -v2
 
         # Get ESXi server version
-        [int]$esxVersion = [convert]::ToInt32($esxcli.system.version.get.Invoke().version.replace(".",""),10)
+        $esxVersion =  $hv.version.remove(3)
+
+        # Identify latest VIB based on the NSX Manager and ESXi server version
+        $desiredVIBVersion = $vibMatrix[$esxVersion]
 
         # Get VIB info
-        if (($nsxVersion -ge 633) -and ($esxVersion -ge 600)) {
-            $ESXi_VIBInfo = $esxcli.software.vib.list.Invoke() | ?{$_.name -match "esx-nsxv"}
-            
-            # In case VIBs are not upgraded yet
-            if(!$ESXi_VIBInfo){
-                $ESXi_VIBInfo = $esxcli.software.vib.list.Invoke() | ?{$_.name -match "esx-v"}
-            }
-        }
-        else{
-            $ESXi_VIBInfo = $esxcli.software.vib.list.Invoke() | ?{$_.name -match "esx-v"}
-        }
+        $ESXi_VIBInfo = $esxcli.software.vib.list.Invoke() | ?{($_.name -match "esx-nsxv") -or ($_.name -match "esx-v")}
             
         it "Esxcli returned VIBs info" { 
             $ESXi_VIBInfo | should not be blank
         }
 
         if ($ESXi_VIBInfo) {
-            foreach ($vib in $ESXi_VIBInfo) { 
+            $a = New-Object -TypeName PSobject
+            $a | Add-Member -MemberType NoteProperty -Name vibStatus -Value "Ok"
+            $env_VIBVersionArray += $a
+            foreach ($vib in $ESXi_VIBInfo) {       
                 $ESXi_VIBVersionArray = $ESXi_VIBVersionArray+$vib.version
-                $global:env_VIBVersionArray = $global:env_VIBVersionArray+$vib.version
-                it "$($vib.name) VIB Version same as desired VIB version" { 
+                it "$($vib.name) $($vib.version) VIB Version same as latest VIB version for the current NSX Manager" { 
                     $vib.version | Should BeExactly $desiredVIBVersion
+                }
+                if($vib.version -ne $desiredVIBVersion){
+                    $env_VIBVersionArray.vibStatus = "Fail"
                 }
             }
             $uniqueVIBVersionArray=$ESXi_VIBVersionArray | select -unique
@@ -93,8 +133,8 @@ Describe "NSX VIB Versions"{
         write-host
     }
     Write-Host "NSX Environment - All Hosts"
-    if ( $global:env_VIBVersionArray.count -gt 1 ) {
-        $uniqueEnvVIBVersionObj=$env_VIBVersionArray | select -unique
-        it "All VIB Versions are same accross the Environment" {$uniqueEnvVIBVersionObj.count -eq 1 | Should Be $true}
+    if ($env_VIBVersionArray.count -gt 1 ) {
+        $uniqueEnvVIBVersionObj=$env_VIBVersionArray.vibStatus | select -unique
+        it "All VIB Versions accross the environment are up to date" {($uniqueEnvVIBVersionObj.count -eq 1) -and ($uniqueEnvVIBVersionObj -eq "Ok") | Should Be $true}
     }
 }
