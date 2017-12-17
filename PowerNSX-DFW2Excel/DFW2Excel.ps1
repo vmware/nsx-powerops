@@ -23,13 +23,15 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 # Author:   Tony Sangha
 # Blog:    tonysangha.com
-# Version:  1.0
+# Version:  1.0.1
 # PowerCLI v6.0
 # PowerNSX v3.0
 # Purpose: Document NSX for vSphere Distributed Firewall
 
 param (
     [switch]$EnableIpDetection,
+    [switch]$GetSecTagMembers,
+    [switch]$GetSecGrpMembers,
     [switch]$StartMinimised,
     [string]$DocumentPath
 )
@@ -192,11 +194,18 @@ function startExcel(){
     $usedRange = $ws7.UsedRange
     $null = $usedRange.EntireColumn.Autofit()
 
-    Write-Host "`nRetrieving DFW Layer 3 FW Rules" -foregroundcolor "magenta"
+    Write-Host "`nRetrieving Environment Summary" -foregroundcolor "magenta"
     $ws8 = $wb.Worksheets.Add()
-    $ws8.Name = "Layer 3 Firewall"
-    dfw_ws($ws8)
+    $ws8.Name = "Environment Summary"
+    env_ws($ws8)
     $usedRange = $ws8.UsedRange
+    $null = $usedRange.EntireColumn.Autofit()
+
+    Write-Host "`nRetrieving DFW Layer 3 FW Rules" -foregroundcolor "magenta"
+    $ws9 = $wb.Worksheets.Add()
+    $ws9.Name = "Layer 3 Firewall"
+    dfw_ws($ws9)
+    $usedRange = $ws9.UsedRange
     $null = $usedRange.EntireColumn.Autofit()
 
     # Must cleanup manually or excel process wont quit.
@@ -208,6 +217,7 @@ function startExcel(){
     ReleaseObject -Obj $ws6    
     ReleaseObject -Obj $ws7
     ReleaseObject -Obj $ws8    
+    ReleaseObject -Obj $ws9    
     ReleaseObject -Obj $usedRange
     
     if ( $DocumentPath -and (test-path (split-path -parent $DocumentPath))) { 
@@ -678,34 +688,135 @@ function pop_sg_ws($sheet){
 
     $row++
 
-    foreach ($member in $sg){
 
-        $members = $member | Get-NSXSecurityGroupEffectiveMember
+    if ($collect_vm_members -eq "y") {
+        Write-Host "Collection of VM Sec Membership Enabled"
+        
+        foreach ($member in $sg){
 
-        $sheet.Cells.Item($row,1) = $member.name
+            $members = $member | Get-NSXSecurityGroupEffectiveMember
 
-        foreach ($vm in $members.virtualmachine.vmnode)
-        {
-            $sheet.Cells.Item($row,2) = $vm.vmID
-            $sheet.Cells.Item($row,3) = $vm.vmName
+            $sheet.Cells.Item($row,1) = $member.name
 
-            $result = $vmaddressing_ht[$vm.vmID]        
-            if([string]::IsNullOrWhiteSpace($result))
+            foreach ($vm in $members.virtualmachine.vmnode)
             {
-                 $sheet.Cells.Item($row,3) = $vm.vmName
+                $sheet.Cells.Item($row,2) = $vm.vmID
+                $sheet.Cells.Item($row,3) = $vm.vmName
+
+                $result = $vmaddressing_ht[$vm.vmID]        
+                if([string]::IsNullOrWhiteSpace($result))
+                {
+                     $sheet.Cells.Item($row,3) = $vm.vmName
+                }
+                else 
+                {
+                    $link = $sheet.Hyperlinks.Add(
+                    $sheet.Cells.Item($row,3),
+                    "",
+                    $result,
+                    "Virtual Machine Information",
+                    $vm.vmName)          
+                }
+                $row++
             }
-            else 
-            {
-                # Write-Host $vm.vmName
-                $link = $sheet.Hyperlinks.Add(
-                $sheet.Cells.Item($row,3),
-                "",
-                $result,
-                "Virtual Machine Information",
-                $vm.vmName)          
-            }
-            $row++
         }
+    }
+    else {
+        Write-Host "Collection of VM Sec Membership Disabled"
+        $sheet.Cells.Item($row,2) = "<Collection Disabled>"
+        $sheet.Cells.Item($row,2).Font.ColorIndex = 3
+        $sheet.Cells.Item($row,3) = "<Collection Disabled>"
+        $sheet.Cells.Item($row,3).Font.ColorIndex = 3
+    }
+} 
+
+########################################################
+#    Environment Summary
+########################################################
+
+function env_ws($sheet){
+
+    $sheet.Cells.Item(1,1) = "NSX Environment Summary"
+    $sheet.Cells.Item(1,1).Font.Size = $titleFontSize
+    $sheet.Cells.Item(1,1).Font.Bold = $titleFontBold
+    $sheet.Cells.Item(1,1).Font.ColorIndex = $titleFontColorIndex
+    $sheet.Cells.Item(1,1).Font.Name = $titleFontName
+    $sheet.Cells.Item(1,1).Interior.ColorIndex = $titleInteriorColor
+    $range1 = $sheet.Range("a1", "j1")
+    $range1.merge() | Out-Null
+
+    $sys_sum = Get-NsxManagerSystemSummary
+    $ssoconfig = Get-NsxManagerSsoConfig
+    $vcconfig = Get-NsxManagerVcenterConfig
+    $ver = Get-PowerNSXVersion
+
+    $sheet.Cells.Item(2,1) = "PowerNSX version"
+    $sheet.Cells.Item(2,2) = $ver.version.toString()
+
+    $sheet.Cells.Item(3,1) = "NSX Manager Name"
+    $sheet.Cells.Item(3,2) = $sys_sum.hostName
+    
+    $sheet.Cells.Item(4,1) = "IPv4 Address"
+    $sheet.Cells.Item(4,2) = $sys_sum.Ipv4Address
+
+    $sheet.Cells.Item(5,1) = "SSO Lookup URL"
+    $sheet.Cells.Item(5,2) = $ssoconfig.ssoLookupServiceUrl    
+
+    $sheet.Cells.Item(6,1) = "SSO User Account"
+    $sheet.Cells.Item(6,2) = $ssoconfig.ssoAdminUsername
+    
+    $sheet.Cells.Item(7,1) = "vCenter Mapping"
+    $sheet.Cells.Item(7,2) = $vcconfig.ipAddress
+
+    $sheet.Cells.Item(8,1) = "NSX Manager Version"
+    $sheet.Cells.Item(8,2) = ($sys_sum.versionInfo.majorVersion + "." `
+                             + $sys_sum.versionInfo.minorVersion + "." `
+                             + $sys_sum.versionInfo.patchVersion + "." `
+                             + $sys_sum.versionInfo.buildNumber)
+    
+    $sheet.Cells.Item(9,1) = "Security Group Membership Statistics"
+    $sheet.Cells.Item(9,1).Font.Size = $titleFontSize
+    $sheet.Cells.Item(9,1).Font.Bold = $titleFontBold
+    $sheet.Cells.Item(9,1).Font.ColorIndex = $titleFontColorIndex
+    $sheet.Cells.Item(9,1).Font.Name = $titleFontName
+    $sheet.Cells.Item(9,1).Interior.ColorIndex = $titleInteriorColor
+    $range1 = $sheet.Range("a9", "j9")
+    $range1.merge() | Out-Null
+    
+    $sheet.Cells.Item(10,1) = "Security Group Name"
+    $sheet.Cells.Item(10,2) = "Translated VMs"
+    $sheet.Cells.Item(10,3) = "Translated IPs"
+    $range2 = $sheet.Range("a10", "c10")
+    $range2.Font.Bold = $subTitleFontBold
+    $range2.Interior.ColorIndex = $subTitleInteriorColor
+    $range2.Font.Name = $subTitleFontName
+    pop_env_ws($sheet)
+}
+
+function pop_env_ws($sheet){
+
+    $row = 11
+
+    ### Security Group Membership statistics
+
+    $sg = Get-NSXSecurityGroup
+
+    foreach($item in $sg){
+
+        $sheet.Cells.Item($row,1) = $item.name
+
+        $url_vms = "/api/2.0/services/securitygroup/" + $item.objectid + `
+                   "/translation/virtualmachines"
+        $url_ips = "/api/2.0/services/securitygroup/" + $item.objectid + `
+                   "/translation/ipaddresses"
+        
+        $sec_vm_stats = Invoke-NsxRestMethod -method get -uri $url_vms
+        $sheet.Cells.Item($row,2) = $sec_vm_stats.vmnodes.vmnode.Length 
+
+        $sec_ip_stats = Invoke-NsxRestMethod -method get -uri $url_ips
+        $sheet.Cells.Item($row,3) = $sec_ip_stats.ipNodes.ipNode.ipAddresses.Length
+
+        $row ++
     }
 }
 
@@ -1078,7 +1189,7 @@ function sec_tags_ws($sheet){
 }
 
 function pop_sec_tags_ws($sheet){
-
+    
     $row=3
     $ST = get-nsxsecuritytag -includesystem
 
@@ -1099,17 +1210,25 @@ function pop_sec_tags_ws($sheet){
 
     $row ++
 
-    # Retrieve a list of all Tag Assignments
-    $tag_assign = $ST | Get-NsxSecurityTagAssignment
-
     # Traverse VM membership and populate spreadsheet
-    foreach ($mem in $tag_assign){
+    if ($collect_vm_stag_members -eq "y") {
+        
+        # Retrieve a list of all Tag Assignments
+        $tag_assign = $ST | Get-NsxSecurityTagAssignment        
+        
+        foreach ($mem in $tag_assign){
 
-        $sheet.Cells.Item($row,1) = $mem.SecurityTag.name
-        $sheet.Cells.Item($row,2) = $mem.VirtualMachine.name
-        $row++
+            $sheet.Cells.Item($row,1) = $mem.SecurityTag.name
+            $sheet.Cells.Item($row,2) = $mem.VirtualMachine.name
+            $row++
+        }
     }
-
+    else {
+        $sheet.Cells.Item($row,1) = "<Collection Disabled>"
+        $sheet.Cells.Item($row,1).Font.ColorIndex = 3
+        $sheet.Cells.Item($row,2) = "<Collection Disabled>"
+        $sheet.Cells.Item($row,2).Font.ColorIndex = 3
+    }
 }
 
 ########################################################
@@ -1218,46 +1337,53 @@ function pop_ip_address_ws($sheet){
 #    Global Functions
 ########################################################
 
-function user_input_vm_ips(){
-
-    # Ask user if they want to collect VM IP Addresses
-    Write-Host "`nCollection of VM IP Addresses has changed to use the value that is reported to VMware Tools, therefore
-                    VM Tools must be installed and running on VMs" -foregroundcolor "yellow"
-    $collect_vm_ips = Read-Host "`nWould you like to continue collection of VM IP Addresses (Default: N) Y/N?"
-    return $collect_vm_ips
-}
-
 If (-not $DefaultNSXConnection) 
 {
-    Write-Warning "`nConnect to NSX Managersestablised"
+    Write-Warning "`nConnect to NSX Manager established"
     $nsx_mgr = Read-Host "`nIP or FQDN of NSX Manager? "
     Connect-NSXServer -NSXServer $nsx_mgr
 }
 
 $version = Get-NsxManagerSystemSummary
 $major_version = $version.versionInfo.majorVersion
-$minor_version = $version.versionInfo.minorVersion
 
-# Only tested to run on NSX 6.2.x installations
+# Only tested to run on NSX 6.2.x & 6.3.x installations
 
 if($major_version -eq 6){
 
     if ( $EnableIpDetection ) {
         $collect_vm_ips = "y"
+        Write-Host "Collection of IP Addresses Enabled"
     } 
     elseif (-not $PSBoundParameters.ContainsKey("EnableIpDetection")) { 
-        $collect_vm_ips = user_input_vm_ips        
-    }
-    else { 
         $collect_vm_ips = "n"
+        Write-Warning "Collection of IP Addresses Disabled"
+    }
+
+    if ( $GetSecTagMembers ) {
+        $collect_vm_stag_members= "y"
+        Write-Host "Collection of Security Tag VM Membership Enabled"
+    } 
+    elseif (-not $PSBoundParameters.ContainsKey("GetSecTagMembers")) { 
+        $collect_vm_stag_members = "n"
+        Write-Warning "Collection of Security Tag VM Membership Disabled"
+    }
+
+    if ( $GetSecGrpMembers ) {
+        $collect_vm_members = "y"
+        Write-Host "Collection of Security Group VM Membership Enabled"
+    } 
+    elseif (-not $PSBoundParameters.ContainsKey("GetSecGrpMembers")) { 
+        $collect_vm_members = "n"
+        Write-Warning "Collection of Security Group VM Membership Disabled"
     }
 
     if ($collect_vm_ips -eq "y") {
-        Write-Host "Collection of IP Addresses Enabled"
+        # Write-Host "Collection of IP Addresses Enabled"
         startExcel("y")
     }
     else{
-        Write-Warning "Collection of IP Addresses Disabled"
+        # Write-Warning "Collection of IP Addresses Disabled"
         startExcel("n")
     }
 }
