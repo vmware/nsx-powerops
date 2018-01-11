@@ -119,19 +119,7 @@ function checkVMKNICPing{
     $titleFontName = "Calibri (Body)"
     $titleInteriorColor = 49
 
-    <#
-    if ($hostCredentails -eq $Null){$hostCredentails = Get-Credential -Message "Credentials for ESXi Host: $fromHost" -UserName "root"}
-    $newSSHSession = startSSHSession -serverToConnectTo $fromHost -credentialsToUse $hostCredentails
-    
-    if ($newSSHSession -eq $null){
-        #Write-Host -ForegroundColor DarkRed "`n Error connecting to SSH!"
-        $SSH_Connection_Error = "SSH Connection Failed! For Host: $fromHost`n"
-        ##$global:totalFailedPings++
-        ##$global:totalPings++
-        Throw $SSH_Connection_Error
-        #exit
-    }
-    #>
+
     $vmknicIPToPingFrom = $hostVMKnicData[$fromHost].$fromVMKnic
 
     Write-Host -ForegroundColor DarkGreen "`n ******************************"
@@ -256,6 +244,8 @@ function checkVMKNICPing{
                         Write-Host "Packet loss is: $($pingStatus.summary.PacketLost)%"
                         $global:excelRowCursor++
                         $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = "Ping failed!"
+                        Log-FailedPing -fromHost $fromHost -fromVMKnic $fromVMKnic -vmknicIPToPingFrom $vmknicIPToPingFrom -vmknicIPToPing $vmknicIPToPing -vmknicNameToPing $vmknicNameToPing -myHost $myHost -summaryExcelSheet $summaryExcelSheet
+                        <#
                         $global:summaryExcelRowCursor++
                         $global:summaryExcelColumnCursor = 6
                         $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromHost
@@ -269,6 +259,7 @@ function checkVMKNICPing{
                         $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicNameToPing
                         $global:summaryExcelColumnCursor++
                         $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $myHost
+                        #>
                     }
                     else{
                         $global:totalFailedPings++
@@ -276,6 +267,8 @@ function checkVMKNICPing{
                         #Write-Host "Total Failed Pings are: $global:totalFailedPings"
                         $global:excelRowCursor++
                         $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = "Ping failed!"
+                        Log-FailedPing -fromHost $fromHost -fromVMKnic $fromVMKnic -vmknicIPToPingFrom $vmknicIPToPingFrom -vmknicIPToPing $vmknicIPToPing -vmknicNameToPing $vmknicNameToPing -myHost $myHost -summaryExcelSheet $summaryExcelSheet
+                        <#
                         $global:summaryExcelRowCursor++
                         $global:summaryExcelColumnCursor = 6
                         $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromHost
@@ -289,6 +282,7 @@ function checkVMKNICPing{
                         $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicNameToPing
                         $global:summaryExcelColumnCursor++
                         $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $myHost
+                        #>
                     }
                 }
                 catch{
@@ -306,6 +300,8 @@ function checkVMKNICPing{
                     $global:totalFailedPings++
                     $global:excelRowCursor++
                     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = "Ping failed!"
+                    Log-FailedPing -fromHost $fromHost -fromVMKnic $fromVMKnic -vmknicIPToPingFrom $vmknicIPToPingFrom -vmknicIPToPing $vmknicIPToPing -vmknicNameToPing $vmknicNameToPing -myHost $myHost -summaryExcelSheet $summaryExcelSheet
+                    <#
                     $global:summaryExcelRowCursor++
                     $global:summaryExcelColumnCursor = 6
                     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromHost
@@ -319,11 +315,28 @@ function checkVMKNICPing{
                     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicNameToPing
                     $global:summaryExcelColumnCursor++
                     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $myHost
-
+                    #>
                 }
             }
         }
     }
+    
+    
+}
+
+function Update-SummaryExcelSheet{
+    
+    param(
+    $summaryExcelSheet
+    )
+
+    $titleFontSize = 8
+    $titleFontBold = $True
+    $titleFontColorIndex = 2
+    $titleFontName = "Calibri (Body)"
+    $titleInteriorColor = 49
+
+
     $global:summaryExcelRowCursor = 3
     $global:summaryExcelColumnCursor = 1
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Number of Ping Tests:"
@@ -406,6 +419,34 @@ function checkVMKNICPing{
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Interior.ColorIndex = $titleInteriorColor
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $global:summaryExcelColumnCursor++
+
+}
+
+function Log-FailedPing{
+
+    param(
+        $fromHost,
+        $fromVMKnic,
+        $vmknicIPToPingFrom,
+        $vmknicIPToPing,
+        $vmknicNameToPing,
+        $myHost,
+        $summaryExcelSheet
+    )
+
+    $global:summaryExcelRowCursor++
+    $global:summaryExcelColumnCursor = 6
+    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromHost
+    $global:summaryExcelColumnCursor++
+    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromVMKnic
+    $global:summaryExcelColumnCursor++
+    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicIPToPingFrom
+    $global:summaryExcelColumnCursor++
+    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicIPToPing
+    $global:summaryExcelColumnCursor++
+    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicNameToPing
+    $global:summaryExcelColumnCursor++
+    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $myHost
 }
 
 #endregion
@@ -421,7 +462,7 @@ $global:listOfHostsVMKnicIPs = @()
 $getHostAndVMKnicDic=@{}
 $global:excelRowCursor =1
 $global:excelColumnCursor =1
-$global:summaryExcelRowCursor =6
+$global:summaryExcelRowCursor =4
 $global:summaryExcelColumnCursor =6
 
 # Get the MTU size to test the ping command with.
@@ -443,21 +484,30 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
     $hostVMKnicData = get-HostsAndVteps
 
     if ($hostVMKnicData[$testHostIP]){
-        #Creating the excel sheet here...
+        #Creating 'Ping Result' excel sheet.
         $newExcelWB = createNewExcel("VMKnicPingTestOutput")
         $sheet = $newExcelWB.WorkSheets.Add()
         $sheet.Name = "Ping Result"
         $sheet.Cells.Item(1,1) = "VMKnic Ping Test Output"
-
+        
+        #Creating 'Summary' excel sheet
         $summarySheet = $newExcelWB.WorkSheets.Add()
         $summarySheet.Name = "Summary"
         $summarySheet.Cells.Item(1,1) = "Summary of VMKnic Ping Test"
+
 
         $detailsOfHost = $hostVMKnicData.$testHostIP
         $detailsOfHost.keys | %{
             checkVMKNICPing -fromHost $testHostIP -fromVMKnic $_ -MTUSize $testMTUSize -excelSheet $sheet -summaryExcelSheet $summarySheet
         }
     }
+
+    #Update 'Summary' excel sheet
+    Update-SummaryExcelSheet -summaryExcelSheet $summarySheet
+
+    # Remove Default Sheet1
+    $newExcelWB.worksheets.item("Sheet1").Delete()
+
     #$newExcelWB.ActiveSheet.UsedRange.AutoFit()
     $global:newExcel.ActiveWorkbook.SaveAs()
     $global:newExcel.Workbooks.Close()
@@ -479,6 +529,9 @@ elseif ($numberOfHostToTest -eq "all" -or $numberOfHostToTest -eq "ALL" -or $num
     $summarySheet.Name = "Summary"
     $summarySheet.Cells.Item(1,1) = "Summary of VMKnic Ping Test"
 
+    
+    
+
     # get list of hosts and run a loop through them to call function check VMKNIC Ping to ping 
     # from each host's each vmknic to all Host's vmknics.
     $listOfHosts = $hostVMKnicData.keys
@@ -489,7 +542,14 @@ elseif ($numberOfHostToTest -eq "all" -or $numberOfHostToTest -eq "ALL" -or $num
             checkVMKNICPing -fromHost $myHost -fromVMKnic $_ -MTUSize $testMTUSize  -excelSheet $sheet -summaryExcelSheet $summarySheet
         }
     }
-    #$newExcelWB.ActiveSheet.UsedRange.AutoFit()
+
+    #Update 'Summary' excel sheet
+    Update-SummaryExcelSheet -summaryExcelSheet $summarySheet
+
+    # Remove Default Sheet1
+    $newExcelWB.worksheets.item("Sheet1").Delete()
+    
+    # Save Excel file
     $global:newExcel.ActiveWorkbook.SaveAs()
     $global:newExcel.Workbooks.Close()
     $global:newExcel.Quit()
