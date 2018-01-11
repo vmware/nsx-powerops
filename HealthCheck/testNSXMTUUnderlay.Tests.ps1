@@ -36,16 +36,12 @@ function createNewExcel($newExcelName){
     $newExcelNameWithDate = $newExcelName +"-"+ $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xlsx"
     Write-Host -ForeGroundColor Green "`n Creating Excel File:" $newExcelNameWithDate
     
-    #$xlFixedFormat = [Microsoft.Office.Interop.Excel.XlFileFormat]::xlWorkbookDefault
     $global:newExcel = New-Object -Com Excel.Application
     $global:newExcel.visible = $false
     $global:newExcel.DisplayAlerts = $false
-    #$Excel.Name = "Test Excel Name"
     $wb = $global:newExcel.Workbooks.Add()
-    #$sheet = $wb.ActiveSheet
     
     # Save the excel with provided Name
-    #$newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate, $xlFixedFormat)
     $global:newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate)
     return $wb
 } # End of function create New Excel
@@ -137,7 +133,6 @@ function checkVMKNICPing{
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.Name = $titleFontName
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    #$excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor+1) = $fromHost
 
     $global:excelRowCursor++
@@ -147,7 +142,6 @@ function checkVMKNICPing{
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.Name = $titleFontName
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    #$excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor+1) = $fromVMKnic
     $global:excelRowCursor++
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = " Pinging From VMKnic IP:"
@@ -156,7 +150,6 @@ function checkVMKNICPing{
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.Name = $titleFontName
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    #$excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor+1) = $vmknicIPToPingFrom
     $global:excelRowCursor++
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = " Ping MTU Size is:"
@@ -165,7 +158,6 @@ function checkVMKNICPing{
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Font.Name = $titleFontName
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    #$excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor).HorizontalAlignment = -4108
     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor+1) = $MTUSize
     $global:excelRowCursor++
 
@@ -229,7 +221,6 @@ function checkVMKNICPing{
                         $pingStatus.summary.PacketLost -eq 0 | Should Be $true
                     }
                     if ($pingStatus.summary.PacketLost -eq 0){                    
-                        #Write-Host -ForegroundColor Green " Ping Passed!"
                         Write-Host -ForegroundColor Green $output
                         $global:excelRowCursor++
                         $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = " Ping Passed!"
@@ -245,21 +236,6 @@ function checkVMKNICPing{
                         $global:excelRowCursor++
                         $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = "Ping failed!"
                         Log-FailedPing -fromHost $fromHost -fromVMKnic $fromVMKnic -vmknicIPToPingFrom $vmknicIPToPingFrom -vmknicIPToPing $vmknicIPToPing -vmknicNameToPing $vmknicNameToPing -myHost $myHost -summaryExcelSheet $summaryExcelSheet
-                        <#
-                        $global:summaryExcelRowCursor++
-                        $global:summaryExcelColumnCursor = 6
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromHost
-                        $global:summaryExcelColumnCursor++
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromVMKnic
-                        $global:summaryExcelColumnCursor++
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicIPToPingFrom
-                        $global:summaryExcelColumnCursor++
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicIPToPing
-                        $global:summaryExcelColumnCursor++
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicNameToPing
-                        $global:summaryExcelColumnCursor++
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $myHost
-                        #>
                     }
                     else{
                         $global:totalFailedPings++
@@ -268,21 +244,6 @@ function checkVMKNICPing{
                         $global:excelRowCursor++
                         $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = "Ping failed!"
                         Log-FailedPing -fromHost $fromHost -fromVMKnic $fromVMKnic -vmknicIPToPingFrom $vmknicIPToPingFrom -vmknicIPToPing $vmknicIPToPing -vmknicNameToPing $vmknicNameToPing -myHost $myHost -summaryExcelSheet $summaryExcelSheet
-                        <#
-                        $global:summaryExcelRowCursor++
-                        $global:summaryExcelColumnCursor = 6
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromHost
-                        $global:summaryExcelColumnCursor++
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromVMKnic
-                        $global:summaryExcelColumnCursor++
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicIPToPingFrom
-                        $global:summaryExcelColumnCursor++
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicIPToPing
-                        $global:summaryExcelColumnCursor++
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicNameToPing
-                        $global:summaryExcelColumnCursor++
-                        $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $myHost
-                        #>
                     }
                 }
                 catch{
@@ -301,21 +262,6 @@ function checkVMKNICPing{
                     $global:excelRowCursor++
                     $excelSheet.Cells.Item($global:excelRowCursor,$global:excelColumnCursor) = "Ping failed!"
                     Log-FailedPing -fromHost $fromHost -fromVMKnic $fromVMKnic -vmknicIPToPingFrom $vmknicIPToPingFrom -vmknicIPToPing $vmknicIPToPing -vmknicNameToPing $vmknicNameToPing -myHost $myHost -summaryExcelSheet $summaryExcelSheet
-                    <#
-                    $global:summaryExcelRowCursor++
-                    $global:summaryExcelColumnCursor = 6
-                    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromHost
-                    $global:summaryExcelColumnCursor++
-                    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $fromVMKnic
-                    $global:summaryExcelColumnCursor++
-                    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicIPToPingFrom
-                    $global:summaryExcelColumnCursor++
-                    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicIPToPing
-                    $global:summaryExcelColumnCursor++
-                    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $vmknicNameToPing
-                    $global:summaryExcelColumnCursor++
-                    $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = $myHost
-                    #>
                 }
             }
         }
@@ -324,6 +270,9 @@ function checkVMKNICPing{
     
 }
 
+# *******************************************************************#
+# Function to update the summary page with headers and overall stats #
+# *******************************************************************#
 function Update-SummaryExcelSheet{
     
     param(
@@ -345,25 +294,24 @@ function Update-SummaryExcelSheet{
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Name = $titleFontName
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    #$summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor+1) = $global:totalPings
     $global:summaryExcelRowCursor++
+
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Tests Passed:"
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Size = $titleFontSize
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Bold = $titleFontBold
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Name = $titleFontName
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    #$summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor+1) = $global:totalPings-$global:totalFailedPings
     $global:summaryExcelRowCursor++
+
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor) = " Total Test Failed:"
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Size = $titleFontSize
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Bold = $titleFontBold
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.ColorIndex = $titleFontColorIndex
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Font.Name = $titleFontName
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).Interior.ColorIndex = $titleInteriorColor
-    #$summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor).HorizontalAlignment = -4108
     $summaryExcelSheet.Cells.Item($global:summaryExcelRowCursor,$global:summaryExcelColumnCursor+1) = $global:totalFailedPings
     $global:summaryExcelRowCursor++
 
@@ -422,6 +370,9 @@ function Update-SummaryExcelSheet{
 
 }
 
+# ************************************************************************#
+# Function to log details of failed ping tests to the excel summary sheet #
+# ************************************************************************#
 function Log-FailedPing{
 
     param(
@@ -508,7 +459,6 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
     # Remove Default Sheet1
     $newExcelWB.worksheets.item("Sheet1").Delete()
 
-    #$newExcelWB.ActiveSheet.UsedRange.AutoFit()
     $global:newExcel.ActiveWorkbook.SaveAs()
     $global:newExcel.Workbooks.Close()
     $global:newExcel.Quit()
@@ -528,9 +478,6 @@ elseif ($numberOfHostToTest -eq "all" -or $numberOfHostToTest -eq "ALL" -or $num
     $summarySheet = $newExcelWB.WorkSheets.Add()
     $summarySheet.Name = "Summary"
     $summarySheet.Cells.Item(1,1) = "Summary of VMKnic Ping Test"
-
-    
-    
 
     # get list of hosts and run a loop through them to call function check VMKNIC Ping to ping 
     # from each host's each vmknic to all Host's vmknics.
