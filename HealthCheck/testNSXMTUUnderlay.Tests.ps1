@@ -63,33 +63,28 @@ function get-HostsAndVteps{
         $tz_hosts += New-Object PSObject -Property $Props
     }
 
+    # Get rid of duplicate entries of hosts that are part of more than 1 transport zone.
+    $hostnames = $tz_hosts.hostnames | select -Unique
+
     # Collect VTEP
-    foreach($tz in $tz_hosts){
-    
-        # reset reporting arrays for each transport zone
-        $detailed_report = @()
-        $summary_report = @()
+    foreach($vmhost in $hostnames){
+        #create esxcli object for a host
+        $esxcli = Get-ESXCLI -VMHost $vmhost -V2
+        $esxVersion = ($esxcli.system.version.get.Invoke()).version
 
-        # Collecting host-vteps array
-        $Hosts_vteps = @()
-        foreach($vmhost in $tz.hostNames){
-            #create esxcli object for a host
-            $esxcli = Get-ESXCLI -VMHost $vmhost -V2
-            $esxVersion = ($esxcli.system.version.get.Invoke()).version
+        #collecting VTEP VMK names and IP Addresses
+        $vteps = $esxcli.network.ip.interface.list.Invoke() | ?{$_.netstackinstance -eq "vxlan"} | select Name, Enabled, MTU
 
-            #collecting VTEP VMK names and IP Addresses
-            $vteps = $esxcli.network.ip.interface.list.Invoke() | ?{$_.netstackinstance -eq "vxlan"} | select Name, Enabled, MTU
-
-            #collect IP addresses for each VTEP
-            $VMKnicData = @{}
-            foreach($vmk in $vteps){
-                $ipv4 = ($esxcli.network.ip.interface.ipv4.get.Invoke() | ?{$_.name -eq $vmk.name}).IPv4Address
-                $VMKnicData.add($vmk.name,$ipv4)
-            }
-         $hostVMKnicData.Add($vmhost, $VMKnicData)
+        #collect IP addresses for each VTEP
+        $VMKnicData = @{}
+        foreach($vmk in $vteps){
+            $ipv4 = ($esxcli.network.ip.interface.ipv4.get.Invoke() | ?{$_.name -eq $vmk.name}).IPv4Address
+            $VMKnicData.add($vmk.name,$ipv4)
         }
-       
+        $hostVMKnicData.Add($vmhost, $VMKnicData)
     }
+       
+
     return $hostVMKnicData
 }
 
