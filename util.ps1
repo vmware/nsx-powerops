@@ -487,6 +487,33 @@ function Get-ProfileEsxiCreds {
     $cred        
 }
 
+function Get-ProfileNsxManagerCreds {
+
+    param ( 
+        [string]$profileName=$config.DefaultProfile
+    )
+
+
+    if ( $config.profiles.$profileName.nsxpassword ) {
+
+        write-host -foregroundcolor cyan "Using NSX Manager credentials from connection profile $profileName"
+        $username = $config.profiles.$profileName.nsxusername
+        $password = $config.profiles.$profileName.nsxpassword
+        if ( $password ) { 
+            $cred = New-Object System.Management.Automation.PSCredential $username, ($password | convertto-securestring)
+        }
+        else {
+            $cred = New-Object System.Management.Automation.PSCredential $username, (New-Object System.Security.SecureString)
+        }
+    }
+    else { 
+        write-host -foregroundcolor Yellow "No NSX Manager credentials saved in connection profile $profileName"
+        $cred = Get-Credential -message "Default NSX Manager Credentials"
+    }
+    
+    $cred        
+}
+
 function Get-ProfileControllerCreds {
 
     param ( 

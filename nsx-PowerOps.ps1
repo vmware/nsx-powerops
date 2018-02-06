@@ -1270,6 +1270,8 @@ function runNSXTest ($testModule){
     $global:NsxConnection = $DefaultNSXConnection
     $global:EsxiHostCredential = Get-ProfileEsxiCreds -ProfileName $config.defaultprofile
     $global:ControllerCredential = Get-ProfileControllerCreds -ProfileName $config.defaultprofile
+    $global:NSXManagerCredential = Get-ProfileNsxManagerCreds -ProfileName $config.defaultprofile
+    $global:documentlocation
     $result = Invoke-Pester -Script @{ 
         Path = "$mydirectory/HealthCheck/$testModule.Tests.ps1"
         Parameters = @{ 
@@ -1665,6 +1667,12 @@ Output Directory: $DocumentLocation
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXMTUUnderlay" }
+                },
+                @{ 
+                    "Name" = "Compare DLR and Hosts Routing Tables"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXDlrHostRoutingTable" }
                 }
             )
         }
