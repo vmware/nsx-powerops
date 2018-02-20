@@ -23,7 +23,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 # Author:   Tony Sangha
 # Blog:    tonysangha.com
-# Version:  1.0.1
+# Version:  1.0.2
 # PowerCLI v6.0
 # PowerNSX v3.0
 # Purpose: Document NSX for vSphere Distributed Firewall
@@ -194,18 +194,32 @@ function startExcel(){
     $usedRange = $ws7.UsedRange
     $null = $usedRange.EntireColumn.Autofit()
 
-    Write-Host "`nRetrieving Environment Summary" -foregroundcolor "magenta"
+    Write-Host "`nRetrieving DFW Redirect FW Rules" -foregroundcolor "magenta"
     $ws8 = $wb.Worksheets.Add()
-    $ws8.Name = "Environment Summary"
-    env_ws($ws8)
+    $ws8.Name = "Redirection Firewall Rules"
+    dfw_ws -sheet $ws8 -fw_type 'redirect'
     $usedRange = $ws8.UsedRange
     $null = $usedRange.EntireColumn.Autofit()
 
-    Write-Host "`nRetrieving DFW Layer 3 FW Rules" -foregroundcolor "magenta"
+    Write-Host "`nRetrieving DFW Layer 2 FW Rules" -foregroundcolor "magenta"
     $ws9 = $wb.Worksheets.Add()
-    $ws9.Name = "Layer 3 Firewall"
-    dfw_ws($ws9)
+    $ws9.Name = "Layer 2 Firewall Rules"
+    dfw_ws -sheet $ws9 -fw_type 'layer2'
     $usedRange = $ws9.UsedRange
+    $null = $usedRange.EntireColumn.Autofit()
+
+    Write-Host "`nRetrieving DFW Layer 3 FW Rules" -foregroundcolor "magenta"
+    $ws10 = $wb.Worksheets.Add()
+    $ws10.Name = "Layer 3 Firewall Rules"
+    dfw_ws -sheet $ws10 -fw_type 'layer3'
+    $usedRange = $ws10.UsedRange
+    $null = $usedRange.EntireColumn.Autofit()
+
+    Write-Host "`nRetrieving Environment Summary" -foregroundcolor "magenta"
+    $ws11 = $wb.Worksheets.Add()
+    $ws11.Name = "Environment Summary"
+    env_ws($ws11)
+    $usedRange = $ws11.UsedRange
     $null = $usedRange.EntireColumn.Autofit()
 
     # Must cleanup manually or excel process wont quit.
@@ -217,7 +231,9 @@ function startExcel(){
     ReleaseObject -Obj $ws6    
     ReleaseObject -Obj $ws7
     ReleaseObject -Obj $ws8    
-    ReleaseObject -Obj $ws9    
+    ReleaseObject -Obj $ws9   
+    ReleaseObject -Obj $ws10 
+    ReleaseObject -Obj $ws11
     ReleaseObject -Obj $usedRange
     
     if ( $DocumentPath -and (test-path (split-path -parent $DocumentPath))) { 
@@ -232,10 +248,17 @@ function startExcel(){
 }
 
 ########################################################
-#    Firewall Worksheet (Only Layer 3)
+#    Firewall Worksheet for L2/L3 & Redirect Types
 ########################################################
 
-function dfw_ws($sheet){
+function dfw_ws(){
+
+    param (
+        [Parameter (Mandatory=$true)]
+            [Object]$sheet,
+        [Parameter (Mandatory=$true)]
+            [string]$fw_type
+    )
 
     $sheet.Cells.Item(1,1) = "Firewall Configuration"
     $sheet.Cells.Item(1,1).Font.Size = $titleFontSize
@@ -246,12 +269,31 @@ function dfw_ws($sheet){
     $range1 = $sheet.Range("a1", "s1")
     $range1.merge() | Out-Null
 
-    l3_rules($sheet)
+    fw_rules -sheet $sheet -fw_type $fw_type
 }
 
-function l3_rules($sheet){
+function fw_rules(){
 
-    $sheet.Cells.Item(2,1) = "Layer 3 Rules"
+    param (
+        [Parameter (Mandatory=$true)]
+            [Object]$sheet,
+        [Parameter (Mandatory=$true)]
+            [string]$fw_type
+    )
+
+    if ( $fw_type -eq 'redirect' ) {
+        $sheet.Cells.Item(2,1) = "Redirection Rules"
+        $fw_sections = Get-NSXFirewallSection -sectionType 'layer3redirectsections'
+    }
+    elseif ( $fw_type -eq 'layer2' ) {
+        $sheet.Cells.Item(2,1) = "Layer 2 FW Rules"
+        $fw_sections = Get-NSXFirewallSection -sectionType 'layer2sections'
+    }
+    else {
+        $sheet.Cells.Item(2,1) = "Layer 3 FW Rules"
+        $fw_sections = Get-NSXFirewallSection -sectionType 'layer3sections'
+    }
+
     $sheet.Cells.Item(2,1).Font.Bold = $titleFontBold
     $sheet.Cells.Item(2,1).Font.ColorIndex = $titleFontColorIndex
     $sheet.Cells.Item(2,1).Font.Name = $titleFontName
@@ -287,259 +329,264 @@ function l3_rules($sheet){
     $range2.Interior.ColorIndex = $subTitleInteriorColor
     $range2.Font.Name = $subTitleFontName
 
-    $fw_sections = Get-NSXFirewallSection
+    # Moved further up the function to if block
+    # $fw_sections = Get-NSXFirewallSection
 
     $row = 4
-
+    
     foreach($section in $fw_sections){
         $sheet.Cells.Item($row,1) = $section.name
         $sheet.Cells.Item($row,1).Font.Bold = $true
         $sheet.Cells.Item($row,2) = $section.id
         $sheet.Cells.Item($row,2).Font.Bold = $true
 
-        foreach($rule in $section.rule){
+        # Only go through rules if a section actually contains rules
+        if (Get-Member -InputObject $section -Name 'rule' -MemberType Properties)
+        {
+            foreach($rule in $section.rule){
 
-            if($rule.disabled -eq "false"){
-                $sheet.Cells.Item($row,3) = "Enabled"
-            } else {
-                $sheet.Cells.Item($row,3) = "Disabled"
-            }
-            if ($rule.name -eq "rule"){
-                $sheet.Cells.Item($row,4) = $valueNotDefined
+                if($rule.disabled -eq "false"){
+                    $sheet.Cells.Item($row,3) = "Enabled"
                 } else {
-                    $sheet.Cells.Item($row,4) = $rule.name
-                    $sheet.Cells.Item($row,4).Font.Bold = $true
+                    $sheet.Cells.Item($row,3) = "Disabled"
                 }
-            $sheet.Cells.Item($row,5) = $rule.id
-            $sheet.Cells.Item($row,5).Font.Bold = $true
-
-            # Highlight Allow/Deny statements
-            if($rule.action -eq "deny"){
-                $sheet.Cells.Item($row,15) = $rule.action
-                $sheet.Cells.Item($row,15).Font.ColorIndex = 3
-            } elseif($rule.action -eq "allow"){
-                $sheet.Cells.Item($row,15) = $rule.action
-                $sheet.Cells.Item($row,15).Font.ColorIndex = 4
-            }
-
-            $sheet.Cells.Item($row,16) = $rule.direction
-            $sheet.Cells.Item($row,17) = $rule.packetType
-            $sheet.Cells.Item($row,19) = $rule.logged
-
-            ###### Sources Section ######
-            $srcRow = $row
-
-            # If Source does not exist, it must be set to ANY
-            if (!$rule.sources){
-                $sheet.Cells.Item($srcRow,8) = "ANY"
-                $sheet.Cells.Item($srcRow,8).Font.ColorIndex = 45
-            } else {
-                #If Negated field exists, document
-                if ($rule.sources.excluded -eq "True" ){
-                    $sheet.Cells.Item($srcRow,6) = "NEGATE"
-                    $sheet.Cells.Item($row,6).Font.ColorIndex = 3
-                }
-
-                foreach($source in $rule.sources.source){
-                    $sheet.Cells.Item($srcRow,7) = $source.type
-
-                    if($source.type -eq "Ipv4Address"){
-                        $sheet.Cells.Item($srcRow,8) = $source.value
-                    } 
-                    elseif($source.type -eq "Ipv6Address") {
-                        $sheet.Cells.Item($srcRow,8) = $source.value
-                    } 
-                    elseif ($source.type -eq "IPSet") {
-                        $result = $ipsets_ht[$source.value]        
-                        if([string]::IsNullOrWhiteSpace($result))
-                        {
-                            $sheet.Cells.Item($srcRow,8) = $source.name
-                            $sheet.Cells.Item($srcRow,9) = $source.value
-                        }
-                        else 
-                        {
-                            $link = $sheet.Hyperlinks.Add(
-                            $sheet.Cells.Item($srcRow,8),
-                            "",
-                            $result,
-                            $source.value,
-                            $source.name)  
-                           $sheet.Cells.Item($srcRow,9) = $source.value
-                        }
-                     }
-                    elseif ($source.type -eq "SecurityGroup") {
-                        $result = $secgrp_ht[$source.value]        
-                        if([string]::IsNullOrWhiteSpace($result))
-                        {
-                            $sheet.Cells.Item($srcRow,8) = $source.name
-                            $sheet.Cells.Item($srcRow,9) = $source.value
-                        }
-                        else 
-                        {
-                            $link = $sheet.Hyperlinks.Add(
-                            $sheet.Cells.Item($srcRow,8),
-                            "",
-                            $result,
-                            $source.value,
-                            $source.name)  
-                           $sheet.Cells.Item($srcRow,9) = $source.value
-                        }
-                     }
-                    elseif ($source.type -eq "VirtualMachine") {
-                        $result = $vmaddressing_ht[$source.value]        
-                        if([string]::IsNullOrWhiteSpace($result))
-                        {
-                            $sheet.Cells.Item($srcRow,8) = $source.name
-                            $sheet.Cells.Item($srcRow,9) = $source.value
-                        }
-                        else 
-                        {
-                            $link = $sheet.Hyperlinks.Add(
-                            $sheet.Cells.Item($srcRow,8),
-                            "",
-                            $result,
-                            $source.value,
-                            $source.name)  
-                           $sheet.Cells.Item($srcRow,9) = $source.value
-                        }
-                     }
-                     else {
-                        $sheet.Cells.Item($srcRow,8) = $source.name
-                        $sheet.Cells.Item($srcRow,9) = $source.value
+                if ($rule.name -eq "rule"){
+                    $sheet.Cells.Item($row,4) = $valueNotDefined
+                    } else {
+                        $sheet.Cells.Item($row,4) = $rule.name
+                        $sheet.Cells.Item($row,4).Font.Bold = $true
                     }
-                $srcRow++
-                }
-            }
+                $sheet.Cells.Item($row,5) = $rule.id
+                $sheet.Cells.Item($row,5).Font.Bold = $true
 
-            ###### Destination Section ######
-            $dstRow = $row
-
-            # If Destination does not exist, it must be set to ANY
-            if (!$rule.destinations){
-                $sheet.Cells.Item($dstRow,13) = "ANY"
-                $sheet.Cells.Item($dstRow,13).Font.ColorIndex = 45
-            } else {
-
-                #If Negated field exists, document
-                if ($rule.destinations.excluded -eq "True" ){
-                    $sheet.Cells.Item($srcRow,10) = "NEGATE"
-                    $sheet.Cells.Item($row,10).Font.ColorIndex = 3
+                # Highlight Allow/Deny statements
+                if($rule.action -eq "deny"){
+                    $sheet.Cells.Item($row,15) = $rule.action
+                    $sheet.Cells.Item($row,15).Font.ColorIndex = 3
+                } elseif($rule.action -eq "allow"){
+                    $sheet.Cells.Item($row,15) = $rule.action
+                    $sheet.Cells.Item($row,15).Font.ColorIndex = 4
                 }
 
-                foreach($destination in $rule.destinations.destination){
-                    $sheet.Cells.Item($dstRow,11) = $destination.type
-                    if($destination.type -eq "Ipv4Address"){
-                        $sheet.Cells.Item($dstRow,12) = $destination.value
+                $sheet.Cells.Item($row,16) = $rule.direction
+                $sheet.Cells.Item($row,17) = $rule.packetType
+                $sheet.Cells.Item($row,19) = $rule.logged
+
+                ###### Sources Section ######
+                $srcRow = $row
+
+                # If Source does not exist, it must be set to ANY
+                if (!$rule.sources){
+                    $sheet.Cells.Item($srcRow,8) = "ANY"
+                    $sheet.Cells.Item($srcRow,8).Font.ColorIndex = 45
+                } else {
+                    #If Negated field exists, document
+                    if ($rule.sources.excluded -eq "True" ){
+                        $sheet.Cells.Item($srcRow,6) = "NEGATE"
+                        $sheet.Cells.Item($row,6).Font.ColorIndex = 3
+                    }
+
+                    foreach($source in $rule.sources.source){
+                        $sheet.Cells.Item($srcRow,7) = $source.type
+
+                        if($source.type -eq "Ipv4Address"){
+                            $sheet.Cells.Item($srcRow,8) = $source.value
                         } 
-                    elseif($destination.type -eq "Ipv6Address") {
+                        elseif($source.type -eq "Ipv6Address") {
+                            $sheet.Cells.Item($srcRow,8) = $source.value
+                        } 
+                        elseif ($source.type -eq "IPSet") {
+                            $result = $ipsets_ht[$source.value]        
+                            if([string]::IsNullOrWhiteSpace($result))
+                            {
+                                $sheet.Cells.Item($srcRow,8) = $source.name
+                                $sheet.Cells.Item($srcRow,9) = $source.value
+                            }
+                            else 
+                            {
+                                $link = $sheet.Hyperlinks.Add(
+                                $sheet.Cells.Item($srcRow,8),
+                                "",
+                                $result,
+                                $source.value,
+                                $source.name)  
+                            $sheet.Cells.Item($srcRow,9) = $source.value
+                            }
+                        }
+                        elseif ($source.type -eq "SecurityGroup") {
+                            $result = $secgrp_ht[$source.value]        
+                            if([string]::IsNullOrWhiteSpace($result))
+                            {
+                                $sheet.Cells.Item($srcRow,8) = $source.name
+                                $sheet.Cells.Item($srcRow,9) = $source.value
+                            }
+                            else 
+                            {
+                                $link = $sheet.Hyperlinks.Add(
+                                $sheet.Cells.Item($srcRow,8),
+                                "",
+                                $result,
+                                $source.value,
+                                $source.name)  
+                            $sheet.Cells.Item($srcRow,9) = $source.value
+                            }
+                        }
+                        elseif ($source.type -eq "VirtualMachine") {
+                            $result = $vmaddressing_ht[$source.value]        
+                            if([string]::IsNullOrWhiteSpace($result))
+                            {
+                                $sheet.Cells.Item($srcRow,8) = $source.name
+                                $sheet.Cells.Item($srcRow,9) = $source.value
+                            }
+                            else 
+                            {
+                                $link = $sheet.Hyperlinks.Add(
+                                $sheet.Cells.Item($srcRow,8),
+                                "",
+                                $result,
+                                $source.value,
+                                $source.name)  
+                            $sheet.Cells.Item($srcRow,9) = $source.value
+                            }
+                        }
+                        else {
+                            $sheet.Cells.Item($srcRow,8) = $source.name
+                            $sheet.Cells.Item($srcRow,9) = $source.value
+                        }
+                    $srcRow++
+                    }
+                }
+
+                ###### Destination Section ######
+                $dstRow = $row
+
+                # If Destination does not exist, it must be set to ANY
+                if (!$rule.destinations){
+                    $sheet.Cells.Item($dstRow,13) = "ANY"
+                    $sheet.Cells.Item($dstRow,13).Font.ColorIndex = 45
+                } else {
+
+                    #If Negated field exists, document
+                    if ($rule.destinations.excluded -eq "True" ){
+                        $sheet.Cells.Item($srcRow,10) = "NEGATE"
+                        $sheet.Cells.Item($row,10).Font.ColorIndex = 3
+                    }
+
+                    foreach($destination in $rule.destinations.destination){
+                        $sheet.Cells.Item($dstRow,11) = $destination.type
+                        if($destination.type -eq "Ipv4Address"){
                             $sheet.Cells.Item($dstRow,12) = $destination.value
-                        } 
-                    elseif ($destination.type -eq "IPSet") {
-                        $result = $ipsets_ht[$destination.value]        
-                        if([string]::IsNullOrWhiteSpace($result))
-                        {
-                            $sheet.Cells.Item($dstRow,12) = $destination.name
+                            } 
+                        elseif($destination.type -eq "Ipv6Address") {
+                                $sheet.Cells.Item($dstRow,12) = $destination.value
+                            } 
+                        elseif ($destination.type -eq "IPSet") {
+                            $result = $ipsets_ht[$destination.value]        
+                            if([string]::IsNullOrWhiteSpace($result))
+                            {
+                                $sheet.Cells.Item($dstRow,12) = $destination.name
+                                $sheet.Cells.Item($dstRow,13) = $destination.value
+                            }
+                            else 
+                            {
+                                $link = $sheet.Hyperlinks.Add(
+                                $sheet.Cells.Item($dstRow,12),
+                                "",
+                                $result,
+                                $destination.value,
+                                $destination.name)  
                             $sheet.Cells.Item($dstRow,13) = $destination.value
+                            }
                         }
-                        else 
-                        {
-                            $link = $sheet.Hyperlinks.Add(
-                            $sheet.Cells.Item($dstRow,12),
-                            "",
-                            $result,
-                            $destination.value,
-                            $destination.name)  
-                           $sheet.Cells.Item($dstRow,13) = $destination.value
-                        }
-                     }
-                    elseif ($destination.type -eq "VirtualMachine") {
-                        $result = $vmaddressing_ht[$destination.value]        
-                        if([string]::IsNullOrWhiteSpace($result))
-                        {
-                            $sheet.Cells.Item($dstRow,12) = $destination.name
+                        elseif ($destination.type -eq "VirtualMachine") {
+                            $result = $vmaddressing_ht[$destination.value]        
+                            if([string]::IsNullOrWhiteSpace($result))
+                            {
+                                $sheet.Cells.Item($dstRow,12) = $destination.name
+                                $sheet.Cells.Item($dstRow,13) = $destination.value
+                            }
+                            else 
+                            {
+                                $link = $sheet.Hyperlinks.Add(
+                                $sheet.Cells.Item($dstRow,12),
+                                "",
+                                $result,
+                                $destination.value,
+                                $destination.name)  
                             $sheet.Cells.Item($dstRow,13) = $destination.value
+                            }
                         }
-                        else 
-                        {
-                            $link = $sheet.Hyperlinks.Add(
-                            $sheet.Cells.Item($dstRow,12),
-                            "",
-                            $result,
-                            $destination.value,
-                            $destination.name)  
-                           $sheet.Cells.Item($dstRow,13) = $destination.value
-                        }
-                     }
-                    elseif ($destination.type -eq "SecurityGroup") {
-                        $result = $secgrp_ht[$destination.value]        
-                        if([string]::IsNullOrWhiteSpace($result))
-                        {
-                            $sheet.Cells.Item($dstRow,12) = $destination.name
+                        elseif ($destination.type -eq "SecurityGroup") {
+                            $result = $secgrp_ht[$destination.value]        
+                            if([string]::IsNullOrWhiteSpace($result))
+                            {
+                                $sheet.Cells.Item($dstRow,12) = $destination.name
+                                $sheet.Cells.Item($dstRow,13) = $destination.value
+                            }
+                            else 
+                            {
+                                $link = $sheet.Hyperlinks.Add(
+                                $sheet.Cells.Item($dstRow,12),
+                                "",
+                                $result,
+                                $destination.value,
+                                $destination.name)  
                             $sheet.Cells.Item($dstRow,13) = $destination.value
-                        }
-                        else 
-                        {
-                            $link = $sheet.Hyperlinks.Add(
-                            $sheet.Cells.Item($dstRow,12),
-                            "",
-                            $result,
-                            $destination.value,
-                            $destination.name)  
-                           $sheet.Cells.Item($dstRow,13) = $destination.value
-                        }
-                     }                     
-                     else {
-                            $sheet.Cells.Item($dstRow,12) = $destination.name
-                            $sheet.Cells.Item($dstRow,13) = $destination.value
-                        }
-                    $dstRow++
-                }
-            }
-
-            ###### Services Section ######
-            $svcRow = $row
-
-            # If Service does not exist, it must be set to ANY
-            if(!$rule.services){
-                $sheet.Cells.Item($svcRow,14) = "ANY"
-                $sheet.Cells.Item($svcRow,14).Font.ColorIndex = 45
-            } else {
-                foreach($service in $rule.services.service){
-                    if($service.protocolName)
-                    {
-                        $sheet.Cells.Item($svcRow,14) = $service.protocolName + "/" + $service.destinationPort
+                            }
+                        }                     
+                        else {
+                                $sheet.Cells.Item($dstRow,12) = $destination.name
+                                $sheet.Cells.Item($dstRow,13) = $destination.value
+                            }
+                        $dstRow++
                     }
-                    else {
-                        # $sheet.Cells.Item($svcRow,14) = $service.name
-                        $result = $services_ht[$service.value]        
-                        if([string]::IsNullOrWhiteSpace($result))
-                        {
-                             $sheet.Cells.Item($svcRow,14) = $service.name
-                             # $svcRow++ # Increment Rows
-                        }
-                        else 
-                        {
-                            $link = $sheet.Hyperlinks.Add(
-                            $sheet.Cells.Item($svcRow,14),
-                            "",
-                            $result,
-                            $service.value,
-                            $service.name)  
-                            # $svcRow++ # Increment Rows
-                        }
-                    }
-                    $svcRow++
                 }
-            }
 
-            ###### AppliedTo ######
-            $appRow = $row
+                ###### Services Section ######
+                $svcRow = $row
 
-            foreach($appliedTo in $rule.appliedToList.appliedTo){
-                $sheet.Cells.Item($appRow,18) = $appliedTo.name
-                $appRow++
+                # If Service does not exist, it must be set to ANY
+                if(!$rule.services){
+                    $sheet.Cells.Item($svcRow,14) = "ANY"
+                    $sheet.Cells.Item($svcRow,14).Font.ColorIndex = 45
+                } else {
+                    foreach($service in $rule.services.service){
+                        if($service.protocolName)
+                        {
+                            $sheet.Cells.Item($svcRow,14) = $service.protocolName + "/" + $service.destinationPort
+                        }
+                        else {
+                            # $sheet.Cells.Item($svcRow,14) = $service.name
+                            $result = $services_ht[$service.value]        
+                            if([string]::IsNullOrWhiteSpace($result))
+                            {
+                                $sheet.Cells.Item($svcRow,14) = $service.name
+                                # $svcRow++ # Increment Rows
+                            }
+                            else 
+                            {
+                                $link = $sheet.Hyperlinks.Add(
+                                $sheet.Cells.Item($svcRow,14),
+                                "",
+                                $result,
+                                $service.value,
+                                $service.name)  
+                                # $svcRow++ # Increment Rows
+                            }
+                        }
+                        $svcRow++
+                    }
+                }
+
+                ###### AppliedTo ######
+                $appRow = $row
+
+                foreach($appliedTo in $rule.appliedToList.appliedTo){
+                    $sheet.Cells.Item($appRow,18) = $appliedTo.name
+                    $appRow++
+                }
+                $row = ($srcRow,$dstRow,$svcRow,$appRow | Measure-Object -Maximum).Maximum
             }
-            $row = ($srcRow,$dstRow,$svcRow,$appRow | Measure-Object -Maximum).Maximum
         }
         $row++
         $sheet.Cells.Item($row,1).Interior.ColorIndex = $titleInteriorColor
