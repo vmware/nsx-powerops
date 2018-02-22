@@ -50,7 +50,7 @@ param (
 
 $global:PowerOps = $MyInvocation.MyCommand.Path
 $global:MyDirectory = split-path -parent $MyInvocation.MyCommand.Path
-$version = "2.0"
+$version = "2.1"
 $requiredModules = @("PowerNSX", "Pester", "Posh-SSH")
 
 #Setup default menu colours.
@@ -73,11 +73,9 @@ $MaxReports = 20
 #dot source our utils script.
 . $myDirectory\util.ps1
 
-#Setting up max window size and max buffer size
-# NB 11/17 - Commented out - this is a seriously annoying 'feature'.  Why are
-# we not allowing the user to choose their window size?
-# invoke-expression -Command $mydirectory\maxWindowSize.ps1
-
+#Setting up max window size and max buffer size - dynamic to user's display settings
+#User can manually change the console and buffer size
+invoke-expression -Command $mydirectory\maxWindowSize.ps1
 
 ########################################################
 #    Formatting Options for Excel Spreadsheet
@@ -419,8 +417,10 @@ function getHostInformation {
 
         # Run ESXCLI Command to get VIB List Info from ESXi Host here...
         $allHostVIBList += $esxcli.software.vib.list.invoke() | Select-Object @{N="VMHostName"; E={$VMHostName}}, *
-        #Filter out VIB with starting name 'esx-v'
-        $allHostVIBList | %{if ($_.name.StartsWith("esx-v")){$nsxVIBList += $_}}
+        #Filter out VIB with starting name 'esx-v' 
+        #added 'esx-nsx' as this folder name changed in NSX 6.4 
+        #$allHostVIBList | %{if ($_.name.StartsWith("esx-v")){$nsxVIBList += $_}}
+        $allHostVIBList | %{if ($_.name.StartsWith("esx-v") -OR $_.name.StartsWith("esx-nsx")) {$nsxVIBList += $_}}
         # End ESXCLI Command here.
 
         $allHostNICList += $esxcli.network.nic.list.Invoke() | Select-Object @{N="VMHostName"; E={$VMHostName}}, *
@@ -1270,6 +1270,8 @@ function runNSXTest ($testModule){
     $global:NsxConnection = $DefaultNSXConnection
     $global:EsxiHostCredential = Get-ProfileEsxiCreds -ProfileName $config.defaultprofile
     $global:ControllerCredential = Get-ProfileControllerCreds -ProfileName $config.defaultprofile
+    $global:NSXManagerCredential = Get-ProfileNsxManagerCreds -ProfileName $config.defaultprofile
+    $global:documentlocation
     $result = Invoke-Pester -Script @{ 
         Path = "$mydirectory/HealthCheck/$testModule.Tests.ps1"
         Parameters = @{ 
@@ -1508,6 +1510,7 @@ Switch ( $PSCmdlet.ParameterSetName )  {
 
         # Running interactively - Setup the menu system.
         # Header/Footer.
+
         $MainHeader = @"
 
 __/\\\\\\\\\\\__________________________________________________________________/\\\\\________________________________        
@@ -1665,6 +1668,12 @@ Output Directory: $DocumentLocation
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXMTUUnderlay" }
+                },
+                @{ 
+                    "Name" = "Compare DLR and Hosts Routing Tables [BETA]"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXDlrHostRoutingTable" }
                 }
             )
         }
