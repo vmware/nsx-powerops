@@ -417,8 +417,10 @@ function getHostInformation {
 
         # Run ESXCLI Command to get VIB List Info from ESXi Host here...
         $allHostVIBList += $esxcli.software.vib.list.invoke() | Select-Object @{N="VMHostName"; E={$VMHostName}}, *
-        #Filter out VIB with starting name 'esx-v'
-        $allHostVIBList | %{if ($_.name.StartsWith("esx-v")){$nsxVIBList += $_}}
+        #Filter out VIB with starting name 'esx-v' 
+        #added 'esx-nsx' as this folder name changed in NSX 6.4 
+        #$allHostVIBList | %{if ($_.name.StartsWith("esx-v")){$nsxVIBList += $_}}
+        $allHostVIBList | %{if ($_.name.StartsWith("esx-v") -OR $_.name.StartsWith("esx-nsx")) {$nsxVIBList += $_}}
         # End ESXCLI Command here.
 
         $allHostNICList += $esxcli.network.nic.list.Invoke() | Select-Object @{N="VMHostName"; E={$VMHostName}}, *
