@@ -31,21 +31,17 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 # ********************************************* #
 # Create empty excel sheet here w/ correct name # 
 # ********************************************* #
-function createNewExcel($newExcelName){
-    $startTime = Get-Date
-    $newExcelNameWithDate = $newExcelName +"-"+ $startTime.ToString("yyyy-MM-dd-hh-mm") + ".xlsx"
-    Write-Host -ForeGroundColor Green "`n Creating Excel File:" $newExcelNameWithDate
-    
+
+function createNewExcel{ 
+    Write-Progress -Activity "Creating Excel Document" -Status "Create new Excel document"    
     $global:newExcel = New-Object -Com Excel.Application
     $global:newExcel.visible = $false
     $global:newExcel.DisplayAlerts = $false
     $wb = $global:newExcel.Workbooks.Add()
-    
-    # Save the excel with provided Name
-    $global:newExcel.ActiveWorkbook.SaveAs($newExcelNameWithDate)
-    return $wb
-} # End of function create New Excel
+    Write-Progress -Activity "Creating Excel Document" -Status "Create new Excel document" -Completed    
 
+    return $wb
+} # End of function createNewExcel
 
 # **************************************************************************************** #
 # Function to get list if NSX prepared hosts and their VMKnic and IPs #
@@ -101,15 +97,11 @@ function checkVMKNICPing{
         $summaryExcelSheet
     )
 
-
-
-
     $titleFontSize = 8
     $titleFontBold = $True
     $titleFontColorIndex = 2
     $titleFontName = "Calibri (Body)"
     $titleInteriorColor = 49
-
 
     $vmknicIPToPingFrom = $hostVMKnicData[$fromHost].$fromVMKnic
 
@@ -261,8 +253,6 @@ function checkVMKNICPing{
             }
         }
     }
-    
-    
 }
 
 # *******************************************************************#
@@ -279,7 +269,6 @@ function Update-SummaryExcelSheet{
     $titleFontColorIndex = 2
     $titleFontName = "Calibri (Body)"
     $titleInteriorColor = 49
-
 
     $global:summaryExcelRowCursor = 3
     $global:summaryExcelColumnCursor = 1
@@ -431,7 +420,7 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
 
     if ($hostVMKnicData[$testHostIP]){
         #Creating 'Ping Result' excel sheet.
-        $newExcelWB = createNewExcel("VMKnicPingTestOutput")
+        $newExcelWB = createNewExcel
         $sheet = $newExcelWB.WorkSheets.Add()
         $sheet.Name = "Ping Result"
         $sheet.Cells.Item(1,1) = "VMKnic Ping Test Output"
@@ -440,7 +429,6 @@ if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
         $summarySheet = $newExcelWB.WorkSheets.Add()
         $summarySheet.Name = "Summary"
         $summarySheet.Cells.Item(1,1) = "Summary of VMKnic Ping Test"
-
 
         $detailsOfHost = $hostVMKnicData.$testHostIP
         $detailsOfHost.keys | %{
@@ -464,7 +452,7 @@ elseif ($numberOfHostToTest -eq "all" -or $numberOfHostToTest -eq "ALL" -or $num
     $hostVMKnicData = get-HostsAndVteps
     
     #Creating 'Ping Result' excel sheet
-    $newExcelWB = createNewExcel("VMKnicPingTestOutput")
+    $newExcelWB = createNewExcel
     $sheet = $newExcelWB.WorkSheets.Add()
     $sheet.Name = "Ping Result"
     $sheet.Cells.Item(1,1) = "VMKnic Ping Test Output"
@@ -489,12 +477,17 @@ elseif ($numberOfHostToTest -eq "all" -or $numberOfHostToTest -eq "ALL" -or $num
     Update-SummaryExcelSheet -summaryExcelSheet $summarySheet
 
     # Remove Default Sheet1
-    $newExcelWB.worksheets.item("Sheet1").Delete()
+    $global:newExcel.worksheets.item("Sheet1").Delete()
     
     # Save Excel file
-    $global:newExcel.ActiveWorkbook.SaveAs()
+    $currentdocumentpath = "$documentlocation\VMKnicPingTestOutput-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
+
+    $global:newExcel.ActiveWorkbook.SaveAs($currentdocumentpath)
     $global:newExcel.Workbooks.Close()
     $global:newExcel.Quit()
+
+    releaseObject -obj $newExcelWB
+    releaseObject -obj $newExcel
 }else{
     Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
     exit
