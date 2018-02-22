@@ -50,7 +50,7 @@ param (
 
 $global:PowerOps = $MyInvocation.MyCommand.Path
 $global:MyDirectory = split-path -parent $MyInvocation.MyCommand.Path
-$version = "2.0"
+$version = "2.1"
 $requiredModules = @("PowerNSX", "Pester", "Posh-SSH")
 
 #Setup default menu colours.
@@ -73,11 +73,9 @@ $MaxReports = 20
 #dot source our utils script.
 . $myDirectory\util.ps1
 
-#Setting up max window size and max buffer size
-# NB 11/17 - Commented out - this is a seriously annoying 'feature'.  Why are
-# we not allowing the user to choose their window size?
-# invoke-expression -Command $mydirectory\maxWindowSize.ps1
-
+#Setting up max window size and max buffer size - dynamic to user's display settings
+#User can manually change the console and buffer size
+invoke-expression -Command $mydirectory\maxWindowSize.ps1
 
 ########################################################
 #    Formatting Options for Excel Spreadsheet
@@ -1510,6 +1508,7 @@ Switch ( $PSCmdlet.ParameterSetName )  {
 
         # Running interactively - Setup the menu system.
         # Header/Footer.
+
         $MainHeader = @"
 
 __/\\\\\\\\\\\__________________________________________________________________/\\\\\________________________________        
@@ -1669,7 +1668,7 @@ Output Directory: $DocumentLocation
                     "Script" = {  runNSXTest -testModule "testNSXMTUUnderlay" }
                 },
                 @{ 
-                    "Name" = "Compare DLR and Hosts Routing Tables"
+                    "Name" = "Compare DLR and Hosts Routing Tables [BETA]"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXDlrHostRoutingTable" }
