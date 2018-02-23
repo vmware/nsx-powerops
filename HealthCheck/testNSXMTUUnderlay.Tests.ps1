@@ -389,106 +389,108 @@ function Log-FailedPing{
 # ************************* #
 # Main Function starts here #
 # ************************* #
-$global:hostVMKnicData = @{}
-$global:totalPings = 0
-$global:totalFailedPings = 0
-$global:failedPingDic=@{}
-$global:listOfHostsVMKnicIPs = @()
-$getHostAndVMKnicDic=@{}
-$global:excelRowCursor =1
-$global:excelColumnCursor =1
-$global:summaryExcelRowCursor =4
-$global:summaryExcelColumnCursor =6
+Describe "NSX Manager" {
+    $global:hostVMKnicData = @{}
+    $global:totalPings = 0
+    $global:totalFailedPings = 0
+    $global:failedPingDic=@{}
+    $global:listOfHostsVMKnicIPs = @()
+    $getHostAndVMKnicDic=@{}
+    $global:excelRowCursor =1
+    $global:excelColumnCursor =1
+    $global:summaryExcelRowCursor =4
+    $global:summaryExcelColumnCursor =6
 
-# Get the MTU size to test the ping command with.
-Write-Host "`n>> Please provide the MTU size to test [Default: 1572]:" -ForegroundColor Darkyellow -NoNewline
-$testMTUSize = Read-Host
+    # Get the MTU size to test the ping command with.
+    Write-Host "`n>> Please provide the MTU size to test [Default: 1572]:" -ForegroundColor Darkyellow -NoNewline
+    $testMTUSize = Read-Host
 
-if ($testMTUSize -eq ''){
-    $testMTUSize = 1572
-}
+    if ($testMTUSize -eq ''){
+        $testMTUSize = 1572
+    }
 
-# get the one or all host options from the user.
-Write-Host "`n>> Run this test from 'one' host or 'all' [Default: all]:" -ForegroundColor Darkyellow -NoNewline
-[string]$numberOfHostToTest = Read-Host
+    # get the one or all host options from the user.
+    Write-Host "`n>> Run this test from 'one' host or 'all' [Default: all]:" -ForegroundColor Darkyellow -NoNewline
+    [string]$numberOfHostToTest = Read-Host
 
-# Check if user entered one or all. Call getHostAndTheirVMKnics appropriatelly as per the user choice.
-if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
-    Write-Host "`n>> Please provide the Host ID:" -ForegroundColor DarkGreen -NoNewline
-    $testHostIP = Read-Host
-    $hostVMKnicData = get-HostsAndVteps
+    # Check if user entered one or all. Call getHostAndTheirVMKnics appropriatelly as per the user choice.
+    if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
+        Write-Host "`n>> Please provide the Host ID:" -ForegroundColor DarkGreen -NoNewline
+        $testHostIP = Read-Host
+        $hostVMKnicData = get-HostsAndVteps
 
-    if ($hostVMKnicData[$testHostIP]){
-        #Creating 'Ping Result' excel sheet.
+        if ($hostVMKnicData[$testHostIP]){
+            #Creating 'Ping Result' excel sheet.
+            $newExcelWB = createNewExcel
+            $sheet = $newExcelWB.WorkSheets.Add()
+            $sheet.Name = "Ping Result"
+            $sheet.Cells.Item(1,1) = "VMKnic Ping Test Output"
+            
+            #Creating 'Summary' excel sheet
+            $summarySheet = $newExcelWB.WorkSheets.Add()
+            $summarySheet.Name = "Summary"
+            $summarySheet.Cells.Item(1,1) = "Summary of VMKnic Ping Test"
+
+            $detailsOfHost = $hostVMKnicData.$testHostIP
+            $detailsOfHost.keys | %{
+                checkVMKNICPing -fromHost $testHostIP -fromVMKnic $_ -MTUSize $testMTUSize -excelSheet $sheet -summaryExcelSheet $summarySheet
+            }
+        }
+
+        #Update 'Summary' excel sheet
+        Update-SummaryExcelSheet -summaryExcelSheet $summarySheet
+
+        # Remove Default Sheet1
+        $newExcelWB.worksheets.item("Sheet1").Delete()
+
+        $global:newExcel.ActiveWorkbook.SaveAs()
+        $global:newExcel.Workbooks.Close()
+        $global:newExcel.Quit()
+    }
+    elseif ($numberOfHostToTest -eq "all" -or $numberOfHostToTest -eq "ALL" -or $numberOfHostToTest -eq ''){
+
+        # get global hostVMKnicData by running function getHostAndTheirVMKnics
+        $hostVMKnicData = get-HostsAndVteps
+        
+        #Creating 'Ping Result' excel sheet
         $newExcelWB = createNewExcel
         $sheet = $newExcelWB.WorkSheets.Add()
         $sheet.Name = "Ping Result"
         $sheet.Cells.Item(1,1) = "VMKnic Ping Test Output"
-        
+
         #Creating 'Summary' excel sheet
         $summarySheet = $newExcelWB.WorkSheets.Add()
         $summarySheet.Name = "Summary"
         $summarySheet.Cells.Item(1,1) = "Summary of VMKnic Ping Test"
 
-        $detailsOfHost = $hostVMKnicData.$testHostIP
-        $detailsOfHost.keys | %{
-            checkVMKNICPing -fromHost $testHostIP -fromVMKnic $_ -MTUSize $testMTUSize -excelSheet $sheet -summaryExcelSheet $summarySheet
+        # get list of hosts and run a loop through them to call function check VMKNIC Ping to ping 
+        # from each host's each vmknic to all Host's vmknics.
+        $listOfHosts = $hostVMKnicData.keys
+        $listOfHosts | %{
+            $myHost=$_
+            $listOfHostsVMKnics = $hostVMKnicData[$_].keys
+            $listOfHostsVMKnics | %{
+                checkVMKNICPing -fromHost $myHost -fromVMKnic $_ -MTUSize $testMTUSize  -excelSheet $sheet -summaryExcelSheet $summarySheet
+            }
         }
+
+        #Update 'Summary' excel sheet
+        Update-SummaryExcelSheet -summaryExcelSheet $summarySheet
+
+        # Remove Default Sheet1
+        $global:newExcel.worksheets.item("Sheet1").Delete()
+        
+        # Save Excel file
+        $currentdocumentpath = "$documentlocation\VMKnicPingTestOutput-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
+
+        $global:newExcel.ActiveWorkbook.SaveAs($currentdocumentpath)
+        $global:newExcel.Workbooks.Close()
+        $global:newExcel.Quit()
+
+        releaseObject -obj $newExcelWB
+        releaseObject -obj $newExcel
+    }else{
+        Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
+        exit
     }
-
-    #Update 'Summary' excel sheet
-    Update-SummaryExcelSheet -summaryExcelSheet $summarySheet
-
-    # Remove Default Sheet1
-    $newExcelWB.worksheets.item("Sheet1").Delete()
-
-    $global:newExcel.ActiveWorkbook.SaveAs()
-    $global:newExcel.Workbooks.Close()
-    $global:newExcel.Quit()
-}
-elseif ($numberOfHostToTest -eq "all" -or $numberOfHostToTest -eq "ALL" -or $numberOfHostToTest -eq ''){
-
-    # get global hostVMKnicData by running function getHostAndTheirVMKnics
-    $hostVMKnicData = get-HostsAndVteps
-    
-    #Creating 'Ping Result' excel sheet
-    $newExcelWB = createNewExcel
-    $sheet = $newExcelWB.WorkSheets.Add()
-    $sheet.Name = "Ping Result"
-    $sheet.Cells.Item(1,1) = "VMKnic Ping Test Output"
-
-    #Creating 'Summary' excel sheet
-    $summarySheet = $newExcelWB.WorkSheets.Add()
-    $summarySheet.Name = "Summary"
-    $summarySheet.Cells.Item(1,1) = "Summary of VMKnic Ping Test"
-
-    # get list of hosts and run a loop through them to call function check VMKNIC Ping to ping 
-    # from each host's each vmknic to all Host's vmknics.
-    $listOfHosts = $hostVMKnicData.keys
-    $listOfHosts | %{
-        $myHost=$_
-        $listOfHostsVMKnics = $hostVMKnicData[$_].keys
-        $listOfHostsVMKnics | %{
-            checkVMKNICPing -fromHost $myHost -fromVMKnic $_ -MTUSize $testMTUSize  -excelSheet $sheet -summaryExcelSheet $summarySheet
-        }
-    }
-
-    #Update 'Summary' excel sheet
-    Update-SummaryExcelSheet -summaryExcelSheet $summarySheet
-
-    # Remove Default Sheet1
-    $global:newExcel.worksheets.item("Sheet1").Delete()
-    
-    # Save Excel file
-    $currentdocumentpath = "$documentlocation\VMKnicPingTestOutput-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
-
-    $global:newExcel.ActiveWorkbook.SaveAs($currentdocumentpath)
-    $global:newExcel.Workbooks.Close()
-    $global:newExcel.Quit()
-
-    releaseObject -obj $newExcelWB
-    releaseObject -obj $newExcel
-}else{
-    Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
-    exit
 }
