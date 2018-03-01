@@ -366,6 +366,9 @@ function fw_rules(){
                 } elseif($rule.action -eq "allow"){
                     $sheet.Cells.Item($row,15) = $rule.action
                     $sheet.Cells.Item($row,15).Font.ColorIndex = 4
+                } elseif($rule.action -eq "redirect"){
+                    $sheet.Cells.Item($row,15) = $rule.action
+                    $sheet.Cells.Item($row,15).Font.ColorIndex = 5
                 }
 
                 $sheet.Cells.Item($row,16) = $rule.direction
