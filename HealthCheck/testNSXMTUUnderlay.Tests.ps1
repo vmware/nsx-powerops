@@ -439,7 +439,7 @@ Describe "NSX Manager" {
 
     # Check if user entered one or all. Call getHostAndTheirVMKnics appropriatelly as per the user choice.
     if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
-        Write-Host "`n>> Please provide the Host ID: " -ForegroundColor DarkGreen -NoNewline
+        Write-Host "`n>> Please provide the Host Name or IP (as shown in vCenter):" -ForegroundColor DarkGreen -NoNewline
         $testHostIP = Read-Host
         # get global hostVMKnicData by running function getHostAndTheirVMKnics
         get-HostsAndVteps -server $NSXConnection.VIConnection
