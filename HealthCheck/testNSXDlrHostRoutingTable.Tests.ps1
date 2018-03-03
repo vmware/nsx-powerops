@@ -238,7 +238,7 @@ else{
 
     } while(($choice -lt 1) -or ($choice -gt $dlrs.Count))
     $dlrname = $dlrs[$choice-1].name
-    $tzID = $dlrs[$choice-1].edgeSummary.logicalRouterScopes.logicalRouterScope.id
+    $tzID = ($dlrs[$choice-1].edgeSummary.logicalRouterScopes.logicalRouterScope | ?{$_.Type -eq "TransportZone"}).id
 }
 
 # get clusters in the same transport zone where DLR resides
