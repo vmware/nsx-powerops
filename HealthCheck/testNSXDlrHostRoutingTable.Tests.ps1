@@ -28,11 +28,18 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 #region Functions
  
- function startSSHSession($serverToConnectTo, $credentialsToUse){
-    $newSSHSession = New-Sshsession -computername $serverToConnectTo -Credential $credentialsToUse -AcceptKey
-    return $newSSHSession
+ function invoke-NSXCLICmd($commandToInvoke, $session){
+    write-progress -activity "Executing NSX CLI Command: $commandToInvoke"
+    $xmlBody = "<nsxcli>
+     <command> $commandToInvoke </command>
+     </nsxcli>"
+    $AdditionalHeaders = @{"Accept"="text/plain"; "Content-type"="Application/xml"}
+    $nsxCLIResponceweb = Invoke-NsxWebRequest -URI "/api/1.0/nsx/cli?action=execute" -method post -extraheader $AdditionalHeaders -body $xmlBody -connection $session
+    write-progress -activity "Executing NSX CLI Command: $commandToInvoke" -Completed
+    
+    return $nsxCLIResponceweb
 }
- 
+
  #http://jongurgul.com/blog/get-stringhash-get-filehash/ 
 Function Get-StringHash([String] $String,$HashName = "MD5") { 
     $StringBuilder = New-Object System.Text.StringBuilder 
@@ -106,33 +113,16 @@ function ConvertTo-DottedDecimalIP {
 
 }
 
-function Run-SShcommand{
-    param([string]$server,[string]$command)
-    try{
-        $session = New-SSHSession -ComputerName $server -Credential $credentials -AcceptKey 
-    }
-    catch{
-        Throw "Failed to establish SSH session to connect NSX Manager "
-    }
-    $stream = $session.Session.CreateShellStream("dumb", 0, 0, 0, 0, 1000)
-    $stream.Write("$command
-    ")
-    sleep 2
-    $output = $stream.read()
-    remove-SSHSession -Index 0
-    return $output
-}
-
 function get-HostRoutingTable{
     param(
-    $NsxManager,
     $vdrID,
-    $hostID
+    $hostID,
+    $connection
     )
     
-    # get SSH output
-    $result = Run-SShcommand -server $NsxManager -command "show logical-router host $hostID dlr $vdrID route"
-
+    # get CLI output
+    $result = (invoke-NSXCLICmd -commandToInvoke "show logical-router host $hostID dlr $vdrID route" -session $connection).content
+    
     # process string output to create array for a host routing table
     $routingTableMatches = Select-String "(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+([^\[][UGCIHF\!E]{1,3})\s+(\d)\s+(MANUAL|AUTO)" -Input $result -AllMatches -CaseSensitive | Foreach {$_.matches}
     $routingTableArray = @()
@@ -153,13 +143,13 @@ function get-HostRoutingTable{
 
 function get-DLRRoutingTable{
     param(
-    $NsxManager,
-    $edgeID
+    $edgeID,
+    $connection
     )
     
-    # get SSH output
-    $result = Run-SShcommand -server $NsxManager -command "show edge $edgeID ip route"
-
+    # get CLI output
+    $result = (invoke-NSXCLICmd -commandToInvoke "show edge $edgeID ip route" -session $connection).content
+    
     # process string output to create array for a DLR routing table
     $routingTableMatches = Select-String "([OiBCS]|L1|L2|IA|E1|E2|N1|N2)\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\/(\d{1,2}).*via\s{1}(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" -Input $result -AllMatches -CaseSensitive | Foreach {$_.matches}
     $routingTableArray = @()
@@ -184,13 +174,13 @@ function get-DLRRoutingTable{
 
 function get-vdrID{
     param(
-    $NsxManager,
-    $edgeID
+    $edgeID,
+    $connection
     )
     
     # get SSH output
-    $result = Run-SShcommand -server $NsxManager -command "show logical-router host $($vSphereHosts[0].id) dlr all brief"
-
+    $result = (invoke-NSXCLICmd -commandToInvoke "show logical-router host $($vSphereHosts[0].id) dlr all brief" -session $connection).content
+    
     # process string output to find VDR ID
     $vdrIdMatches = Select-String "(edge-\d{1,3})\s*(0x[a-f0-9]+)" -Input $result -AllMatches  | Foreach {$_.matches}
     for($i = 0; $i -lt $vdrIdMatches.Count; $i++){     
@@ -217,7 +207,7 @@ function Show-Menu{
 
 # NSX Server connection and credentials
 $server = $NSXConnection.server
-$credentials = $NSXManagerCredential
+$nsxAdminConnection = Connect-NsxServer -NsxServer $NSXConnection.server -Credential $NSXManagerCredential -DefaultConnection:$false -DisableVIAutoConnect:$true -WarningAction SilentlyContinue
 
 # Get all Logical Routers
 $dlrs = Get-NsxLogicalRouter -Connection $NSXConnection
@@ -238,7 +228,7 @@ else{
 
     } while(($choice -lt 1) -or ($choice -gt $dlrs.Count))
     $dlrname = $dlrs[$choice-1].name
-    $tzID = $dlrs[$choice-1].edgeSummary.logicalRouterScopes.logicalRouterScope.id
+    $tzID = ($dlrs[$choice-1].edgeSummary.logicalRouterScopes.logicalRouterScope | ?{$_.Type -eq "TransportZone"}).id
 }
 
 # get clusters in the same transport zone where DLR resides
@@ -262,22 +252,21 @@ else{
 # collecting VDR ID
 Write-Host "`nCollecting routing table from $dlrName " 
 $edgeID = Get-NsxLogicalRouter -Name $dlrName -Connection $NSXConnection
-$vdrID = get-vdrID -NsxManager $server -edgeID $edgeID.id
+$vdrID = get-vdrID -connection $nsxAdminConnection -edgeID $edgeID.id
 
 # Collect DLR Routing Table
-$dlrRoutingTable = get-DLRRoutingTable -NsxManager $server -edgeID $edgeiD.id
+$dlrRoutingTable = get-DLRRoutingTable -connection $nsxAdminConnection -edgeID $edgeiD.id
 
 # Collect routing tables from all ESXi servers
 $vSphereHostsRoutingTable=@()
 foreach($vmhost in $vSphereHosts){
     Write-host "Collecting routing table from host $($vmhost.name)"
-    $hostRoutingTable = get-hostRoutingTable -NsxManager $server -vdrID $vdrID -hostID $vmhost.id
+    $hostRoutingTable = get-hostRoutingTable -connection $nsxAdminConnection -vdrID $vdrID -hostID $vmhost.id
     $a = New-Object -TypeName PSobject
     $a | Add-Member -MemberType NoteProperty -Name hostname -Value $vmhost.name
     $a | Add-Member -MemberType NoteProperty -Name routingTable -Value $hostRoutingTable
     $a | Add-Member -MemberType NoteProperty -Name CommonHash -Value $(get-stringHash $hostRoutingTable.string "MD5")
     $vSphereHostsRoutingTable += $a
-
 }
 
 
