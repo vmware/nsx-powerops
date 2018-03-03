@@ -154,7 +154,8 @@ function get-HostRoutingTable{
 function get-DLRRoutingTable{
     param(
     $NsxManager,
-    $edgeID
+    $edgeID,
+    $HAstatus
     )
     
     # get SSH output
@@ -172,7 +173,10 @@ function get-DLRRoutingTable{
         $a | Add-Member -MemberType NoteProperty -Name Gateway -Value $routingTableMatches[$i].Groups[4].value
         $a | Add-Member -MemberType NoteProperty -Name String  -Value $($a.Destination + $a.Netmask)
         $a | Add-Member -MemberType NoteProperty -Name Hash -Value $(get-stringHash $a.string "MD5")
-        $routingTableArray += $a
+        # Ignore Connected Routes on HA Enabled DLRs
+        if(($HAstatus -eq "True") -and ($a.Hash -ne "81a42c4978a79ec7d4d98ff515bbd411")){
+            $routingTableArray += $a
+        }
     }
     $b = New-Object -TypeName PSObject 
     $b |  Add-Member -MemberType NoteProperty -Name EdgeID -Value $edgeID
@@ -262,10 +266,11 @@ else{
 # collecting VDR ID
 Write-Host "`nCollecting routing table from $dlrName " 
 $edgeID = Get-NsxLogicalRouter -Name $dlrName -Connection $NSXConnection
+$EdgeHAstatus = $edgeID.features.highAvailability.enabled
 $vdrID = get-vdrID -NsxManager $server -edgeID $edgeID.id
 
 # Collect DLR Routing Table
-$dlrRoutingTable = get-DLRRoutingTable -NsxManager $server -edgeID $edgeiD.id
+$dlrRoutingTable = get-DLRRoutingTable -NsxManager $server -edgeID $edgeiD.id -HAstatus $EdgeHAstatus
 
 # Collect routing tables from all ESXi servers
 $vSphereHostsRoutingTable=@()
@@ -292,7 +297,6 @@ foreach($vmhost in $vSphereHostsRoutingTable){
   
     # Collect the list of hosts with faulty routing tables
     if($dlrRoutingTable.CommonHash -eq $vmhost.CommonHash){
-        #write-host -Fore:Green "EsXi server routing table matches DLR routing table`n"
         $faultyRoutes = $false
     }
 
@@ -318,10 +322,13 @@ foreach($server in $vSphereHosts){
 $report += " "
 $report += "Hosts with inconsistent routing table:"
 foreach($server in $faultyHosts){
-    $report += "`t`t $($server.name)"
+    $report += "`t`t $($server)"
 }
-write-host -fore:yellow "`nExporting summary report to $($path+"\DLR_Validation_Summary_Report.txt")"
-$report | Out-File $($path+"\DLR_Validation_Summary_Report.txt")
+
+$timeStamp = Get-Date -Format "yyyy-MM-dd_hh-mm"
+
+write-host -fore:yellow "`nExporting summary report to $($path+"\DLR_Validation_Summary_Report-" + $timeStamp +".txt")"
+$report | Out-File $($path+"\DLR_Validation_Summary_Report-" + $timeStamp + ".txt")
 
 
 # Create and export routing table report
@@ -333,5 +340,7 @@ foreach($server in $vSphereHostsRoutingTable){
     $RoutingTablereport += "`t`t $($server.routingTable | select Destination,Netmask,Gateway,Flags | Out-String)"
 }
 
-write-host -fore:yellow "`nExporting DLR and ESXi routing tables to $($path+"\DLR_Validation_Routing_Table_Report.txt")"
-$RoutingTablereport | Out-File $($path+"\DLR_Validation_Routing_Table_Report.txt")
+
+write-host -fore:yellow "`nExporting DLR and ESXi routing tables to $($path+"\DLR_Validation_Routing_Table_Report-"+ $timeStamp +".txt")"
+$RoutingTablereport | Out-File $($path+"\DLR_Validation_Routing_Table_Report-" + $timeStamp + ".txt")
+
