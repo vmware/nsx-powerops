@@ -16,7 +16,7 @@ function ReleaseObject {
 
     Try {
         $intRel = 0
-        Do { 
+        Do {
             $intRel = [System.Runtime.InteropServices.Marshal]::ReleaseComObject($Obj)
         } While ($intRel -gt  0)
     }
@@ -25,33 +25,33 @@ function ReleaseObject {
     }
     Finally {
         [System.GC]::Collect()
-       
+
     }
 }
-function out-event { 
+function out-event {
     [cmdletbinding()]
     param (
         [Parameter(ValueFromPipeline=$true)]
             [string]$message,
-        [Parameter()]        
+        [Parameter()]
             [ValidateSet("information", "warning", "error")]
             [string]$entrytype = "information",
         [Parameter()]
             [switch]$WriteToEventLog
     )
     #Simple logging/output function
-    if ( $WriteToEventLog ) { 
+    if ( $WriteToEventLog ) {
         Write-EventLog -Message $message -EntryType $entrytype -ErrorAction Ignore
-    }    
+    }
     switch ( $entrytype ) {
-        "information" { write-host $message } 
-        "warning" { write-warning $message } 
-        "error" { write-error $message } 
+        "information" { write-host $message }
+        "warning" { write-warning $message }
+        "error" { write-error $message }
     }
 }
 
-function Show-MenuV2 { 
-    
+function Show-MenuV2 {
+
     <#
     .SYNOPSIS
     Displays a menu that provides nesting of menu items, arbitrary script
@@ -60,15 +60,15 @@ function Show-MenuV2 {
     .DESCRIPTION
     Provides a simple template based menu function.  The user defines a series
     of 'MenuItems' - hashtables of an expected format (see examples for detail)
-    - that allow a menu of choices consisting of nested menus, or individual 
+    - that allow a menu of choices consisting of nested menus, or individual
     items that execute an arbitrary scriptblock to be shown to the user.
 
-    Menuitems have an enabled property that can be toggled at runtime, 
+    Menuitems have an enabled property that can be toggled at runtime,
     allowing code executed in one menuitem to influence another.
 
     Simple Header and subheader value and color properties allow the menu to
-    be customised at runtime, and a footer property allows the user to define 
-    a scriptblock that returns a string that is executed every time the menu is 
+    be customised at runtime, and a footer property allows the user to define
+    a scriptblock that returns a string that is executed every time the menu is
     redrawn that allows for a simple feedback loop of 'state' if required.
 
     .EXAMPLE
@@ -78,51 +78,51 @@ function Show-MenuV2 {
     $MainHeader = "Menu Test Header"
     $Subheader = "Menu Test SubHeader"
 
-    $Configuration = @{ 
+    $Configuration = @{
         "Script" = { show-menu -menu $Configuration | out-null };
         "Status" = "EnabledInvalid";
         "StatusText" = "Not completed"
         "Name" = "Configuration";
         "HelpText" = "Nothing"
-        "Items" = @( 
+        "Items" = @(
             @{
                 "Enabled" = $true;
                 "Status" = "UnselectedInvalid";
                 "StatusText" = "UNSELECTED"
                 "Name" = "Enable Processing";
-                "Script" = { 
+                "Script" = {
                     $Processing.Enabled = $true
                     $script:Configured = $true
                     return "Processing Enabled"
-                } 
+                }
             }
         )
     }
 
-    $Processing = @{ 
+    $Processing = @{
         "Script" = { show-menu -menu $Processing | out-null };
         "Status" = "Disabled";
         "Name" = "Processing";
         "HelpText" = "Need to enable me first"
-        "Items" = @( 
+        "Items" = @(
             @{
                 "Enabled" = $true;
                 "Name" = "get-date";
-                "Script" = { $script:CurrentDate = get-date } 
+                "Script" = { $script:CurrentDate = get-date }
             }
         )
     }
 
-    $rootmenu = @{ 
+    $rootmenu = @{
         "Name" = "Root Menu";
         "Status"= "MenuInvalid"
-        "Items" = @( 
+        "Items" = @(
             $Configuration,
             $Processing
         )
     }
 
-    $Footer = { 
+    $Footer = {
         "Configured : $($Configured)`nCurrent Date : $($CurrentDate)"
     }
 
@@ -148,14 +148,14 @@ function Show-MenuV2 {
         [string]$PromptColor="Yellow",
         [string]$ScriptStatusTextColor = "DarkGreen",
         [string]$SectionHeaderColor = "DarkCyan"
-        
+
     )
 
     if ( $memu.items.count -gt 10 ) { throw "Too many items in menu - whinge at bradford. "}
     if ( -not ($menu.Name -and $menu.MainHeader -and $Menu.SubHeader -and $menu.Footer -and ($menu.Footer -is [ScriptBlock]) )) { throw "Specified menu object is not valid" }
     if ( $menu.status -and ($menu.status -isnot [scriptblock]) ) { throw "Specified menu object has an invalid status type: $($menu.status.gettype())"}
     if ( $menu.statustext -and ($menu.statustext -isnot [scriptblock]) ) { throw "Specified menu object has an invalid statustext type: $($menu.statustext.gettype())"}
-    
+
     $keyvalid = $false
     $status = ""
     $statuscolor = "white"
@@ -164,24 +164,24 @@ function Show-MenuV2 {
     }
     $script:breadcrumb.add($menu.Name) | out-null
 
-    while ( -not $menuexit ) { 
+    while ( -not $menuexit ) {
 
         $ConsoleWidth = (Get-host).ui.RawUI.windowsize.width
 
         clear-host
-        write-host -foregroundcolor $HeaderColor ( "*" * $ConsoleWidth )  
+        write-host -foregroundcolor $HeaderColor ( "*" * $ConsoleWidth )
         write-host -foregroundcolor $HeaderColor $Menu.MainHeader
-        if ( $subheader) { 
-            write-host -foregroundcolor $SubheaderColor $Menu.subheader 
+        if ( $subheader) {
+            write-host -foregroundcolor $SubheaderColor $Menu.subheader
         }
-        write-host -foregroundcolor $HeaderColor ( "*" * $ConsoleWidth + "`n" )  
+        write-host -foregroundcolor $HeaderColor ( "*" * $ConsoleWidth + "`n" )
         write-host -foregroundcolor $MenuTitleColor "$($breadcrumb -join(" > "))`n"
-        for ( $index=0; $index -lt ($menu.items.count ); $index++ ) { 
-            
+        for ( $index=0; $index -lt ($menu.items.count ); $index++ ) {
+
             # If there is a section header defined and different to last, display it...
-            $LastSectionHeader = $CurrentSectionHeader           
+            $LastSectionHeader = $CurrentSectionHeader
             $CurrentSectionHeader = $menu.items[$index].SectionHeader
-            if ( $CurrentSectionHeader -and ($CurrentSectionHeader -ne $LastSectionHeader)) { 
+            if ( $CurrentSectionHeader -and ($CurrentSectionHeader -ne $LastSectionHeader)) {
                 write-host -ForegroundColor $SectionHeaderColor "`n$CurrentSectionHeader"
             }
             $BaseItemText = $menu.items[$index].Name
@@ -190,74 +190,52 @@ function Show-MenuV2 {
 
             switch ( $menu.items[$index].Status.invoke() ) {
 
-                "Disabled" { 
-                    if ( $menu.items[$index].StatusText ) { 
+                "Disabled" {
+                    if ( $menu.items[$index].StatusText ) {
                         $ItemStatusText = $menu.items[$index].StatusText.invoke()
                     }
                     else {
                         $ItemStatusText = "DISABLED"
                     }
-                    $OutputColor = $MenuDisabledItemColor 
-                    $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]" 
+                    $OutputColor = $MenuDisabledItemColor
+                    $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]"
                 }
 
-                "UnselectedInvalid" { 
-                    if ( $menu.items[$index].StatusText ) { 
+                "UnselectedInvalid" {
+                    if ( $menu.items[$index].StatusText ) {
                         $ItemStatusText = $menu.items[$index].StatusText.invoke()
                     }
                     else {
                         $ItemStatusText = "INVALID"
                     }
                     $OutputColor = $MenuItemColor
-                    $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]" 
+                    $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]"
                 }
-                
-                "UnselectedValid" { 
-                    if ( $menu.items[$index].StatusText ) { 
+
+                "UnselectedValid" {
+                    if ( $menu.items[$index].StatusText ) {
                         $ItemStatusText = $menu.items[$index].StatusText.invoke()
                     }
                     else {
                         $ItemStatusText = "UNSELECTED"
                     }
                     $OutputColor = $MenuItemColor
-                    $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]" 
+                    $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]"
                 }
-                
+
                 "SelectedValid" {
-                    if ( $menu.items[$index].StatusText ) { 
+                    if ( $menu.items[$index].StatusText ) {
                         $ItemStatusText = $menu.items[$index].StatusText.invoke()
                     }
                     else {
                         $ItemStatusText = "SELECTED"
-                    } 
+                    }
                     $OutputColor = $MenuItemSelectedColor
                     $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]"
                 }
-                
+
                 "SelectedInvalid" {
-                    if ( $menu.items[$index].StatusText ) { 
-                        $ItemStatusText = $menu.items[$index].StatusText.invoke()
-                    }
-                    else {
-                        $ItemStatusText = "INVALID"
-                    } 
-                    $OutputColor = $MenuItemIncompleteColor
-                    $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]"
-                }
-                
-                "MenuValid" {
-                    if ( $menu.items[$index].StatusText ) { 
-                        $ItemStatusText = $menu.items[$index].StatusText.invoke()
-                    }
-                    else {
-                        $ItemStatusText = "VALID"
-                    } 
-                    $OutputColor = $MenuItemColor
-                    $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]"
-                }
-                
-                "MenuInvalid" { 
-                    if ( $menu.items[$index].StatusText ) { 
+                    if ( $menu.items[$index].StatusText ) {
                         $ItemStatusText = $menu.items[$index].StatusText.invoke()
                     }
                     else {
@@ -267,8 +245,30 @@ function Show-MenuV2 {
                     $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]"
                 }
 
-                "MenuEnabled" { 
-                    if ( $menu.items[$index].StatusText ) { 
+                "MenuValid" {
+                    if ( $menu.items[$index].StatusText ) {
+                        $ItemStatusText = $menu.items[$index].StatusText.invoke()
+                    }
+                    else {
+                        $ItemStatusText = "VALID"
+                    }
+                    $OutputColor = $MenuItemColor
+                    $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]"
+                }
+
+                "MenuInvalid" {
+                    if ( $menu.items[$index].StatusText ) {
+                        $ItemStatusText = $menu.items[$index].StatusText.invoke()
+                    }
+                    else {
+                        $ItemStatusText = "INVALID"
+                    }
+                    $OutputColor = $MenuItemIncompleteColor
+                    $ItemText = "{0,-$Column1Width }{1,-$Column2Width}" -f "$($index + 1) - $BaseItemText"," [  $ItemStatusText  ]"
+                }
+
+                "MenuEnabled" {
+                    if ( $menu.items[$index].StatusText ) {
                         $ItemStatusText = $menu.items[$index].StatusText.invoke()
                     }
                     else {
@@ -287,7 +287,7 @@ function Show-MenuV2 {
             write-host -foregroundcolor $OutputColor $ItemText
 
         }
-        if ( $menu.footer ) { 
+        if ( $menu.footer ) {
             $FooterString = &$Menu.footer
 
             write-host -foregroundcolor $FooterColor ( "`n" + "*" * $ConsoleWidth )
@@ -298,17 +298,17 @@ function Show-MenuV2 {
         write-host -foregroundcolor $PromptColor "Enter the number of your choice, h to get item specific help, x to go back or q to quit."
         write-host -foregroundcolor $statuscolor $status
 
-        $key = [console]::ReadKey($true) 
+        $key = [console]::ReadKey($true)
         switch ( $key.keychar.toString() ) {
             "x" { $menuexit = $true }
             "q" { $script:allmenuexit = $true }
-            "h" { 
-                do { 
+            "h" {
+                do {
                     write-host "Enter Item number to get related help for:"
                     $helpitem = ([console]::ReadKey($true)).keychar.toString()
-                    if ( ( 1..$menu.items.count ) -contains $helpitem ) { 
+                    if ( ( 1..$menu.items.count ) -contains $helpitem ) {
                         $statuscolor = "Yellow"
-                        if ( $menu.items[$([int]$helpitem - 1)].HelpText ) { 
+                        if ( $menu.items[$([int]$helpitem - 1)].HelpText ) {
                             $status = "`n>>>: $($menu.items[$([int]$helpitem - 1)].HelpText)"
                         }
                         else {
@@ -318,27 +318,27 @@ function Show-MenuV2 {
                 } while ( -not ( ( 1..$menu.items.count ) -contains $helpitem ))
             }
             default {
-                if ( ( 1..$menu.items.count ) -contains $_ ) { 
+                if ( ( 1..$menu.items.count ) -contains $_ ) {
                     #Valid selection
-                    if ( $menu.items[$($_ - 1)].Status.invoke() -ne "Disabled" ) { 
-                        if ( $menu.items[$($_ - 1)].Interactive ) { 
-                            Write-Host -ForegroundColor $ScriptStatusTextColor "You have selected # '$_'. $($menu.items[$($_ - 1)].name)" 
+                    if ( $menu.items[$($_ - 1)].Status.invoke() -ne "Disabled" ) {
+                        if ( $menu.items[$($_ - 1)].Interactive ) {
+                            Write-Host -ForegroundColor $ScriptStatusTextColor "You have selected # '$_'. $($menu.items[$($_ - 1)].name)"
                         }
                         $script:SelectedItemNumber = [int]($_ - 1)
                         $status = &$menu.items[$($_ - 1)].script
                         $statuscolor = "White"
-                        if ( $menu.items[$($_ - 1)].Interactive ) { 
+                        if ( $menu.items[$($_ - 1)].Interactive ) {
                             Write-Host -ForegroundColor $ScriptStatusTextColor "Done.  Hit any key to continue."
-                            $key = [console]::ReadKey($true) 
+                            $key = [console]::ReadKey($true)
                         }
                     }
-                    else { 
+                    else {
                         $statuscolor = "Yellow"
                         $status = "Option not available. $($menu.items[$($_ - 1)].HelpText)"
 
                     }
                 }
-                else { 
+                else {
                     $statuscolor = "Red"
                     $status = "Invalid choice $_"
                 }
@@ -352,11 +352,11 @@ function Show-MenuV2 {
 }
 
 function Remove-ConnectionProfile {
-    
+
     #vSphere Config Menu Item 2
-    $ConnectionProfileMenu = @{ 
+    $ConnectionProfileMenu = @{
         "Script" = {}
-        "Status" = { "MenuEnabled" } 
+        "Status" = { "MenuEnabled" }
         "Name" = "Delete Connection Profile"
         "HelpText" = "Deletes an existing connection profile"
         "MainHeader" = $MainHeader
@@ -366,8 +366,8 @@ function Remove-ConnectionProfile {
     }
     foreach ( $profilename in $Config.Profiles.Keys ) {
         $ConnectionProfileMenu.Items.Add(
-            @{ 
-                "Name" = $ProfileName; "Status" = {"UnselectedValid"}; "StatusText" = {"Select to Delete"}; "Script" = { 
+            @{
+                "Name" = $ProfileName; "Status" = {"UnselectedValid"}; "StatusText" = {"Select to Delete"}; "Script" = {
                     $Config.Profiles.Remove($ConnectionProfileMenu.Items[$SelectedItemNumber].name)
                     if ( $ConnectionProfileMenu.Items[$SelectedItemNumber].name -eq $config.DefaultProfile ){
                         $Config.DefaultProfile = ''
@@ -377,15 +377,15 @@ function Remove-ConnectionProfile {
                     set-variable -scope 1 -name menuexit -value $true
                     "Removed Connection Profile $ProfileName"
                 }
-            } 
+            }
         ) | out-null
     }
     show-menuv2 -menu $ConnectionProfileMenu | out-null
 }
 
 function Set-DefaultConnectionProfile {
-    
-    $ConnectionProfileMenu = @{ 
+
+    $ConnectionProfileMenu = @{
         "Script" = {}
         "Status" = { "MenuEnabled" }
         "Name" = "Set Default Connection Profile"
@@ -397,32 +397,32 @@ function Set-DefaultConnectionProfile {
     }
     foreach ( $profilename in $Config.Profiles.Keys ) {
         $ConnectionProfileMenu.Items.Add(
-            @{ 
+            @{
                 "Name" = $ProfileName
                 "Status" = {
                     if ($ProfileName -eq $config.DefaultProfile) {
                         "SelectedValid"
-                    } 
-                    else { 
+                    }
+                    else {
                         "UnselectedValid"
                     }
                 }
                 "StatusText" = {
-                    if ($ProfileName -eq $config.DefaultProfile) { 
-                        "Default" 
+                    if ($ProfileName -eq $config.DefaultProfile) {
+                        "Default"
                     }
                     else {
                         "Select"
                     }
                 }
-                "Script" = { 
+                "Script" = {
                     $Config.DefaultProfile = $ConnectionProfileMenu.Items[$SelectedItemNumber].name
                     Save-Config
                     #Exit the menu
                     set-variable -scope 1 -name menuexit -value $true
                     "Set Default Connection Profile $ProfileName"
                 }
-            } 
+            }
         ) | out-null
     }
     show-menuv2 -menu $ConnectionProfileMenu | out-null
@@ -430,7 +430,7 @@ function Set-DefaultConnectionProfile {
 
 function Get-ProfileConnection {
 
-    param ( 
+    param (
         [string]$profileName=$config.DefaultProfile
     )
 
@@ -441,28 +441,28 @@ function Get-ProfileConnection {
     $viusername = $config.profiles.$profileName.viusername
     $nsxusername = $config.profiles.$profileName.NsxUsername
 
-    if ( $config.profiles.$profileName.nsxpassword ) { 
+    if ( $config.profiles.$profileName.nsxpassword ) {
         $nsxcred = New-Object System.Management.Automation.PSCredential $nsxusername, ($config.profiles.$profileName.nsxpassword | convertto-securestring)
     }
-    else { 
+    else {
         $nsxCred = Get-Credential -message "NSX Credentials for $NsxServer" -username $NsxUsername
     }
 
-    if ( $config.profiles.$profileName.vipassword ) { 
+    if ( $config.profiles.$profileName.vipassword ) {
         $vicred = New-Object System.Management.Automation.PSCredential $viusername, ($config.profiles.$profileName.vipassword | convertto-securestring)
     }
-    else { 
+    else {
         $viCred = Get-Credential -message "vCenter Credentials" -username $viusername
     }
-    
+
     $conn = Connect-NsxServer -DefaultConnection:$false -ViDefaultConnection:$false -server $nsxserver -cred $nsxCred -vicred $viCred -ViWarningAction Ignore
 
-    $conn        
+    $conn
 }
 
 function Get-ProfileEsxiCreds {
 
-    param ( 
+    param (
         [string]$profileName=$config.DefaultProfile
     )
 
@@ -472,24 +472,24 @@ function Get-ProfileEsxiCreds {
         write-host -foregroundcolor cyan "Using ESXi credentials from connection profile $profileName"
         $username = $config.profiles.$profileName.defaultHostUserName
         $password = $config.profiles.$profileName.defaultHostPassword
-        if ( $password ) { 
+        if ( $password ) {
             $cred = New-Object System.Management.Automation.PSCredential $username, ($password | convertto-securestring)
         }
         else {
             $cred = New-Object System.Management.Automation.PSCredential $username, (New-Object System.Security.SecureString)
         }
     }
-    else { 
+    else {
         write-host -foregroundcolor Yellow "No ESXi credentials saved in connection profile $profileName"
         $cred = Get-Credential -message "Default ESXi Host Credentials"
     }
-    
-    $cred        
+
+    $cred
 }
 
 function Get-ProfileNsxManagerCreds {
 
-    param ( 
+    param (
         [string]$profileName=$config.DefaultProfile
     )
 
@@ -499,24 +499,24 @@ function Get-ProfileNsxManagerCreds {
         write-host -foregroundcolor cyan "Using NSX Manager credentials from connection profile $profileName"
         $username = $config.profiles.$profileName.nsxusername
         $password = $config.profiles.$profileName.nsxpassword
-        if ( $password ) { 
+        if ( $password ) {
             $cred = New-Object System.Management.Automation.PSCredential $username, ($password | convertto-securestring)
         }
         else {
             $cred = New-Object System.Management.Automation.PSCredential $username, (New-Object System.Security.SecureString)
         }
     }
-    else { 
+    else {
         write-host -foregroundcolor Yellow "No NSX Manager credentials saved in connection profile $profileName"
         $cred = Get-Credential -message "Default NSX Manager Credentials"
     }
-    
-    $cred        
+
+    $cred
 }
 
 function Get-ProfileControllerCreds {
 
-    param ( 
+    param (
         [string]$profileName=$config.DefaultProfile
     )
 
@@ -528,33 +528,33 @@ function Get-ProfileControllerCreds {
         $password = $config.profiles.$profileName.ctrlpassword
         $cred = New-Object System.Management.Automation.PSCredential $username, ($password | convertto-securestring)
     }
-    else { 
+    else {
         write-host -foregroundcolor Yellow "No NSX Controller credentials saved in connection profile $profileName"
         $cred = Get-Credential -message "NSX Controller Credentials" -username "admin"
     }
-    
-    $cred        
+
+    $cred
 }
 
 function Save-Config {
-    
+
     $configfile = 'config.ps1'
-    if ( test-path $configfile ) { 
+    if ( test-path $configfile ) {
 
         $message  = "Existing config found on disk."
         $question = "Update with current config?"
         $decision = $Host.UI.PromptForChoice($message, $question, $yesnochoices, 1)
-    
-    }    
-    else { $decision = 0 } 
+
+    }
+    else { $decision = 0 }
     if ($decision -eq 0) {
 
         $outobj = [pscustomobject]@{
-        
+
             '_configdate' = get-date -format yyyy_M_d_HH_mm
             "config" = $Config
         }
-        
+
         $outobj | convertto-pson | set-content $configfile
         "Saved current config to $configfile"
     }
@@ -564,9 +564,9 @@ function Read-Config {
 
     $configfile = "$MyDirectory\config.ps1"
     write-progress -Activity "Loading from Config $($inobj._configdate) in file $configfile"
-    
-    if ( test-path $configfile ) { 
-        try { 
+
+    if ( test-path $configfile ) {
+        try {
 
             $inobj =  & $configfile
             $script:Config = $inobj.config
@@ -577,7 +577,7 @@ function Read-Config {
         }
     }
     write-progress -Activity "Loading from Config $($inobj._configdate) in file $configfile" -Completed
-    
+
 }
 
 function New-ConnectionProfile {
@@ -588,11 +588,11 @@ function New-ConnectionProfile {
     $nsxusername = read-hostwithdefault -default $default_nsxusername "Enter NSX username"
     $nsxpassword = read-host -assecurestring "Enter NSX password"
     $nsxcred = New-Object System.Management.Automation.PSCredential $nsxusername, $nsxpassword
-    
-    try { 
+
+    try {
         $vc = ""
-        $vcinfo = Invoke-NsxRestMethod -cred $nsxcred -server $nsxserver -method "get" -URI "/api/2.0/services/vcconfig" -ValidateCertificate $false -port 443 -protocol "https"
-        if ( -not $vcinfo.vcinfo.ipaddress ) { 
+        $vcinfo = Invoke-NsxRestMethod -cred $nsxcred -server $nsxserver -method "get" -URI "/api/2.0/services/vcconfig" -ValidateCertificate $false -port 443 -protocol "https" -uriPrefix ""
+        if ( -not $vcinfo.vcinfo.ipaddress ) {
             throw "No vCenter registration found."
         }
         $vc = $vcinfo.vcinfo.ipaddress
@@ -606,7 +606,7 @@ function New-ConnectionProfile {
     $vipassword = read-host -assecurestring "Enter vCenter Password"
     $vicred = New-Object System.Management.Automation.PSCredential $viusername, $vipassword
 
-    try { 
+    try {
 
         # Do a per connect to VC so we get a connection failure if something goes wrong
         $VCConnection = Connect-VIServer -Credential $vicred -Server $vc -ErrorAction stop -NotDefault
@@ -615,12 +615,12 @@ function New-ConnectionProfile {
         #Get NSX details.
         $NewProfile = @{
             "NsxServer" = $nsxserver
-            "nsxusername" = $nsxusername            
+            "nsxusername" = $nsxusername
             "viusername" = $viusername
         }
 
-        Do { 
-            $ProfileName = Read-hostwithdefault -default $nsxserver "Enter a unique connection profile name." 
+        Do {
+            $ProfileName = Read-hostwithdefault -default $nsxserver "Enter a unique connection profile name."
         } while ( ($Config.Profiles) -and ($Config.Profiles.Contains($ProfileName) ))
 
         $message  = "Passwords can be securely saved to disk, but will be accessible to anyone logged onto this machine as the current user.  Interactive plugins will prompt for password if its not saved as part of the connection profile, but scheduled plugins will not be able to use this connection profile if passwords are not saved."
@@ -628,7 +628,7 @@ function New-ConnectionProfile {
         $decision = $Host.UI.PromptForChoice($message, $question, $yesnochoices, 1)
 
         if ($decision -eq 0) {
-            $NewProfile.Add("nsxpassword",$($nsxpassword | ConvertFrom-SecureString )) 
+            $NewProfile.Add("nsxpassword",$($nsxpassword | ConvertFrom-SecureString ))
             $NewProfile.Add("vipassword", $($vipassword | ConvertFrom-SecureString))
 
             #Controller Details
@@ -638,7 +638,7 @@ function New-ConnectionProfile {
 
             if ($decision -eq 0) {
                 $ctrlpassword = read-host -assecurestring "Enter NSX Controller Password"
-                $NewProfile.Add("ctrlpassword",$($ctrlpassword | ConvertFrom-SecureString )) 
+                $NewProfile.Add("ctrlpassword",$($ctrlpassword | ConvertFrom-SecureString ))
             }
 
             #Host Details
@@ -659,7 +659,7 @@ function New-ConnectionProfile {
             }
         }
 
-        if ( $Config.Profiles) { 
+        if ( $Config.Profiles) {
             $script:Config.Profiles.Add($ProfileName, $NewProfile)
         }
         else {
@@ -686,14 +686,14 @@ function New-ConnectionProfile {
     }
 }
 
-function read-hostwithdefault { 
+function read-hostwithdefault {
 
     param(
 
         [string]$Default,
         [string]$Prompt
     )
-    
+
     if ($default) {
         $response = read-host -prompt "$Prompt [$Default]"
         if ( $response -eq "" ) {
@@ -703,7 +703,7 @@ function read-hostwithdefault {
             $response
         }
     }
-    else { 
+    else {
         read-host -prompt $Prompt
     }
 }
@@ -716,17 +716,17 @@ function ConvertTo-PSON {
     This produces 'PSON', the powerShell-equivalent of JSON from any object you pass to it. It isn't suitable for the huge objects produced by some of the cmdlets such as Get-Process, but fine for simple objects
     .EXAMPLE
     $array=@()
-    $array+=Get-Process wi* |  Select-Object Handles,NPM,PM,WS,VM,CPU,Id,ProcessName 
+    $array+=Get-Process wi* |  Select-Object Handles,NPM,PM,WS,VM,CPU,Id,ProcessName
     ConvertTo-PSON $array
 
-    .PARAMETER Object 
+    .PARAMETER Object
     the object that you want scripted out
     .PARAMETER Depth
     The depth that you want your object scripted to
     .PARAMETER Nesting Level
     internal use only. required for formatting
     #>
-    
+
     #Been looking for this for some time ;)
     #From https://raw.githubusercontent.com/Phil-Factor/ConvertToPSON/master/ConvertTo-PSON.ps1
 
@@ -742,7 +742,7 @@ function ConvertTo-PSON {
         [parameter(Position = 3, Mandatory = $false, ValueFromPipeline = $false)]
         [int]$XMLAsInnerXML = 0
     )
-    
+
     BEGIN { }
     PROCESS
     {
@@ -819,7 +819,7 @@ function ConvertTo-PSON {
 }
 
 function New-PowerOpsScheduledJob {
-    
+
     param (
         $profilename,
         $ScheduledTaskBaseName = "Nsx-PowerOps"
@@ -827,7 +827,7 @@ function New-PowerOpsScheduledJob {
 
     $CurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
 
-    if ( -not ( ([Security.Principal.WindowsPrincipal]$CurrentUser).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))) { 
+    if ( -not ( ([Security.Principal.WindowsPrincipal]$CurrentUser).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator"))) {
         out-Event -EntryType warning "Scheduled tasks can only be created when running as Administrator.  Run PowerOps in an elevated PowerShell host to create a scheduled task."
         return
     }
@@ -852,16 +852,16 @@ function New-PowerOpsScheduledJob {
     $command = [ScriptBlock]::Create("& `"$PowerOps`" -NonInteractive -ConnectionProfile $profilename")
 
     #Then create it, which is easy...
-    try { 
+    try {
         $trigger =  New-JobTrigger -Weekly -At $TaskTimeOfDay -DaysOfWeek $TaskDayOfWeek
         $job = Register-ScheduledJob -ScriptBlock $command -Trigger $trigger -Name $("$ScheduledTaskBaseName-$profilename") -credential $taskCred -ErrorAction Stop
-        
+
         # Create the event log source we will need to log with.
         New-EventLog -LogName Application -Source $EventLogSource -ErrorAction Ignore
 
         # Create the systemprofile Desktop directory that is required for Excel/Visio to run without a logged in user.
         # See https://serverfault.com/questions/266794/when-ran-as-a-scheduled-task-cannot-save-an-excel-workbook-when-using-excel-app
-         
+
         new-item -ItemType Directory "C:\Windows\System32\config\systemprofile\Desktop" -ErrorAction ignore
         new-item -ItemType Directory "C:\Windows\SysWOW64\config\systemprofile\Desktop" -ErrorAction ignore
     }
@@ -869,10 +869,10 @@ function New-PowerOpsScheduledJob {
         Write-event -EntryType warning "Scheduled task creation failed with the following error: $_"
     }
     write-progress -Activity "Creating Scheduled Task" -CurrentOperation "Using authentication profile: $profilename" -Completed
-    
+
 }
 
-function Get-PowerOpsScheduledJob { 
+function Get-PowerOpsScheduledJob {
 
     param (
         $profilename,
@@ -882,27 +882,27 @@ function Get-PowerOpsScheduledJob {
     Get-ScheduledJob -Name "$ScheduledTaskBaseName-$profilename" -ErrorAction Ignore
 }
 
-function Remove-PowerOpsScheduledJob { 
-    
+function Remove-PowerOpsScheduledJob {
+
     param (
         $profilename,
         $ScheduledTaskBaseName = "Nsx-PowerOps"
     )
 
-    try { 
+    try {
         $Task = Get-ScheduledJob -Name "$ScheduledTaskBaseName-$profilename"
         $Task | Unregister-ScheduledJob
-    }catch { 
+    }catch {
         return $false
     }
 }
 
-function Get-EnableScheduledTaskMenu { 
+function Get-EnableScheduledTaskMenu {
 
     #vSphere Config Menu Item 2
-    $ConnectionProfileMenu = @{ 
+    $ConnectionProfileMenu = @{
         "Script" = {}
-        "Status" = { "MenuEnabled" } 
+        "Status" = { "MenuEnabled" }
         "Name" = "Enable/Disable PowerOps Scheduled Documentation Task"
         "MainHeader" = $MainHeader
         "Subheader" = $Subheader
@@ -911,13 +911,13 @@ function Get-EnableScheduledTaskMenu {
     }
     foreach ( $profilename in $Config.Profiles.Keys ) {
         $ConnectionProfileMenu.Items.Add(
-            @{ 
+            @{
                 "Name" = $ProfileName
                 "Status" = {
                     if ( Get-PowerOpsScheduledJob -profilename $BaseItemText ) {
                         "SelectedValid"
                     }
-                    else { 
+                    else {
                         "UnselectedValid"
                     }
                 }
@@ -925,11 +925,11 @@ function Get-EnableScheduledTaskMenu {
                     if ( Get-PowerOpsScheduledJob -profilename $BaseItemText ) {
                         "Enabled - Select to Disable"
                     }
-                    else { 
+                    else {
                         "Not Enabled - Select to Enable"
                     }
                 }
-                "Script" = { 
+                "Script" = {
                     if ( Get-PowerOpsScheduledJob -profilename $ConnectionProfileMenu.Items[$SelectedItemNumber].name ) {
                         Remove-PowerOpsScheduledJob -profilename $ConnectionProfileMenu.Items[$SelectedItemNumber].name
                     }
@@ -937,11 +937,11 @@ function Get-EnableScheduledTaskMenu {
                         New-PowerOpsScheduledJob -profilename $ConnectionProfileMenu.Items[$SelectedItemNumber].name
                     }
                 }
-            } 
+            }
         ) | out-null
     }
     show-menuv2 -menu $ConnectionProfileMenu -FooterTextColor "Yellow"| out-null
-    
+
 }
 
 
