@@ -70,10 +70,15 @@ Describe "NSX Manager" {
     }
     Write-Verbose "Enabled: $(($ComponentSummary | ? { $_.name -match 'RabbitMQ'}).enabled), Running $(($ComponentSummary | ? { $_.name -match 'RabbitMQ'}).status)"
 
+    if((get-nsxmanagerrole).role -eq "Primary") {
     it "has the NSX Replicator Service in a running state" {
         ($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).status | should match RUNNING
-    }
+        }
     Write-Verbose "Enabled: $(($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).enabled), Running $(($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).status)"
-
+    } else {
+    it "has the NSX Replicator Service in a stopped state" {
+            ($ComponentSummary | ? { 
+                $_.name -match 'NSX Replicator'}).status | should match STOPPED
+        }
+    }
 }
-
