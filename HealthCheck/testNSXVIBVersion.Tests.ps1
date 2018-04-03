@@ -80,6 +80,7 @@ foreach($row in $processedWebResponse){
 
 
 Describe "NSX VIB Versions"{
+    Write-Host "Check VIB(s) version - Individual Hosts"
     $ESXi_VIBVersionArray=@()
     $env_VIBVersionArray=@()
 
@@ -108,31 +109,30 @@ Describe "NSX VIB Versions"{
 
         # Get VIB info
         $ESXi_VIBInfo = $esxcli.software.vib.list.Invoke() | ?{($_.name -match "esx-nsxv") -or ($_.name -match "esx-v")}
-            
-        it "Esxcli returned VIBs info" { 
+
+        it "Host $hv.name got VIB(s) installed." {
             $ESXi_VIBInfo | should not be blank
         }
 
         if ($ESXi_VIBInfo) {
             $a = New-Object -TypeName PSobject
             $a | Add-Member -MemberType NoteProperty -Name vibStatus -Value "Ok"
-            $env_VIBVersionArray += $a
             foreach ($vib in $ESXi_VIBInfo) {       
                 $ESXi_VIBVersionArray = $ESXi_VIBVersionArray+$vib.version
-                it "$($vib.name) $($vib.version) VIB Version same as latest VIB version for the current NSX Manager" { 
+                it "VIB $($vib.name), version $($vib.version) is the latest VIB version for your NSX Manager" {
                     $vib.version | Should BeExactly $desiredVIBVersion
                 }
                 if($vib.version -ne $desiredVIBVersion){
-                    $env_VIBVersionArray.vibStatus = "Fail"
+                    $a.vibStatus = "Fail"
                 }
             }
+            $env_VIBVersionArray += $a
             $uniqueVIBVersionArray=$ESXi_VIBVersionArray | select -unique
             it "All VIB Versions are same accross the host $hv.name" {$uniqueVIBVersionArray.count -eq 1 | Should Be $true}
         }
-
         write-host
     }
-    Write-Host "NSX Environment - All Hosts"
+    Write-Host "Check VIB(s) version - All Hosts"
     if ($env_VIBVersionArray.count -gt 1 ) {
         $uniqueEnvVIBVersionObj=$env_VIBVersionArray.vibStatus | select -unique
         it "All VIB Versions accross the environment are up to date" {($uniqueEnvVIBVersionObj.count -eq 1) -and ($uniqueEnvVIBVersionObj -eq "Ok") | Should Be $true}
