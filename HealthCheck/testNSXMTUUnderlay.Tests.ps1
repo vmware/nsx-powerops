@@ -47,41 +47,32 @@ function createNewExcel{
 # Function to get list if NSX prepared hosts and their VMKnic and IPs #
 # **************************************************************************************** #
 function get-HostsAndVteps{
-
-    #Collect NSX prepared clusters and hosts
-    $tz_hosts = @()
-    Get-NsxTransportZone -Connection $NsxConnection | %{
-        $Props = @{
-            tzName = $_.Name
-            clusterNames = $_.clusters.cluster.cluster.name
-            hostNames = ($_.clusters.cluster.cluster.name | %{get-cluster -name $_ | get-vmhost}).name
-        }    
-        $tz_hosts += New-Object PSObject -Property $Props
-    }
-
-    # Get rid of duplicate entries of hosts that are part of more than 1 transport zone.
-    $hostnames = $tz_hosts.hostnames | select -Unique
-
+    param($server)
+    #Collect all hosts in Connected state
+    $hostnames = (Get-VMHost -Server $server | ?{$_.ConnectionState -eq "Connected"}).name
+    
     # Collect VTEP
     foreach($vmhost in $hostnames){
         #create esxcli object for a host
-        $esxcli = Get-ESXCLI -VMHost $vmhost -V2
+        $esxcli = Get-ESXCLI -VMHost $vmhost -V2 -Server $server
         $esxVersion = ($esxcli.system.version.get.Invoke()).version
 
         #collecting VTEP VMK names and IP Addresses
         $vteps = $esxcli.network.ip.interface.list.Invoke() | ?{$_.netstackinstance -eq "vxlan"} | select Name, Enabled, MTU
 
         #collect IP addresses for each VTEP
-        $VMKnicData = @{}
-        foreach($vmk in $vteps){
-            $ipv4 = ($esxcli.network.ip.interface.ipv4.get.Invoke() | ?{$_.name -eq $vmk.name}).IPv4Address
-            $VMKnicData.add($vmk.name,$ipv4)
+        if($vteps){
+            $VMKnicData = @{}
+            foreach($vmk in $vteps){
+                $ipv4 = ($esxcli.network.ip.interface.ipv4.get.Invoke() | ?{$_.name -eq $vmk.name}).IPv4Address
+                $VMKnicData.add($vmk.name,$ipv4)
+            }
+            $hostVMKnicData.Add($vmhost, $VMKnicData)
+            
+            # collect combination of ESXi Host and its vCenter - for Cross-VC NSX Deployments
+            $hostvCenterData.add($vmhost,$server)
         }
-        $hostVMKnicData.Add($vmhost, $VMKnicData)
-    }
-       
-
-    return $hostVMKnicData
+    }       
 }
 
 # **************************************************************************** #
@@ -93,6 +84,7 @@ function checkVMKNICPing{
         [string]$fromHost,
         [string]$fromVMKnic,
         [string]$MTUSize,
+        $server,
         $excelSheet,
         $summaryExcelSheet
     )
@@ -179,7 +171,7 @@ function checkVMKNICPing{
 
                 #Preparing arguments
                 $arguments = @{}
-                $esxcli = Get-ESXCLI -vmhost $fromHost -V2
+                $esxcli = Get-ESXCLI -vmhost $fromHost -V2 -Server $server
 
                 $arguments = $esxcli.network.diag.ping.CreateArgs()
                 $arguments.host = $vmknicIPToPing
@@ -391,6 +383,7 @@ function Log-FailedPing{
 # ************************* #
 Describe "NSX Manager" {
     $global:hostVMKnicData = @{}
+    $global:hostvCenterData = @{}
     $global:totalPings = 0
     $global:totalFailedPings = 0
     $global:failedPingDic=@{}
@@ -401,6 +394,36 @@ Describe "NSX Manager" {
     $global:summaryExcelRowCursor =4
     $global:summaryExcelColumnCursor =6
 
+    # Check the NSX Manager Role
+    $nsxManagerRole = (Get-NsxManagerRole -Connection $NSXConnection).Role
+
+    if($nsxManagerRole -ne "STANDALONE"){
+        Write-Host "`nNSX Manager Role is $nsxManagerRole"
+        do{
+            $answer = Read-Host "Do you want to run this test across Primary and Secondary NSX Managers? (y/n)"
+        }while($answer -notmatch "^[yn]$")
+    }
+
+    if($answer -eq "y"){
+        
+        Write-Host -fore:DarkYellow "`nPlease provide the connection details for the second vCenter Server"
+        
+        $secondaryVC = Read-Host ">> Enter vCenter Server FQDN or IP Address"
+        $secondaryVcUsername = Read-Host ">> Enter user name"
+        $secondaryVcPassword = read-host -assecurestring ">> Enter password" 
+        $secondaryVcCred = New-Object System.Management.Automation.PSCredential $secondaryVcUsername, $secondaryVcPassword
+        $secondaryVcConnection = Connect-VIServer -Server $secondaryVC -Credential $secondaryVcCred
+        
+    
+        if($secondaryVcConnection){    
+            write-host -fore:Green "Successfully connected to the second vCenter Server."        
+        }
+        else{
+            write-host -fore:Red "Failed to connect to the second vCenter Server."
+        }
+    }
+
+
     # Get the MTU size to test the ping command with.
     Write-Host "`n>> Please provide the MTU size to test [Default: 1572]:" -ForegroundColor Darkyellow -NoNewline
     $testMTUSize = Read-Host
@@ -408,6 +431,7 @@ Describe "NSX Manager" {
     if ($testMTUSize -eq ''){
         $testMTUSize = 1572
     }
+
 
     # get the one or all host options from the user.
     Write-Host "`n>> Run this test from 'one' host or 'all' [Default: all]:" -ForegroundColor Darkyellow -NoNewline
@@ -417,7 +441,11 @@ Describe "NSX Manager" {
     if ($numberOfHostToTest -eq 1 -or $numberOfHostToTest -eq "one"){
         Write-Host "`n>> Please provide the Host Name or IP (as shown in vCenter):" -ForegroundColor DarkGreen -NoNewline
         $testHostIP = Read-Host
-        $hostVMKnicData = get-HostsAndVteps
+        # get global hostVMKnicData by running function getHostAndTheirVMKnics
+        get-HostsAndVteps -server $NSXConnection.VIConnection
+        if($secondaryVcConnection){
+            get-HostsAndVteps -server $secondaryVcConnection
+        }
 
         if ($hostVMKnicData[$testHostIP]){
             #Creating 'Ping Result' excel sheet.
@@ -432,8 +460,9 @@ Describe "NSX Manager" {
             $summarySheet.Cells.Item(1,1) = "Summary of VMKnic Ping Test"
 
             $detailsOfHost = $hostVMKnicData.$testHostIP
+            $server = $hostvCenterData[$testHostIP]
             $detailsOfHost.keys | %{
-                checkVMKNICPing -fromHost $testHostIP -fromVMKnic $_ -MTUSize $testMTUSize -excelSheet $sheet -summaryExcelSheet $summarySheet
+                checkVMKNICPing -fromHost $testHostIP -fromVMKnic $_ -MTUSize $testMTUSize -excelSheet $sheet -summaryExcelSheet $summarySheet -server $server
             }
         }
 
@@ -443,15 +472,23 @@ Describe "NSX Manager" {
         # Remove Default Sheet1
         $newExcelWB.worksheets.item("Sheet1").Delete()
 
-        $global:newExcel.ActiveWorkbook.SaveAs()
-        $global:newExcel.Workbooks.Close()
+        # Save Excel file
+        $currentdocumentpath = "$documentlocation\VMKnicPingTestOutput-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
+        $newExcelWB.SaveAs($currentdocumentpath)
+        $newExcelWB.close()
         $global:newExcel.Quit()
+        releaseObject -obj $newExcelWB
+        releaseObject -obj $newExcel
+
     }
     elseif ($numberOfHostToTest -eq "all" -or $numberOfHostToTest -eq "ALL" -or $numberOfHostToTest -eq ''){
 
         # get global hostVMKnicData by running function getHostAndTheirVMKnics
-        $hostVMKnicData = get-HostsAndVteps
-        
+        get-HostsAndVteps -server $NSXConnection.VIConnection
+        if($secondaryVcConnection){
+           get-HostsAndVteps -server $secondaryVcConnection
+        }
+
         #Creating 'Ping Result' excel sheet
         $newExcelWB = createNewExcel
         $sheet = $newExcelWB.WorkSheets.Add()
@@ -467,10 +504,11 @@ Describe "NSX Manager" {
         # from each host's each vmknic to all Host's vmknics.
         $listOfHosts = $hostVMKnicData.keys
         $listOfHosts | %{
+            $server = $hostvCenterData[$_]
             $myHost=$_
             $listOfHostsVMKnics = $hostVMKnicData[$_].keys
             $listOfHostsVMKnics | %{
-                checkVMKNICPing -fromHost $myHost -fromVMKnic $_ -MTUSize $testMTUSize  -excelSheet $sheet -summaryExcelSheet $summarySheet
+                checkVMKNICPing -fromHost $myHost -fromVMKnic $_ -MTUSize $testMTUSize  -excelSheet $sheet -summaryExcelSheet $summarySheet -server $server
             }
         }
 
@@ -482,15 +520,15 @@ Describe "NSX Manager" {
         
         # Save Excel file
         $currentdocumentpath = "$documentlocation\VMKnicPingTestOutput-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
-
-        $global:newExcel.ActiveWorkbook.SaveAs($currentdocumentpath)
-        $global:newExcel.Workbooks.Close()
+        $newExcelWB.SaveAs($currentdocumentpath)
+        $newExcelWB.close()
         $global:newExcel.Quit()
-
         releaseObject -obj $newExcelWB
         releaseObject -obj $newExcel
-    }else{
+    }
+    else{
         Write-Host -ForegroundColor DarkRed "You have made an invalid choice!"
         exit
     }
+
 }
