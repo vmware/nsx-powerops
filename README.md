@@ -14,6 +14,11 @@ Current version: 2.1.1 (Feb 28, 2018)
 
 * [PowerOps Documentation - VCDX248](http://www.vcdx248.com/)
 
+### Step-By-Step Install Guide (w/ screenshots)
+
+* [PowerOps Install Guide - VCDX248](http://www.vcdx248.com/2018/02/step-by-step-install-deploy-guide-of.html)
+
+
 ### Prerequisites
 
 #### Required Pre-Requisites:
