@@ -1534,7 +1534,8 @@ __/\\\\\\\\\\\__________________________________________________________________
         $Footer = { 
 @"
 Default Connection Profile: $($Config.DefaultProfile)
-Connected : $($DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected)
+Current Connection Profile: $(if(!$DefaultNSXConnection){"N/A"} else {foreach($key in $config.profiles.GetEnumerator() | ?{$_.value.NSXServer -eq $DefaultNSXConnection.Server}){$key.name}})
+Connected: $($DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected)
 Output Directory: $DocumentLocation
 "@
         }
@@ -1684,7 +1685,7 @@ Output Directory: $DocumentLocation
         # Authentication profile menu definition.
         $AuthConfigMenu = @{
             
-            "Name" = "Configure Connection Profiles"
+            "Name" = "Connection Profiles"
             "Status" = { 
                 if ( -not (checkDependancies -ListAvailable $true) ) {
                     "Disabled"
@@ -1736,6 +1737,36 @@ Output Directory: $DocumentLocation
                     "HelpText" = "Deletes an existing connection profile."
                     "Script" = { Remove-ConnectionProfile; if ((-not ($Config.DefaultProfile)) -and ($DefaultNSXConnection)) { disconnectDefaultNsxConnection } }
                 },
+                @{
+                    "Name" = "Set Current Connection Profile"
+                    "Status" = { 
+                        If ($DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected) {
+                            "SelectedValid" 
+                        } 
+                        elseif ( $Config.Profiles -and ($Config.Profiles.Count -gt 0) ) {
+                            "MenuValid"
+                        }
+                        else {
+                            "Disabled" 
+                        }
+                    }
+                    "StatusText" = {
+                        If ( $DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected ) {
+                            foreach($key in $config.profiles.GetEnumerator() | ?{$_.value.NSXServer -eq $DefaultNSXConnection.Server}){
+                                $key.name
+                            }
+                        } 
+                        elseif ( $Config.Profiles -and ($Config.Profiles.Count -gt 0) ) {
+                            "SELECT"
+                        }
+                        else {
+                            "No Connection Profiles Defined" 
+                        }
+                    }
+                    "HelpText" = "Selects the connection profile used for interactive operations that require access to NSX/VC."
+                    "Script" = { Set-ConnectionProfile }
+                },
+
                 @{
                     "Name" = "Select Default Connection Profile"
                     "Status" = { 

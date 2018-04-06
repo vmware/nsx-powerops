@@ -428,6 +428,49 @@ function Set-DefaultConnectionProfile {
     show-menuv2 -menu $ConnectionProfileMenu | out-null
 }
 
+function Set-ConnectionProfile {
+    
+    $ConnectionProfileMenu = @{ 
+        "Script" = {}
+        "Status" = { "MenuEnabled" }
+        "Name" = "Set Current Connection Profile"
+        "HelpText" = "Connects existing connection profile"
+        "MainHeader" = $MainHeader
+        "Subheader" = $Subheader
+        "Footer" = $footer
+        "Items" = New-Object System.Collections.Arraylist
+    }
+    foreach ( $profilename in $Config.Profiles.Keys ) {
+        $ConnectionProfileMenu.Items.Add(
+            @{ 
+                "Name" = $profileName
+                "Status" = {
+                    if ($profileName -eq $config.DefaultProfile) {
+                        "SelectedValid"
+                    } 
+                    else { 
+                        "UnselectedValid"
+                    }
+                }
+                "StatusText" = {
+                    if ($profileName -eq $config.DefaultProfile) { 
+                        "Default" 
+                    }
+                    else {
+                        "Select"
+                    }
+                }
+                "Script" = { 
+                    connectProfile $($ConnectionProfileMenu.Items[$SelectedItemNumber].name)
+                    set-variable -scope 1 -name menuexit -value $true
+                    "Set Connection Profile $ProfileName"
+                }
+            } 
+        ) | out-null
+    }
+    show-menuv2 -menu $ConnectionProfileMenu | out-null
+}
+
 function Get-ProfileConnection {
 
     param (
