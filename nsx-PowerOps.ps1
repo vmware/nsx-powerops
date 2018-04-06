@@ -397,21 +397,25 @@ function getHostInformation {
         $getDLRs = Get-NsxLogicalRouter
         $findLogicalSwitchElements= @("Destination")
         #$findLogicalSwitchElements= @("show")
-        if($getDLRs.gettype().BaseType.Name -eq "Array"){
+        if($getDLRs){   
+            if($getDLRs.gettype().BaseType.Name -eq "Array") {
             $getDLRs | %{
                 $nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$($_.id)+" route"
                 invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $nsxMgrCommandRouteTable
                 $parsedRouteTable = parseSSHOutput -fileToParse $nsxMgrCommandRouteTable -findElements $findLogicalSwitchElements -direction "Column"
                 $sshCommandOutputDataRouteTable.Add($nsxMgrCommandRouteTable, $parsedRouteTable.$($parsedRouteTable.keys))
                 $listOfDLRCmd += $nsxMgrCommandRouteTable
-                }
+                Remove-Item ./$nsxMgrCommandRouteTable
+            }
             $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, $listOfDLRCmd
-        }else{
-            $nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$getDLRs.id+" route"
-            invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $nsxMgrCommandRouteTable
-            $parsedRouteTable = (parseSSHOutput -fileToParse $nsxMgrCommandRouteTable -findElements $findLogicalSwitchElements -direction "Column")
-            $sshCommandOutputDataRouteTable.Add($nsxMgrCommandRouteTable, $parsedRouteTable.$($parsedRouteTable.keys))
-            $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, $nsxMgrCommandRouteTable
+        }
+            else {
+                $nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$getDLRs.id+" route"
+                invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $nsxMgrCommandRouteTable
+                $parsedRouteTable = (parseSSHOutput -fileToParse $nsxMgrCommandRouteTable -findElements $findLogicalSwitchElements -direction "Column")
+                $sshCommandOutputDataRouteTable.Add($nsxMgrCommandRouteTable, $parsedRouteTable.$($parsedRouteTable.keys))
+                $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, $nsxMgrCommandRouteTable
+            }
         }
         # NSX Manager SSH Command Ends here.
 
@@ -458,7 +462,6 @@ function getHostInformation {
         ####plotDynamicExcel one workBook at a time
         $plotHostInformationExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxHostExcelWorkBook -workSheetName $hostWorkSheetName -listOfDataToPlot $allVmHostsExcelData
         ####writeToExcel -eachDataElementToPrint $sshCommandOutputDataLogicalSwitch -listOfAllAttributesToPrint $sshCommandOutputLable
-        Remove-Item ./$nsxMgrCommandRouteTable
     }
     #invokeNSXCLICmd(" show logical-switch host host-31 verbose ")
     #$nsxHostExcelWorkBook.SaveAs()
