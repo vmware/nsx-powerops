@@ -8,7 +8,7 @@ SPDX-License-Identifier: MIT
 NSX Power Operations is a platform that provides NSX users a way to document their VMware NSX for vSphere environment in Microsoft Excel and Visio files that are easily consumable and referable. The documentation not only captures the Desired State (configuration) but also the Realized State (for example: routing & forwarding tables) across the distributed environment. The platform also embeds rich health check tools.
 
 ### Releases & Major Branches
-Current version: 2.1.1 (Feb 28, 2018)
+Current version: 2.2 (April 10, 2018)
 
 ### Documentation
 
