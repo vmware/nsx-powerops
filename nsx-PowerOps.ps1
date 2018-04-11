@@ -50,7 +50,7 @@ param (
 
 $global:PowerOps = $MyInvocation.MyCommand.Path
 $global:MyDirectory = split-path -parent $MyInvocation.MyCommand.Path
-$version = "2.1.1"
+$version = "2.2"
 $requiredModules = @("PowerNSX", "Pester", "Posh-SSH")
 
 #Setup default menu colours.
@@ -150,17 +150,40 @@ function checkDependancies {
     )
     # returns bool based on required dependancies for script being installed.
     write-progress -Activity "Checking dependancies"
-    if ( -not $script:DependanciesSatisfied) { 
-        foreach ( $module in $requiredModules ) { 
+    if ( -not $script:DependanciesSatisfied) {
+        foreach ( $module in $requiredModules ) {
+            $setusfyPNVer = 0
             write-progress -Activity "Checking dependancies" -Status $module
-            if ( -not ( Get-Module -ListAvailable:$ListAvailable -name $module )) { 
-                write-progress -Activity "Checking dependancies" -Status $module -Completed        
+            if ( -not ( Get-Module -ListAvailable:$ListAvailable -name $module )) {
+                write-progress -Activity "Checking dependancies" -Status $module -Completed
                 return $false
+            }elseif ($module -eq "PowerNSX"){
+                $powerNSXModule = Get-Module -ListAvailable -name $module
+                if ($powerNSXModule.gettype().basetype.name -eq "Array"){
+                    $powerNSXModule |foreach {
+                        $powerNSXVersion = $_.version
+                        $majorPNVer = $powerNSXVersion.major
+                        $minorPNVer = $powerNSXVersion.minor
+                        $buildPNVer = $powerNSXVersion.build
+                        if ( -not $majorPNVer -lt 3 -or $majorPNVer -eq 3 -And $minorPNVer -eq 0 -And $buildPNVer -lt 1091){$setusfyPNVer++}
+                    }
+                    if ($setusfyPNVer -eq 0){return $false}
+                }else{
+                    $powerNSXVersion = $powerNSXModule.version
+                    $majorPNVer = $powerNSXVersion.major
+                    $minorPNVer = $powerNSXVersion.minor
+                    $buildPNVer = $powerNSXVersion.build
+                    if ($majorPNVer -lt 3 -or $majorPNVer -eq 3 -And $minorPNVer -eq 0 -And $buildPNVer -lt 1091){
+                        write-progress -Activity "Please update PowerNSX by Installing Dependencies (press #1), current PowerNSX version is: $powerNSXVersion"
+                        return $false}
+                }
+            }else{
+                write-progress -Activity "PowerNSX version: $powerNSXVersion.version"
             }
         }
         $script:DependanciesSatisfied = $true
     }
-    write-progress -Activity "Checking dependancies" -Completed    
+    write-progress -Activity "Checking dependancies" -Completed
     return $true
 }
 
@@ -176,6 +199,17 @@ function installDependencies {
             if ( -not (Get-Module -ListAvailable $Module )) { 
                 Install-Module -Name $Module -Scope CurrentUser
                 Write-Progress -Activity "Installing module dependancies." -CurrentOperation "Install module $module."
+            }elseif ($module -eq "PowerNSX"){
+                $powerNSXModule = Get-Module -ListAvailable -name $module
+                $powerNSXVersion = $powerNSXModule.version
+                $majorPNVer = $powerNSXVersion.major
+                $minorPNVer = $powerNSXVersion.minor
+                $buildPNVer = $powerNSXVersion.build
+                if ($majorPNVer -lt 3 -or $majorPNVer -eq 3 -And $minorPNVer -eq 0 -And $buildPNVer -lt 1091){
+                    #Update-Module -Name $Module
+                    Install-Module -Name $Module -Force
+                    Write-Progress -Activity "Updating Module." -CurrentOperation "Updating module $module."
+                }
             }
         }
         Write-Progress -Activity "Installing module dependancies." -Completed        

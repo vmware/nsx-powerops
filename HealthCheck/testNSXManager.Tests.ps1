@@ -34,12 +34,6 @@ Describe "NSX Manager" {
 
     $vCenterStatus = Get-NsxManagervCenterConfig -connection $global:NsxConnection
 
-    #vCenter Connected Check
-    It "is connected to vCenter" { 
-        $vCenterStatus.Connected | should be $true
-    }
-    Write-Verbose "vCenter Server : $($vCenterStatus.IpAddress), Connected : $($vCenterStatus.Connected)"
-
     #Last inventory check
     #Define the start of the universe
     [datetime]$origin = '1970-01-01 00:00:00'
@@ -70,10 +64,15 @@ Describe "NSX Manager" {
     }
     Write-Verbose "Enabled: $(($ComponentSummary | ? { $_.name -match 'RabbitMQ'}).enabled), Running $(($ComponentSummary | ? { $_.name -match 'RabbitMQ'}).status)"
 
+    if((get-nsxmanagerrole).role -eq "Primary") {
     it "has the NSX Replicator Service in a running state" {
         ($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).status | should match RUNNING
-    }
+        }
     Write-Verbose "Enabled: $(($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).enabled), Running $(($ComponentSummary | ? { $_.name -match 'NSX Replicator'}).status)"
-
+    } else {
+    it "has the NSX Replicator Service in a stopped state" {
+            ($ComponentSummary | ? { 
+                $_.name -match 'NSX Replicator'}).status | should match STOPPED
+        }
+    }
 }
-

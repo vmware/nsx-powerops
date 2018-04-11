@@ -23,7 +23,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 # Author:   Tony Sangha
 # Blog:    tonysangha.com
-# Version:  1.0.2
+# Version:  1.0.3
 # PowerCLI v6.0
 # PowerNSX v3.0
 # Purpose: Document NSX for vSphere Distributed Firewall
@@ -175,10 +175,17 @@ function startExcel(){
 
     Write-Host "`nRetrieving Security Groups configured in NSX-v." -foregroundcolor "magenta"
     $ws5 = $wb.WorkSheets.Add()
-    $ws5.Name = "Security_Groups"
+    $ws5.Name = "Security Group Configuration"
     sg_ws($ws5)
     $usedRange = $ws5.UsedRange
     $null = $usedRange.EntireColumn.Autofit()
+
+    Write-Host "`nRetrieving Security Groups Effective Membership in NSX-v." -foregroundcolor "magenta"
+    $ws_sg_vm_mem = $wb.WorkSheets.Add()
+    $ws_sg_vm_mem.Name = "Security Group Effective Member"
+    sg_resultant_membership($ws_sg_vm_mem)
+    $usedRange = $ws_sg_vm_mem.UsedRange
+    $null = $usedRange.EntireColumn.Autofit()    
 
     Write-Host "`nRetrieving Security Tags configured in NSX-v." -foregroundcolor "magenta"
     $ws6 = $wb.Worksheets.Add()
@@ -234,6 +241,7 @@ function startExcel(){
     ReleaseObject -Obj $ws9   
     ReleaseObject -Obj $ws10 
     ReleaseObject -Obj $ws11
+    ReleaseObject -Obj $ws_sg_vm_mem
     ReleaseObject -Obj $usedRange
     
     if ( $DocumentPath -and (test-path (split-path -parent $DocumentPath))) { 
@@ -601,7 +609,7 @@ function fw_rules(){
 }
 
 ########################################################
-#    Security Groups
+#    Security Groups - Configuration
 ########################################################
 
 function sg_ws($sheet){
@@ -717,27 +725,133 @@ function pop_sg_ws($sheet){
         }
     }
 
-    $sheet.Cells.Item($row,1) = "Security Group Membership"
+    $sheet.Cells.Item($row,1) = "Security Group Exclude & Include Membership"
     $sheet.Cells.Item($row,1).Font.Size = $titleFontSize
     $sheet.Cells.Item($row,1).Font.Bold = $titleFontBold
     $sheet.Cells.Item($row,1).Font.ColorIndex = $titleFontColorIndex
     $sheet.Cells.Item($row,1).Font.Name = $titleFontName
     $sheet.Cells.Item($row,1).Interior.ColorIndex = $titleInteriorColor
-    $range2 = $sheet.Range("a"+$row, "j"+$row)
+    $range2 = $sheet.Range("a"+$row, "H"+$row)
     $range2.merge() | Out-Null
 
     $row++
 
     $sheet.Cells.Item($row,1) = "SG Name"
-    $sheet.Cells.Item($row,2) = "VM ID"
-    $sheet.Cells.Item($row,3) = "VM Name"
-    $range3 = $sheet.Range("a"+$row, "c"+$row)
+    $sheet.Cells.Item($row,2) = "SG Object ID"   
+    $sheet.Cells.Item($row,3) = "Is Universal"
+    $sheet.Cells.Item($row,4) = "Inclusion or Exclusion"
+    $sheet.Cells.Item($row,5) = "Member Type"
+    $sheet.Cells.Item($row,6) = "Member Name"
+    $sheet.Cells.Item($row,7) = "Member Object-ID"
+    $sheet.Cells.Item($row,8) = "Universal"    
+    $range3 = $sheet.Range("a"+$row, "h"+$row)
     $range3.Font.Bold = $subTitleFontBold
     $range3.Interior.ColorIndex = $subTitleInteriorColor
     $range3.Font.Name = $subTitleFontName
 
     $row++
 
+    foreach ( $member in $sg ){
+
+        $sheet.Cells.Item($row,1) = $member.name
+        $sheet.Cells.Item($row,2) = $member.objectId
+        $sheet.Cells.Item($row,3) = $member.isUniversal
+        $range_row = $row
+        $row++
+
+        if ( $member.member ) {
+            
+            foreach ($item in $member.member ) {
+                
+                $sheet.Cells.Item($row,4) = "Include"
+                $sheet.Cells.Item($row,5) = $item.objectTypeName
+                $sheet.Cells.Item($row,6) = $item.name
+                $sheet.Cells.Item($row,7) = $item.objectId
+                $sheet.Cells.Item($row,8) = $item.isUniversal
+                $row++
+            }
+        }
+        
+        if ( $member.excludeMember ) {
+            
+            foreach ($item in $member.excludeMember ) {
+                
+                $sheet.Cells.Item($row,4) = "Exclude"
+                $sheet.Cells.Item($row,5) = $item.objectTypeName
+                $sheet.Cells.Item($row,6) = $item.name
+                $sheet.Cells.Item($row,7) = $item.objectId
+                $sheet.Cells.Item($row,8) = $item.isUniversal
+                $row++
+            }
+        }        
+    }
+
+    foreach ( $member in $sgu ){
+
+        $sheet.Cells.Item($row,1) = $member.name
+        $sheet.Cells.Item($row,2) = $member.objectId
+        $sheet.Cells.Item($row,3) = $member.isUniversal
+
+        $row++
+
+        if ( $member.member ) {
+            
+            foreach ($item in $member.member ) {
+                
+                $sheet.Cells.Item($row,4) = "Include"
+                $sheet.Cells.Item($row,5) = $item.objectTypeName
+                $sheet.Cells.Item($row,6) = $item.name
+                $sheet.Cells.Item($row,7) = $item.objectId
+                $sheet.Cells.Item($row,8) = $item.isUniversal
+                $row++
+            }
+        }
+        
+        if ( $member.excludeMember ) {
+            
+            foreach ($item in $member.excludeMember ) {
+                
+                $sheet.Cells.Item($row,4) = "Exclude"
+                $sheet.Cells.Item($row,5) = $item.objectTypeName
+                $sheet.Cells.Item($row,6) = $item.name
+                $sheet.Cells.Item($row,7) = $item.objectId
+                $sheet.Cells.Item($row,8) = $item.isUniversal
+                $row++
+            }
+        }        
+    }
+} 
+
+########################################################
+#    Security Groups - Effective Membership
+########################################################
+
+function sg_resultant_membership($sheet){
+
+    $sheet.Cells.Item(1,1) = "Security Group Effective VM Membership"
+    $sheet.Cells.Item(1,1).Font.Size = $titleFontSize
+    $sheet.Cells.Item(1,1).Font.Bold = $titleFontBold
+    $sheet.Cells.Item(1,1).Font.ColorIndex = $titleFontColorIndex
+    $sheet.Cells.Item(1,1).Font.Name = $titleFontName
+    $sheet.Cells.Item(1,1).Interior.ColorIndex = $titleInteriorColor
+    $range1 = $sheet.Range("a1", "j1")
+    $range1.merge() | Out-Null
+
+    $sheet.Cells.Item(2,1) = "SG Name"
+    $sheet.Cells.Item(2,2) = "SG Object ID"
+    $sheet.Cells.Item(2,3) = "VM Name"
+    $sheet.Cells.Item(2,4) = "VM ID"
+    $range2 = $sheet.Range("a2", "d2")
+    $range2.Font.Bold = $subTitleFontBold
+    $range2.Interior.ColorIndex = $subTitleInteriorColor
+    $range2.Font.Name = $subTitleFontName
+    pop_sg_resultant_membership($sheet)
+}
+
+function pop_sg_resultant_membership($sheet){
+
+    $row = 3
+    $sg = Get-NSXSecurityGroup -scopeID 'globalroot-0'
 
     if ($collect_vm_members -eq "y") {
         Write-Host "Collection of VM Sec Membership Enabled"
@@ -747,11 +861,12 @@ function pop_sg_ws($sheet){
             $members = $member | Get-NSXSecurityGroupEffectiveMember
 
             $sheet.Cells.Item($row,1) = $member.name
+            $sheet.Cells.Item($row,2) = $member.objectid
 
             foreach ($vm in $members.virtualmachine.vmnode)
             {
-                $sheet.Cells.Item($row,2) = $vm.vmID
                 $sheet.Cells.Item($row,3) = $vm.vmName
+                $sheet.Cells.Item($row,4) = $vm.vmID
 
                 $result = $vmaddressing_ht[$vm.vmID]        
                 if([string]::IsNullOrWhiteSpace($result))
@@ -778,7 +893,8 @@ function pop_sg_ws($sheet){
         $sheet.Cells.Item($row,3) = "<Collection Disabled>"
         $sheet.Cells.Item($row,3).Font.ColorIndex = 3
     }
-} 
+}
+
 
 ########################################################
 #    Environment Summary
@@ -1253,7 +1369,8 @@ function pop_sec_tags_ws($sheet){
 
     $sheet.Cells.Item($row,1) = "Security Tag Name"
     $sheet.Cells.Item($row,2) = "VM Name"
-    $range3 = $sheet.Range("a"+$row, "b"+$row)
+    $sheet.Cells.Item($row,3) = "VM ID"
+    $range3 = $sheet.Range("a"+$row, "c"+$row)
     $range3.Font.Bold = $subTitleFontBold
     $range3.Interior.ColorIndex = $subTitleInteriorColor
     $range3.Font.Name = $subTitleFontName
@@ -1270,6 +1387,8 @@ function pop_sec_tags_ws($sheet){
 
             $sheet.Cells.Item($row,1) = $mem.SecurityTag.name
             $sheet.Cells.Item($row,2) = $mem.VirtualMachine.name
+            $vm_id = $mem.VirtualMachine.ID.TrimStart("VirtualMachine-")
+            $sheet.Cells.Item($row,3) = $vm_id
             $row++
         }
     }
