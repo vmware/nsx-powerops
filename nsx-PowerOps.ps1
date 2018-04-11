@@ -150,17 +150,40 @@ function checkDependancies {
     )
     # returns bool based on required dependancies for script being installed.
     write-progress -Activity "Checking dependancies"
-    if ( -not $script:DependanciesSatisfied) { 
-        foreach ( $module in $requiredModules ) { 
+    if ( -not $script:DependanciesSatisfied) {
+        foreach ( $module in $requiredModules ) {
+            $setusfyPNVer = 0
             write-progress -Activity "Checking dependancies" -Status $module
-            if ( -not ( Get-Module -ListAvailable:$ListAvailable -name $module )) { 
-                write-progress -Activity "Checking dependancies" -Status $module -Completed        
+            if ( -not ( Get-Module -ListAvailable:$ListAvailable -name $module )) {
+                write-progress -Activity "Checking dependancies" -Status $module -Completed
                 return $false
+            }elseif ($module -eq "PowerNSX"){
+                $powerNSXModule = Get-Module -ListAvailable -name $module
+                if ($powerNSXModule.gettype().basetype.name -eq "Array"){
+                    $powerNSXModule |foreach {
+                        $powerNSXVersion = $_.version
+                        $majorPNVer = $powerNSXVersion.major
+                        $minorPNVer = $powerNSXVersion.minor
+                        $buildPNVer = $powerNSXVersion.build
+                        if ( -not $majorPNVer -lt 3 -or $majorPNVer -eq 3 -And $minorPNVer -eq 0 -And $buildPNVer -lt 1091){$setusfyPNVer++}
+                    }
+                    if ($setusfyPNVer -eq 0){return $false}
+                }else{
+                    $powerNSXVersion = $powerNSXModule.version
+                    $majorPNVer = $powerNSXVersion.major
+                    $minorPNVer = $powerNSXVersion.minor
+                    $buildPNVer = $powerNSXVersion.build
+                    if ($majorPNVer -lt 3 -or $majorPNVer -eq 3 -And $minorPNVer -eq 0 -And $buildPNVer -lt 1091){
+                        write-progress -Activity "Please update PowerNSX by Installing Dependencies (press #1), current PowerNSX version is: $powerNSXVersion"
+                        return $false}
+                }
+            }else{
+                write-progress -Activity "PowerNSX version: $powerNSXVersion.version"
             }
         }
         $script:DependanciesSatisfied = $true
     }
-    write-progress -Activity "Checking dependancies" -Completed    
+    write-progress -Activity "Checking dependancies" -Completed
     return $true
 }
 
@@ -176,6 +199,17 @@ function installDependencies {
             if ( -not (Get-Module -ListAvailable $Module )) { 
                 Install-Module -Name $Module -Scope CurrentUser
                 Write-Progress -Activity "Installing module dependancies." -CurrentOperation "Install module $module."
+            }elseif ($module -eq "PowerNSX"){
+                $powerNSXModule = Get-Module -ListAvailable -name $module
+                $powerNSXVersion = $powerNSXModule.version
+                $majorPNVer = $powerNSXVersion.major
+                $minorPNVer = $powerNSXVersion.minor
+                $buildPNVer = $powerNSXVersion.build
+                if ($majorPNVer -lt 3 -or $majorPNVer -eq 3 -And $minorPNVer -eq 0 -And $buildPNVer -lt 1091){
+                    #Update-Module -Name $Module
+                    Install-Module -Name $Module -Force
+                    Write-Progress -Activity "Updating Module." -CurrentOperation "Updating module $module."
+                }
             }
         }
         Write-Progress -Activity "Installing module dependancies." -Completed        
@@ -397,25 +431,21 @@ function getHostInformation {
         $getDLRs = Get-NsxLogicalRouter
         $findLogicalSwitchElements= @("Destination")
         #$findLogicalSwitchElements= @("show")
-        if($getDLRs){   
-            if($getDLRs.gettype().BaseType.Name -eq "Array") {
+        if($getDLRs.gettype().BaseType.Name -eq "Array"){
             $getDLRs | %{
                 $nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$($_.id)+" route"
                 invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $nsxMgrCommandRouteTable
                 $parsedRouteTable = parseSSHOutput -fileToParse $nsxMgrCommandRouteTable -findElements $findLogicalSwitchElements -direction "Column"
                 $sshCommandOutputDataRouteTable.Add($nsxMgrCommandRouteTable, $parsedRouteTable.$($parsedRouteTable.keys))
                 $listOfDLRCmd += $nsxMgrCommandRouteTable
-                Remove-Item ./$nsxMgrCommandRouteTable
-            }
+                }
             $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, $listOfDLRCmd
-        }
-            else {
-                $nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$getDLRs.id+" route"
-                invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $nsxMgrCommandRouteTable
-                $parsedRouteTable = (parseSSHOutput -fileToParse $nsxMgrCommandRouteTable -findElements $findLogicalSwitchElements -direction "Column")
-                $sshCommandOutputDataRouteTable.Add($nsxMgrCommandRouteTable, $parsedRouteTable.$($parsedRouteTable.keys))
-                $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, $nsxMgrCommandRouteTable
-            }
+        }else{
+            $nsxMgrCommandRouteTable = "show logical-router host "+$myNewHostID+" dlr "+$getDLRs.id+" route"
+            invokeNSXCLICmd -commandToInvoke $nsxMgrCommandRouteTable -fileName $nsxMgrCommandRouteTable
+            $parsedRouteTable = (parseSSHOutput -fileToParse $nsxMgrCommandRouteTable -findElements $findLogicalSwitchElements -direction "Column")
+            $sshCommandOutputDataRouteTable.Add($nsxMgrCommandRouteTable, $parsedRouteTable.$($parsedRouteTable.keys))
+            $tempHostDataRouteTable = $sshCommandOutputDataRouteTable, $nsxMgrCommandRouteTable
         }
         # NSX Manager SSH Command Ends here.
 
@@ -462,6 +492,7 @@ function getHostInformation {
         ####plotDynamicExcel one workBook at a time
         $plotHostInformationExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxHostExcelWorkBook -workSheetName $hostWorkSheetName -listOfDataToPlot $allVmHostsExcelData
         ####writeToExcel -eachDataElementToPrint $sshCommandOutputDataLogicalSwitch -listOfAllAttributesToPrint $sshCommandOutputLable
+        Remove-Item ./$nsxMgrCommandRouteTable
     }
     #invokeNSXCLICmd(" show logical-switch host host-31 verbose ")
     #$nsxHostExcelWorkBook.SaveAs()
@@ -1534,8 +1565,7 @@ __/\\\\\\\\\\\__________________________________________________________________
         $Footer = { 
 @"
 Default Connection Profile: $($Config.DefaultProfile)
-Current Connection Profile: $(if(!$DefaultNSXConnection){"N/A"} else {foreach($key in $config.profiles.GetEnumerator() | ?{$_.value.NSXServer -eq $DefaultNSXConnection.Server}){$key.name}})
-Connected: $($DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected)
+Connected : $($DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected)
 Output Directory: $DocumentLocation
 "@
         }
@@ -1685,7 +1715,7 @@ Output Directory: $DocumentLocation
         # Authentication profile menu definition.
         $AuthConfigMenu = @{
             
-            "Name" = "Connection Profiles"
+            "Name" = "Configure Connection Profiles"
             "Status" = { 
                 if ( -not (checkDependancies -ListAvailable $true) ) {
                     "Disabled"
@@ -1737,36 +1767,6 @@ Output Directory: $DocumentLocation
                     "HelpText" = "Deletes an existing connection profile."
                     "Script" = { Remove-ConnectionProfile; if ((-not ($Config.DefaultProfile)) -and ($DefaultNSXConnection)) { disconnectDefaultNsxConnection } }
                 },
-                @{
-                    "Name" = "Set Current Connection Profile"
-                    "Status" = { 
-                        If ($DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected) {
-                            "SelectedValid" 
-                        } 
-                        elseif ( $Config.Profiles -and ($Config.Profiles.Count -gt 0) ) {
-                            "MenuValid"
-                        }
-                        else {
-                            "Disabled" 
-                        }
-                    }
-                    "StatusText" = {
-                        If ( $DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected ) {
-                            foreach($key in $config.profiles.GetEnumerator() | ?{$_.value.NSXServer -eq $DefaultNSXConnection.Server}){
-                                $key.name
-                            }
-                        } 
-                        elseif ( $Config.Profiles -and ($Config.Profiles.Count -gt 0) ) {
-                            "SELECT"
-                        }
-                        else {
-                            "No Connection Profiles Defined" 
-                        }
-                    }
-                    "HelpText" = "Selects the connection profile used for interactive operations that require access to NSX/VC."
-                    "Script" = { Set-ConnectionProfile }
-                },
-
                 @{
                     "Name" = "Select Default Connection Profile"
                     "Status" = { 

@@ -34,12 +34,6 @@ Describe "NSX Manager" {
 
     $vCenterStatus = Get-NsxManagervCenterConfig -connection $global:NsxConnection
 
-    #vCenter Connected Check
-    It "is connected to vCenter" { 
-        $vCenterStatus.Connected | should be $true
-    }
-    Write-Verbose "vCenter Server : $($vCenterStatus.IpAddress), Connected : $($vCenterStatus.Connected)"
-
     #Last inventory check
     #Define the start of the universe
     [datetime]$origin = '1970-01-01 00:00:00'
