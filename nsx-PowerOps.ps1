@@ -50,7 +50,7 @@ param (
 
 $global:PowerOps = $MyInvocation.MyCommand.Path
 $global:MyDirectory = split-path -parent $MyInvocation.MyCommand.Path
-$version = "2.2.1"
+$version = "2.2.2"
 $requiredModules = @("PowerNSX", "Pester", "Posh-SSH")
 
 #Setup default menu colours.
@@ -282,6 +282,7 @@ function getNSXComponents {
     $allNSXComponentExcelDataDLR =@{}
 
     $nsxManagerSummary = Get-NsxManagerSystemSummary
+    $nsxManagerLicense = invoke-expression -Command $mydirectory\get-license.ps1
     $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
     $nsxManagerRole = Get-NsxManagerRole
     $nsxManagerBackup = Get-NsxManagerBackup
@@ -299,7 +300,7 @@ function getNSXComponents {
     "NSX Edge Info" = $nsxEdges, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "vnics", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "hypervisorAssist", "queryDaemon", "edgeSummary";
     "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
     #>
-    $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"; "NSX Manager Backup" = $nsxManagerBackup, "all"; "NSX Manager Network" = $nsxManagerNetwork, "all"; "NSX Manager SSO Config" = $nsxManagerSsoConfig, "all"; "NSX Manager Syslog Server" = $nsxManagerSyslogServer, "all"; "NSX Manager Time Settings" =  $nsxManagerTimeSettings, "all"; "vCenter Version" = $vCenterVersionInfo, "all"}
+    $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"; "NSX Manager Backup" = $nsxManagerBackup, "all"; "NSX Manager Network" = $nsxManagerNetwork, "all"; "NSX Manager SSO Config" = $nsxManagerSsoConfig, "all"; "NSX Manager Syslog Server" = $nsxManagerSyslogServer, "all"; "NSX Manager Time Settings" =  $nsxManagerTimeSettings, "all"; "vCenter Version" = $vCenterVersionInfo, "all"; "NSX Manager License" = $nsxManagerLicense, "all"}
     
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel
     
