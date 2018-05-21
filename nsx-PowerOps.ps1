@@ -50,7 +50,7 @@ param (
 
 $global:PowerOps = $MyInvocation.MyCommand.Path
 $global:MyDirectory = split-path -parent $MyInvocation.MyCommand.Path
-$version = "2.2"
+$version = "2.2.2"
 $requiredModules = @("PowerNSX", "Pester", "Posh-SSH")
 
 #Setup default menu colours.
@@ -282,6 +282,7 @@ function getNSXComponents {
     $allNSXComponentExcelDataDLR =@{}
 
     $nsxManagerSummary = Get-NsxManagerSystemSummary
+    $nsxManagerLicense = invoke-expression -Command $mydirectory\get-license.ps1
     $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
     $nsxManagerRole = Get-NsxManagerRole
     $nsxManagerBackup = Get-NsxManagerBackup
@@ -299,7 +300,7 @@ function getNSXComponents {
     "NSX Edge Info" = $nsxEdges, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "vnics", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "hypervisorAssist", "queryDaemon", "edgeSummary";
     "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
     #>
-    $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"; "NSX Manager Backup" = $nsxManagerBackup, "all"; "NSX Manager Network" = $nsxManagerNetwork, "all"; "NSX Manager SSO Config" = $nsxManagerSsoConfig, "all"; "NSX Manager Syslog Server" = $nsxManagerSyslogServer, "all"; "NSX Manager Time Settings" =  $nsxManagerTimeSettings, "all"; "vCenter Version" = $vCenterVersionInfo, "all"}
+    $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"; "NSX Manager Backup" = $nsxManagerBackup, "all"; "NSX Manager Network" = $nsxManagerNetwork, "all"; "NSX Manager SSO Config" = $nsxManagerSsoConfig, "all"; "NSX Manager Syslog Server" = $nsxManagerSyslogServer, "all"; "NSX Manager Time Settings" =  $nsxManagerTimeSettings, "all"; "vCenter Version" = $vCenterVersionInfo, "all"; "NSX Manager License" = $nsxManagerLicense, "all"}
     
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel
     
@@ -1565,7 +1566,8 @@ __/\\\\\\\\\\\__________________________________________________________________
         $Footer = { 
 @"
 Default Connection Profile: $($Config.DefaultProfile)
-Connected : $($DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected)
+Current Connection Profile: $(if(!$DefaultNSXConnection){"N/A"} else {foreach($key in $config.profiles.GetEnumerator() | ?{$_.value.NSXServer -eq $DefaultNSXConnection.Server}){$key.name}})
+Connected: $($DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected)
 Output Directory: $DocumentLocation
 "@
         }
@@ -1715,7 +1717,7 @@ Output Directory: $DocumentLocation
         # Authentication profile menu definition.
         $AuthConfigMenu = @{
             
-            "Name" = "Configure Connection Profiles"
+            "Name" = "Connection Profiles"
             "Status" = { 
                 if ( -not (checkDependancies -ListAvailable $true) ) {
                     "Disabled"
@@ -1766,6 +1768,35 @@ Output Directory: $DocumentLocation
                     "StatusText" = { If ( $Config.Profiles -and ($Config.Profiles.Count -gt 0)) { "ENABLED" } else { "No Connection Profiles Defined" } }
                     "HelpText" = "Deletes an existing connection profile."
                     "Script" = { Remove-ConnectionProfile; if ((-not ($Config.DefaultProfile)) -and ($DefaultNSXConnection)) { disconnectDefaultNsxConnection } }
+                },
+                @{
+                    "Name" = "Set Current Connection Profile"
+                    "Status" = {
+                        If ($DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected) {
+                            "SelectedValid"
+                        }
+                        elseif ( $Config.Profiles -and ($Config.Profiles.Count -gt 0) ) {
+                            "MenuValid"
+                        }
+                        else {
+                            "Disabled"
+                        }
+                    }
+                    "StatusText" = {
+                        If ( $DefaultNsxConnection -and $DefaultNsxConnection.ViConnection.IsConnected ) {
+                            foreach($key in $config.profiles.GetEnumerator() | ?{$_.value.NSXServer -eq $DefaultNSXConnection.Server}){
+                                $key.name
+                            }
+                        }
+                        elseif ( $Config.Profiles -and ($Config.Profiles.Count -gt 0) ) {
+                            "SELECT"
+                        }
+                        else {
+                            "No Connection Profiles Defined"
+                        }
+                    }
+                    "HelpText" = "Selects the connection profile used for interactive operations that require access to NSX/VC."
+                    "Script" = { Set-ConnectionProfile }
                 },
                 @{
                     "Name" = "Select Default Connection Profile"
