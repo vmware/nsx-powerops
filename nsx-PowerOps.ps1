@@ -379,8 +379,10 @@ function getHostInformation {
         $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
         $sshCommandOutputDataLogicalSwitch = parseSSHOutput -fileToParse "logical-switch-info.txt" -findElements $findElements -direction "Row"
         #>
-        if ($esxcli.network.ip.interface.list.invoke() | ? { $_.netstackInstance -match 'vxlan' }){
-            try{
+
+        try{
+            if ($esxcli.network.ip.interface.list.invoke() | ? { $_.netstackInstance -match 'vxlan'})
+            {
                 $vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
                 $myVDSName = $vdsInfo.VDSName
                 $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
@@ -393,7 +395,6 @@ function getHostInformation {
                 $sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
                 $tempCountVMKnic = 0
                 if ($vdsInfo.VmknicCount -gt 1){
-                    write-host "More than one vmknic found!"
                     $myVmknicName | %{
                         $sshCommandOutputDataVMKNIC.Add("VmknicName$tempCountVMKnic", $myVmknicName[$tempCountVMKnic])
                         $sshCommandOutputDataVMKNIC.Add("IP$tempCountVMKnic", $vmknicInfo.IP[$tempCountVMKnic])
@@ -409,22 +410,22 @@ function getHostInformation {
                 }
                 $gotVXLAN = $true
             }
-            catch{
-                $ErrorMessage = $_.Exception.Message
-                if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
-                    out-event -entrytype warning "No VxLAN data found on this Host $myHostName"
-                    $gotVXLAN = $false
-                }
-                else{
-                    out-event -entrytype error $ErrorMessage
-                    $gotVXLAN = $false
-                }
+        }
+        catch{
+            $ErrorMessage = $_.Exception.Message
+            if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
+                out-event -entrytype warning "No VxLAN data found on this Host $myHostName"
+                $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "VXLAN data not found. Host reboot maybe required.")
+                $sshCommandOutputDataVMKNIC.Add("VmknicCount", "Info not found. Host reboot maybe required.")
+                $gotVXLAN = $false
+            }
+            else{
+                out-event -entrytype error $ErrorMessage
+                $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "False")
+                $sshCommandOutputDataVMKNIC.Add("VmknicCount", "0")
+                $gotVXLAN = $false
             }
         }
-
-        if($gotVXLAN -eq $false){
-            $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "False")
-            $sshCommandOutputDataVMKNIC.Add("VmknicCount", "0")}
 
         # Run SSH Command to get Route Table Info from NSX Manager here...
         $getDLRs = Get-NsxLogicalRouter
