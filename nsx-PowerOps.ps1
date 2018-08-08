@@ -776,8 +776,18 @@ function runDFW2Excel {
     else {
         &$Dfw2Excel -StartMinimised -DocumentPath $DocumentPath
     }
-    
-    
+}
+
+function runAllDocumentationsMenuItems{
+    Write-host "Executing Environment Documentations..."
+    getNSXComponents
+    getHostInformation
+    Write-host "Executing Networking Documentations..."
+    runNSXVISIOTool
+    getRoutingInformation
+    runLB2Excel
+    Write-host "Executing Security Documentation..."
+    runDFW2Excel
 }
 
 function getMemberWithProperty($tempListOfAllAttributesInFunc){
@@ -1557,9 +1567,10 @@ __/\\\\\\\\\\\__________________________________________________________________
        _\/\\\_________\///\\\\\/_____\//\\\\//\\\____\//\\\\\\\\\__\/\\\___________\///\\\\\/_____\/\\\__________/\\\\\\\\\\_
         _\///____________\/////________\///__\///______\/////////___\///______________\/////_______\///__________\//////////__
 
+                                    Brought to you by VMware Customer Success NSX Architects.
 "@
 
-        $Subheader = "NSX PowerOps v$version.`nA project by the NSBU SA team.`n"
+        $Subheader = "`n`nNSX PowerOps Version: $version."
 
         # Footer is a script block that is executed each time the menu is rendered.  We can use it to display status.
         $Footer = { 
@@ -1575,7 +1586,7 @@ Output Directory: $DocumentLocation
         $DependanciesMenu = @{ 
             "Script" = { installDependencies }
             "Interactive" = "True"
-            "HelpText" = "Installs the required dependancies for PowerOps.  The following modules will be installed: $($requiredmodules -join ', ')"
+            "HelpText" = "Installs the required dependancies for NSX PowerOps.  The following modules will be installed: $($requiredmodules -join ', ')"
             "Name" = "Install NSX PowerOps Dependancies"
             "Status" = { if ( checkDependancies -ListAvailable $true) { "Disabled" } else { "MenuEnabled" } }
             "StatusText" = { if ( checkDependancies -ListAvailable $true) { "Installed" } else { "Not Installed" } }
@@ -1587,13 +1598,20 @@ Output Directory: $DocumentLocation
         # Doc menu definition.
         $DocumentationMenu = @{
             "Script" = { Show-MenuV2 -menu $DocumentationMenu }
-            "HelpText" = "Displays a menu of PowerOps documentation tools."
-            "Name" = "PowerOps Documentation Tools"
+            "HelpText" = "Displays a menu of NSX PowerOps documentation tools."
+            "Name" = "NSX PowerOps Documentation Tools"
             "Status" = { if ((checkDependancies -ListAvailable $true) ) { "MenuEnabled" } else { "Disabled" } }
             "Footer" = $footer
             "MainHeader" = $MainHeader
             "Subheader" = $Subheader
             "Items" = @(
+                @{
+                    "SectionHeader" = "Auto Run All"
+                    "Name" = "Run All Following Documentation Menu Items"
+                    "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = { runAllDocumentationsMenuItems }
+                },
                 @{
                     "SectionHeader" = "Environment Documentation"
                     "Name" = "Document All NSX Components"
@@ -1649,8 +1667,8 @@ Output Directory: $DocumentLocation
         # Healthcheck menu definition.
         $HealthCheckMenu = @{    
             "Script" = { Show-MenuV2 -menu $HealthCheckMenu }
-            "HelpText" = "Displays a menu of PowerOps Healthchecks."
-            "Name" = "PowerOps HealthChecks"
+            "HelpText" = "Displays a menu of NSX PowerOps Healthchecks."
+            "Name" = "NSX PowerOps HealthChecks"
             "Status" = { if ((checkDependancies -ListAvailable $true)) { "MenuEnabled" } else { "Disabled" } }
             "Footer" = $footer
             "MainHeader" = $MainHeader
