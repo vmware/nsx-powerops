@@ -1564,6 +1564,7 @@ __/\\\\\\\\\\\__________________________________________________________________
         _\///____________\/////________\///__\///______\/////////___\///______________\/////_______\///__________\//////////__
 
                                     Brought to you by VMware Customer Success NSX Architects.
+                                          https://www.vmware.com/go/nsx-poweroperations
 "@
 
         $Subheader = "`n`nNSX-PowerOps Version: $version."
@@ -1695,7 +1696,7 @@ Output Directory: $DocumentLocation
                     "Script" = {  runNSXTest -testModule "testNSXLogicalSwitch" }
                 },
                 @{ 
-                    "Name" = "NSX Distributed Firewall Heap Test"
+                    "Name" = "NSX DFW Memory Test (requires SSH to ESXi)"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXDistributedFirewallHeap" }
