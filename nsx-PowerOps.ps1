@@ -23,7 +23,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 # *-------------------------------------------* #
 # ********************************************* #
-#      VMware NSX PowerOps by @thisispuneet     #
+#      VMware NSX-PowerOps by @thisispuneet     #
 # This script automate NSX-v day 2 Operations   #
 # and help build the env networking documents   #
 # ********************************************* #
@@ -1566,7 +1566,7 @@ __/\\\\\\\\\\\__________________________________________________________________
                                     Brought to you by VMware Customer Success NSX Architects.
 "@
 
-        $Subheader = "`n`nNSX PowerOps Version: $version."
+        $Subheader = "`n`nNSX-PowerOps Version: $version."
 
         # Footer is a script block that is executed each time the menu is rendered.  We can use it to display status.
         $Footer = { 
@@ -1582,8 +1582,8 @@ Output Directory: $DocumentLocation
         $DependanciesMenu = @{ 
             "Script" = { installDependencies }
             "Interactive" = "True"
-            "HelpText" = "Installs the required dependancies for NSX PowerOps.  The following modules will be installed: $($requiredmodules -join ', ')"
-            "Name" = "Install NSX PowerOps Dependancies"
+            "HelpText" = "Installs the required dependancies for NSX-PowerOps.  The following modules will be installed: $($requiredmodules -join ', ')"
+            "Name" = "Install NSX-PowerOps Dependancies"
             "Status" = { if ( checkDependancies -ListAvailable $true) { "Disabled" } else { "MenuEnabled" } }
             "StatusText" = { if ( checkDependancies -ListAvailable $true) { "Installed" } else { "Not Installed" } }
             "Footer" = $footer
@@ -1594,8 +1594,8 @@ Output Directory: $DocumentLocation
         # Doc menu definition.
         $DocumentationMenu = @{
             "Script" = { Show-MenuV2 -menu $DocumentationMenu }
-            "HelpText" = "Displays a menu of NSX PowerOps documentation tools."
-            "Name" = "NSX PowerOps Documentation Tools"
+            "HelpText" = "Displays a menu of NSX-PowerOps documentation tools."
+            "Name" = "NSX-PowerOps Documentation Tools"
             "Status" = { if ((checkDependancies -ListAvailable $true) ) { "MenuEnabled" } else { "Disabled" } }
             "Footer" = $footer
             "MainHeader" = $MainHeader
@@ -1663,8 +1663,8 @@ Output Directory: $DocumentLocation
         # Healthcheck menu definition.
         $HealthCheckMenu = @{    
             "Script" = { Show-MenuV2 -menu $HealthCheckMenu }
-            "HelpText" = "Displays a menu of NSX PowerOps Healthchecks."
-            "Name" = "NSX PowerOps HealthChecks"
+            "HelpText" = "Displays a menu of NSX-PowerOps Healthchecks."
+            "Name" = "NSX-PowerOps HealthChecks"
             "Status" = { if ((checkDependancies -ListAvailable $true)) { "MenuEnabled" } else { "Disabled" } }
             "Footer" = $footer
             "MainHeader" = $MainHeader
@@ -1869,7 +1869,7 @@ Output Directory: $DocumentLocation
 
         # Root menu definition.
         $rootmenu = @{ 
-            "Name" = "NSX PowerOps Main Menu"
+            "Name" = "NSX-PowerOps Main Menu"
             "Status" = { "MenuValid" }
             "Footer" = $footer
             "MainHeader" = $MainHeader
