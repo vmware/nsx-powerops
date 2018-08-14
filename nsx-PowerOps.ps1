@@ -43,7 +43,7 @@ param (
         [string]$Task = "All",
     [Parameter(ParameterSetName = "NonInteractive")]
         [ValidateNotNullOrEmpty()]
-        [string]$DocumentLocation = ("{0}\Report\{1:yyyy}-{1:MM}-{1:dd}_{1:HH}-{1:mm}" -f (split-path -parent $MyInvocation.MyCommand.Path), (get-date)),
+        [string]$global:DocumentLocation = ("{0}\Report\{1:yyyy}-{1:MM}-{1:dd}_{1:HH}-{1:mm}" -f (split-path -parent $MyInvocation.MyCommand.Path), (get-date)),
     [Parameter()]    
         [switch]$ConnectDefaultProfile
 )
@@ -72,7 +72,8 @@ $MaxReports = 20
 
 #dot source our utils script.
 . $myDirectory\util.ps1
-
+. $myDirectory\auto-email.ps1
+. $myDirectory\get-license.ps1
 #Setting up max window size and max buffer size - dynamic to user's display settings
 #User can manually change the console and buffer size
 invoke-expression -Command $mydirectory\maxWindowSize.ps1
@@ -121,7 +122,7 @@ function init {
     loadDependancies
 
     #Create document location
-    if (-not ( test-path $DocumentLocation )) { 
+    if (-not ( test-path $DocumentLocation )) {
         $null = new-item -ItemType Directory -Path $DocumentLocation
     }
 
@@ -264,6 +265,8 @@ function disconnectDefaultNsxConnection {
         }
         Remove-Variable -Scope Global -name DefaultNsxConnection
     }
+    $directoryInfo = Get-ChildItem $DocumentLocation | Measure-Object
+    If ($directoryInfo.count -eq 0) {Remove-Item $DocumentLocation -Force -Recurse}
 }
 
 #Get NSX Component info here
@@ -282,7 +285,7 @@ function getNSXComponents {
     $allNSXComponentExcelDataDLR =@{}
 
     $nsxManagerSummary = Get-NsxManagerSystemSummary
-    $nsxManagerLicense = invoke-expression -Command $mydirectory\get-license.ps1
+    $nsxManagerLicense = Get-NSXLicenseInfo
     $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
     $nsxManagerRole = Get-NsxManagerRole
     $nsxManagerBackup = Get-NsxManagerBackup
@@ -1533,19 +1536,12 @@ Switch ( $PSCmdlet.ParameterSetName )  {
         if ( ($Config.Profiles[$ConnectionProfile]) -and (checkDependancies) ) { 
             connectProfile -ProfileName $ConnectionProfile
         }
-        Out-Event -entrytype information "Executing NSX component documentation task"
-        getNSXComponents
-        Out-Event -entrytype information "Executing host information documentation task"
-        getHostInformation
-        Out-Event -entrytype information "Executing Visio diagramming task"
-        runNSXVISIOTool
-        Out-Event -entrytype information "Executing routing information task"
-        getRoutingInformation
-        Out-Event -entrytype information "Executing DFW2Excel documentation task"
-        runDFW2Excel
-        Out-Event -entrytype information "Executing Load Balancer documentation task"
-        runLB2Excel
+        Out-Event -entrytype information "Executing All NSX documentation task"
+        runAllDocumentationsMenuItems
+        Out-Event -entrytype information "Sending email with zip attachement"
+        Send-Email -ConnectionProfile $ConnectionProfile
         Out-Event -entrytype information "Invocation complete."
+        disconnectDefaultNsxConnection
     }
     
     "Default" {
