@@ -1662,6 +1662,7 @@ Output Directory: $DocumentLocation
         }
 
         # Healthcheck menu definition.
+        # Divided in Non-Interactive, Interactive, and Beta catagories
         $HealthCheckMenu = @{    
             "Script" = { Show-MenuV2 -menu $HealthCheckMenu }
             "HelpText" = "Displays a menu of NSX-PowerOps Healthchecks."
@@ -1672,54 +1673,63 @@ Output Directory: $DocumentLocation
             "Subheader" = $Subheader
             "Items" = @( 
                 @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "NSX Connectivity Test"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXConnections" }
                 },
                 @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "NSX Manager Test"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXManager" }
                 },
                 @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "NSX Controllers Appliance Test"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {   runNSXTest -testModule "testNSXControllers" }
                 },
                 @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "NSX Logical Switch Test"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXLogicalSwitch" }
                 },
                 @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "NSX DFW Memory Test (requires SSH to ESXi)"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXDistributedFirewallHeap" }
                 },
                 @{ 
-                    "Name" = "Check DLR Instance"
-                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
-                    "Interactive" = $true
-                    "Script" = {  runNSXTest -testModule "testNSXVDR" }
-                },
-                @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "Check VIB Version"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXVIBVersion" }
                 },
                 @{ 
+                    "SectionHeader" = "Interactive Healthchecks Menu"
+                    "Name" = "Check DLR Instance"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXVDR" }
+                },
+                @{ 
+                    "SectionHeader" = "Interactive Healthchecks Menu"
                     "Name" = "Check vTEP to vTEP connectivity"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXMTUUnderlay" }
                 },
                 @{ 
+                    "SectionHeader" = "Beta Healthchecks Menu"
                     "Name" = "Compare DLR and Hosts Routing Tables [BETA]"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
