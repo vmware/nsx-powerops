@@ -512,9 +512,9 @@ function runNSXVISIOTool {
     $capturePath = "$documentlocation\NSX-CaptureBundle-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.zip" -f (get-date)
     $ObjectDiagram = "$MyDirectory\DiagramNSX\NsxObjectDiagram.ps1"
     $ObjectCapture = "$MyDirectory\DiagramNSX\NsxObjectCapture.ps1"
-    $null = &$ObjectCapture -ExportFile $capturePath
+    $null = &$ObjectCapture -ExportPath $MyDirectory -ExportFile $capturePath
     if ( [type]::GetTypeFromProgID("Visio.Application") ) { 
-        &$ObjectDiagram -NoVms -CaptureBundle $capturePath -outputDir $DocumentLocation
+        &$ObjectDiagram -IncludeVms:$false -CaptureBundle $capturePath -outputDir $DocumentLocation
     }
     else {
         out-event -entrytype warning "Visio not installed.  Visio diagram generation is disabled (capture bundle is still created in report directory)"
