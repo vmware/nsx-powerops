@@ -702,6 +702,24 @@ function New-ConnectionProfile {
             }
         }
 
+        $autoEmailMessage  = "User can Enable the E-mail feature here; for scheduled auto-documentation tasks."
+        $autoEmailQuestion = "Add Email info?"
+        $autoEmailDecision = $Host.UI.PromptForChoice($autoEmailMessage, $autoEmailQuestion, $yesnochoices, 1)
+        if ($autoEmailDecision -eq 0) {
+            $fromEmailAddress = Read-Host -Prompt "Enter the Email address that needs to appear in From"
+            $toEmailAddress = Read-Host -Prompt "Enter the destination Email address"
+            $smtpServer = Read-Host -Prompt "Enter the SMTP server address"
+            $smtpUserName = Read-Host -Prompt "[Optional] Enter username if required by SMTP server"
+            if ($smtpUserName) {
+                $smptUserPassword = Read-Host -AsSecureString "Enter password for $smtpUsername"
+                $NewProfile.Add("smtpUserName", $smtpUserName)
+                $NewProfile.Add("smptUserPassword", $smptUserPassword)
+            }
+            $NewProfile.Add("fromEmailAddress", $fromEmailAddress)
+            $NewProfile.Add("toEmailAddress", $toEmailAddress)
+            $NewProfile.Add("smtpServer", $smtpServer)
+        }
+
         if ( $Config.Profiles) {
             $script:Config.Profiles.Add($ProfileName, $NewProfile)
         }

@@ -23,7 +23,7 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
 
 # *-------------------------------------------* #
 # ********************************************* #
-#      VMware NSX PowerOps by @thisispuneet     #
+#      VMware NSX-PowerOps by @thisispuneet     #
 # This script automate NSX-v day 2 Operations   #
 # and help build the env networking documents   #
 # ********************************************* #
@@ -43,14 +43,14 @@ param (
         [string]$Task = "All",
     [Parameter(ParameterSetName = "NonInteractive")]
         [ValidateNotNullOrEmpty()]
-        [string]$DocumentLocation = ("{0}\Report\{1:yyyy}-{1:MM}-{1:dd}_{1:HH}-{1:mm}" -f (split-path -parent $MyInvocation.MyCommand.Path), (get-date)),
+        [string]$global:DocumentLocation = ("{0}\Report\{1:yyyy}-{1:MM}-{1:dd}_{1:HH}-{1:mm}" -f (split-path -parent $MyInvocation.MyCommand.Path), (get-date)),
     [Parameter()]    
         [switch]$ConnectDefaultProfile
 )
 
 $global:PowerOps = $MyInvocation.MyCommand.Path
 $global:MyDirectory = split-path -parent $MyInvocation.MyCommand.Path
-$version = "2.2.2"
+$version = "2.5"
 $requiredModules = @("PowerNSX", "Pester", "Posh-SSH")
 
 #Setup default menu colours.
@@ -72,7 +72,8 @@ $MaxReports = 20
 
 #dot source our utils script.
 . $myDirectory\util.ps1
-
+. $myDirectory\auto-email.ps1
+. $myDirectory\get-license.ps1
 #Setting up max window size and max buffer size - dynamic to user's display settings
 #User can manually change the console and buffer size
 invoke-expression -Command $mydirectory\maxWindowSize.ps1
@@ -121,7 +122,7 @@ function init {
     loadDependancies
 
     #Create document location
-    if (-not ( test-path $DocumentLocation )) { 
+    if (-not ( test-path $DocumentLocation )) {
         $null = new-item -ItemType Directory -Path $DocumentLocation
     }
 
@@ -264,6 +265,8 @@ function disconnectDefaultNsxConnection {
         }
         Remove-Variable -Scope Global -name DefaultNsxConnection
     }
+    $directoryInfo = Get-ChildItem $DocumentLocation | Measure-Object
+    If ($directoryInfo.count -eq 0) {Remove-Item $DocumentLocation -Force -Recurse}
 }
 
 #Get NSX Component info here
@@ -282,7 +285,7 @@ function getNSXComponents {
     $allNSXComponentExcelDataDLR =@{}
 
     $nsxManagerSummary = Get-NsxManagerSystemSummary
-    $nsxManagerLicense = invoke-expression -Command $mydirectory\get-license.ps1
+    $nsxManagerLicense = Get-NSXLicenseInfo
     $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
     $nsxManagerRole = Get-NsxManagerRole
     $nsxManagerBackup = Get-NsxManagerBackup
@@ -300,7 +303,7 @@ function getNSXComponents {
     "NSX Edge Info" = $nsxEdges, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "vnics", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "hypervisorAssist", "queryDaemon", "edgeSummary";
     "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
     #>
-    $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"; "NSX Manager Backup" = $nsxManagerBackup, "all"; "NSX Manager Network" = $nsxManagerNetwork, "all"; "NSX Manager SSO Config" = $nsxManagerSsoConfig, "all"; "NSX Manager Syslog Server" = $nsxManagerSyslogServer, "all"; "NSX Manager Time Settings" =  $nsxManagerTimeSettings, "all"; "vCenter Version" = $vCenterVersionInfo, "all"; "NSX Manager License" = $nsxManagerLicense, "all"}
+    $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"; "NSX Manager Backup" = $nsxManagerBackup, "all"; "NSX Manager Network" = $nsxManagerNetwork, "all"; "NSX Manager SSO Config" = $nsxManagerSsoConfig, "all"; "NSX Manager Syslog Server" = $nsxManagerSyslogServer, "all"; "NSX Manager Time Settings" =  $nsxManagerTimeSettings, "all"; "vCenter Version" = $vCenterVersionInfo, "all"; "NSX Manager License" = $nsxManagerLicense[0], $nsxManagerLicense[1]}
     
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel
     
@@ -379,54 +382,53 @@ function getHostInformation {
         $findElements= @("Control plane Out-Of-Sync", "MTU", "VXLAN vmknic")
         $sshCommandOutputDataLogicalSwitch = parseSSHOutput -fileToParse "logical-switch-info.txt" -findElements $findElements -direction "Row"
         #>
-        get-cluster -Server $DefaultNSXConnection.ViConnection | % {
-            if ($_.id -eq $myParentClusterID){
-                get-cluster $_ | Get-NsxClusterStatus | % {
-                    if($_.featureId -eq "com.vmware.vshield.vsm.vxlan" -And $_.installed -eq "true"){
-                        try{
-                            $vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
-                            $myVDSName = $vdsInfo.VDSName
-                            $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
-                            $sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
-                            $sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
-                            $sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
 
-                            $vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
-                            $myVmknicName = $vmknicInfo.VmknicName
-                            $sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
-                            $tempCountVMKnic = 0
-                            if ($vdsInfo.VmknicCount -gt 1){
-                                $myVmknicName | %{
-                                    $sshCommandOutputDataVMKNIC.Add("VmknicName$tempCountVMKnic", $myVmknicName[$tempCountVMKnic])
-                                    $sshCommandOutputDataVMKNIC.Add("IP$tempCountVMKnic", $vmknicInfo.IP[$tempCountVMKnic])
-                                    $sshCommandOutputDataVMKNIC.Add("Netmask$tempCountVMKnic", $vmknicInfo.Netmask[$tempCountVMKnic])
-                                    $tempvmknicLableList = $tempvmknicLableList + ("VmknicName$tempCountVMKnic", "IP$tempCountVMKnic", "Netmask$tempCountVMKnic")
-                                    $tempCountVMKnic ++
-                                }
-                            }else{
-                                $sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
-                                $sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
-                                $sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
-                            }
-                            $gotVXLAN = $true
-                        }
-                        catch{
-                            $ErrorMessage = $_.Exception.Message
-                            if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
-                                out-event -entrytype warning "No VxLAN data found on this Host $myHostName"
-                                $gotVXLAN = $false
-                            }
-                            else{
-                                out-event -entrytype error $ErrorMessage
-                            }
-                        }
+        try{
+            if ($esxcli.network.ip.interface.list.invoke() | ? { $_.netstackInstance -match 'vxlan'})
+            {
+                $vdsInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.list.invoke()
+                $myVDSName = $vdsInfo.VDSName
+                $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "True")
+                $sshCommandOutputDataLogicalSwitch.Add("VDSName", $myVDSName)
+                $sshCommandOutputDataLogicalSwitch.Add("GatewayIP", $vdsInfo.GatewayIP)
+                $sshCommandOutputDataLogicalSwitch.Add("MTU", $vdsInfo.MTU)
+
+                $vmknicInfo = $esxcli.network.vswitch.dvs.vmware.vxlan.vmknic.list.invoke(@{"vdsname" = $myVDSName})
+                $myVmknicName = $vmknicInfo.VmknicName
+                $sshCommandOutputDataVMKNIC.Add("VmknicCount", $vdsInfo.VmknicCount)
+                $tempCountVMKnic = 0
+                if ($vdsInfo.VmknicCount -gt 1){
+                    $myVmknicName | %{
+                        $sshCommandOutputDataVMKNIC.Add("VmknicName$tempCountVMKnic", $myVmknicName[$tempCountVMKnic])
+                        $sshCommandOutputDataVMKNIC.Add("IP$tempCountVMKnic", $vmknicInfo.IP[$tempCountVMKnic])
+                        $sshCommandOutputDataVMKNIC.Add("Netmask$tempCountVMKnic", $vmknicInfo.Netmask[$tempCountVMKnic])
+                        $tempvmknicLableList = $tempvmknicLableList + ("VmknicName$tempCountVMKnic", "IP$tempCountVMKnic", "Netmask$tempCountVMKnic")
+                        $tempCountVMKnic ++
                     }
+                }else{
+                    $sshCommandOutputDataVMKNIC.Add("VmknicName", $myVmknicName)
+                    $sshCommandOutputDataVMKNIC.Add("IP", $vmknicInfo.IP)
+                    $sshCommandOutputDataVMKNIC.Add("Netmask", $vmknicInfo.Netmask)
+                    $tempvmknicLableList = "VmknicName", "IP", "Netmask"
                 }
+                $gotVXLAN = $true
             }
         }
-        if($gotVXLAN -eq $false){
-            $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "False")
-            $sshCommandOutputDataVMKNIC.Add("VmknicCount", "0")}
+        catch{
+            $ErrorMessage = $_.Exception.Message
+            if ($ErrorMessage -eq "You cannot call a method on a null-valued expression."){
+                out-event -entrytype warning "No VxLAN data found on this Host $myHostName"
+                $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "VXLAN data not found. Host reboot maybe required.")
+                $sshCommandOutputDataVMKNIC.Add("VmknicCount", "Info not found. Host reboot maybe required.")
+                $gotVXLAN = $false
+            }
+            else{
+                out-event -entrytype error $ErrorMessage
+                $sshCommandOutputDataLogicalSwitch.Add("VXLAN Installed", "False")
+                $sshCommandOutputDataVMKNIC.Add("VmknicCount", "0")
+                $gotVXLAN = $false
+            }
+        }
 
         # Run SSH Command to get Route Table Info from NSX Manager here...
         $getDLRs = Get-NsxLogicalRouter
@@ -471,7 +473,7 @@ function getHostInformation {
         $tempHostData = $eachVMHost, "all"
         if ($gotVXLAN -eq $true){
             $tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "VXLAN Installed", "VDSName", "GatewayIP","MTU"
-            $tempHostDataVmkNicDetails = $sshCommandOutputDataVMKNIC, "VmknicCount", "VmknicName", "IP", "Netmask"
+            $tempHostDataVmkNicDetails = $sshCommandOutputDataVMKNIC, "VmknicCount", $tempvmknicLableList
         }else{
             $tempHostDataMgrDetails = $sshCommandOutputDataLogicalSwitch, "VXLAN Installed"
             $tempHostDataVmkNicDetails = $sshCommandOutputDataVMKNIC, "VmknicCount"}
@@ -510,9 +512,9 @@ function runNSXVISIOTool {
     $capturePath = "$documentlocation\NSX-CaptureBundle-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.zip" -f (get-date)
     $ObjectDiagram = "$MyDirectory\DiagramNSX\NsxObjectDiagram.ps1"
     $ObjectCapture = "$MyDirectory\DiagramNSX\NsxObjectCapture.ps1"
-    $null = &$ObjectCapture -ExportFile $capturePath
+    $null = &$ObjectCapture -ExportPath $MyDirectory -ExportFile $capturePath
     if ( [type]::GetTypeFromProgID("Visio.Application") ) { 
-        &$ObjectDiagram -NoVms -CaptureBundle $capturePath -outputDir $DocumentLocation
+        &$ObjectDiagram -IncludeVms:$false -CaptureBundle $capturePath -outputDir $DocumentLocation
     }
     else {
         out-event -entrytype warning "Visio not installed.  Visio diagram generation is disabled (capture bundle is still created in report directory)"
@@ -777,8 +779,18 @@ function runDFW2Excel {
     else {
         &$Dfw2Excel -StartMinimised -DocumentPath $DocumentPath
     }
-    
-    
+}
+
+function runAllDocumentationsMenuItems{
+    Write-host "Executing Environment Documentations..."
+    getNSXComponents
+    getHostInformation
+    Write-host "Executing Networking Documentations..."
+    runNSXVISIOTool
+    getRoutingInformation
+    runLB2Excel
+    Write-host "Executing Security Documentation..."
+    runDFW2Excel
 }
 
 function getMemberWithProperty($tempListOfAllAttributesInFunc){
@@ -1524,19 +1536,12 @@ Switch ( $PSCmdlet.ParameterSetName )  {
         if ( ($Config.Profiles[$ConnectionProfile]) -and (checkDependancies) ) { 
             connectProfile -ProfileName $ConnectionProfile
         }
-        Out-Event -entrytype information "Executing NSX component documentation task"
-        getNSXComponents
-        Out-Event -entrytype information "Executing host information documentation task"
-        getHostInformation
-        Out-Event -entrytype information "Executing Visio diagramming task"
-        runNSXVISIOTool
-        Out-Event -entrytype information "Executing routing information task"
-        getRoutingInformation
-        Out-Event -entrytype information "Executing DFW2Excel documentation task"
-        runDFW2Excel
-        Out-Event -entrytype information "Executing Load Balancer documentation task"
-        runLB2Excel
+        Out-Event -entrytype information "Executing All NSX documentation task"
+        runAllDocumentationsMenuItems
+        Out-Event -entrytype information "Sending email with zip attachement"
+        Send-Email -ConnectionProfile $ConnectionProfile
         Out-Event -entrytype information "Invocation complete."
+        disconnectDefaultNsxConnection
     }
     
     "Default" {
@@ -1558,9 +1563,11 @@ __/\\\\\\\\\\\__________________________________________________________________
        _\/\\\_________\///\\\\\/_____\//\\\\//\\\____\//\\\\\\\\\__\/\\\___________\///\\\\\/_____\/\\\__________/\\\\\\\\\\_
         _\///____________\/////________\///__\///______\/////////___\///______________\/////_______\///__________\//////////__
 
+                                    Brought to you by VMware Customer Success NSX Architects.
+                                          https://www.vmware.com/go/nsx-poweroperations
 "@
 
-        $Subheader = "NSX PowerOps v$version.`nA project by the NSBU SA team.`n"
+        $Subheader = "`n`nNSX-PowerOps Version: $version."
 
         # Footer is a script block that is executed each time the menu is rendered.  We can use it to display status.
         $Footer = { 
@@ -1576,8 +1583,8 @@ Output Directory: $DocumentLocation
         $DependanciesMenu = @{ 
             "Script" = { installDependencies }
             "Interactive" = "True"
-            "HelpText" = "Installs the required dependancies for PowerOps.  The following modules will be installed: $($requiredmodules -join ', ')"
-            "Name" = "Install NSX PowerOps Dependancies"
+            "HelpText" = "Installs the required dependancies for NSX-PowerOps.  The following modules will be installed: $($requiredmodules -join ', ')"
+            "Name" = "Install NSX-PowerOps Dependancies"
             "Status" = { if ( checkDependancies -ListAvailable $true) { "Disabled" } else { "MenuEnabled" } }
             "StatusText" = { if ( checkDependancies -ListAvailable $true) { "Installed" } else { "Not Installed" } }
             "Footer" = $footer
@@ -1588,13 +1595,20 @@ Output Directory: $DocumentLocation
         # Doc menu definition.
         $DocumentationMenu = @{
             "Script" = { Show-MenuV2 -menu $DocumentationMenu }
-            "HelpText" = "Displays a menu of PowerOps documentation tools."
-            "Name" = "PowerOps Documentation Tools"
+            "HelpText" = "Displays a menu of NSX-PowerOps documentation tools."
+            "Name" = "NSX-PowerOps Documentation Tools"
             "Status" = { if ((checkDependancies -ListAvailable $true) ) { "MenuEnabled" } else { "Disabled" } }
             "Footer" = $footer
             "MainHeader" = $MainHeader
             "Subheader" = $Subheader
             "Items" = @(
+                @{
+                    "SectionHeader" = "Auto Run All"
+                    "Name" = "Run All Following Documentation Menu Items"
+                    "Status" = { if ($DefaultNSXConnection -and [type]::GetTypeFromProgID("Excel.Application") ) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = { runAllDocumentationsMenuItems }
+                },
                 @{
                     "SectionHeader" = "Environment Documentation"
                     "Name" = "Document All NSX Components"
@@ -1648,64 +1662,74 @@ Output Directory: $DocumentLocation
         }
 
         # Healthcheck menu definition.
+        # Divided in Non-Interactive, Interactive, and Beta catagories
         $HealthCheckMenu = @{    
             "Script" = { Show-MenuV2 -menu $HealthCheckMenu }
-            "HelpText" = "Displays a menu of PowerOps Healthchecks."
-            "Name" = "PowerOps HealthChecks"
+            "HelpText" = "Displays a menu of NSX-PowerOps Healthchecks."
+            "Name" = "NSX-PowerOps HealthChecks"
             "Status" = { if ((checkDependancies -ListAvailable $true)) { "MenuEnabled" } else { "Disabled" } }
             "Footer" = $footer
             "MainHeader" = $MainHeader
             "Subheader" = $Subheader
             "Items" = @( 
                 @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "NSX Connectivity Test"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXConnections" }
                 },
                 @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "NSX Manager Test"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXManager" }
                 },
                 @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "NSX Controllers Appliance Test"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {   runNSXTest -testModule "testNSXControllers" }
                 },
                 @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "NSX Logical Switch Test"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXLogicalSwitch" }
                 },
                 @{ 
-                    "Name" = "NSX Distributed Firewall Heap Test"
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
+                    "Name" = "NSX DFW Memory Test (requires SSH to ESXi)"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXDistributedFirewallHeap" }
                 },
                 @{ 
-                    "Name" = "Check DLR Instance"
-                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
-                    "Interactive" = $true
-                    "Script" = {  runNSXTest -testModule "testNSXVDR" }
-                },
-                @{ 
+                    "SectionHeader" = "Non-Interactive Healthchecks Menu"
                     "Name" = "Check VIB Version"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXVIBVersion" }
                 },
                 @{ 
+                    "SectionHeader" = "Interactive Healthchecks Menu"
+                    "Name" = "Check DLR Instance"
+                    "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
+                    "Interactive" = $true
+                    "Script" = {  runNSXTest -testModule "testNSXVDR" }
+                },
+                @{ 
+                    "SectionHeader" = "Interactive Healthchecks Menu"
                     "Name" = "Check vTEP to vTEP connectivity"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
                     "Script" = {  runNSXTest -testModule "testNSXMTUUnderlay" }
                 },
                 @{ 
+                    "SectionHeader" = "Beta Healthchecks Menu"
                     "Name" = "Compare DLR and Hosts Routing Tables [BETA]"
                     "Status" = { if ($DefaultNSXConnection) { "MenuEnabled" } else { "Disabled" } }
                     "Interactive" = $true
@@ -1856,7 +1880,7 @@ Output Directory: $DocumentLocation
 
         # Root menu definition.
         $rootmenu = @{ 
-            "Name" = "NSX PowerOps Main Menu"
+            "Name" = "NSX-PowerOps Main Menu"
             "Status" = { "MenuValid" }
             "Footer" = $footer
             "MainHeader" = $MainHeader
