@@ -74,6 +74,7 @@ $MaxReports = 20
 . $myDirectory\util.ps1
 . $myDirectory\auto-email.ps1
 . $myDirectory\get-license.ps1
+. $myDirectory\get-envsummary.ps1
 #Setting up max window size and max buffer size - dynamic to user's display settings
 #User can manually change the console and buffer size
 invoke-expression -Command $mydirectory\maxWindowSize.ps1
@@ -284,7 +285,14 @@ function getNSXComponents {
     $nsxLogicalRouters = Get-NsxLogicalRouter
     $allNSXComponentExcelDataDLR =@{}
 
+    $nsxManagementLabels = "NSX Manager Version", "Version of vCenter", "Total NSX Controllers deployed", "Total Cluster(s) prepared for NSX", "Total Host(s) managed by NSX"
+    $nsxSecurityLables = "Total FireWall (DFW) Rules", "Total Service Composer Policies", "Total Security Groups", "Total Security Tags"
+    $nsxRASLables = "Total Edges", "Total Edges with BGP enabled", "Total Edges with OSPF enabled", "Total Edges with SSL-VPN enabled", "Total Edges with L2VPN enabled", "Total DLRs", "Total DLRs with L2 Bridging enabled", "Total UDLRs", "Total Edges with LB", "Total VIPs", "Total Pool Members", "Total Logical Switches"
+    
     $nsxManagerSummary = Get-NsxManagerSystemSummary
+    $nsxManagementSummary = Get-NSXEnvSummary -nsxManagementLabels $nsxManagementLabels -nsxManagerSummary $nsxManagerSummary
+    $nsxSecuritySummary = Get-NSXSecuritySummary -nsxSecurityLables $nsxSecurityLables
+    $nsxRASSummary = Get-NSXRASSummary -nsxRASLables $nsxRASLables
     $nsxManagerLicense = Get-NSXLicenseInfo
     $nsxManagerVcenterConfig = Get-NsxManagerVcenterConfig
     $nsxManagerRole = Get-NsxManagerRole
@@ -294,7 +302,7 @@ function getNSXComponents {
     $nsxManagerSyslogServer = Get-NsxManagerSyslogServer
     $nsxManagerTimeSettings = Get-NsxManagerTimeSettings
     $vCenterVersionInfo = $global:DefaultVIServer.ExtensionData.Content.About
-    
+
     #Write-Host "Controller ID is:"$nsxControllers[0].id
     <# Example of the code to cherrypick dic elements to plot on documentation excel.
     $allNSXComponentExcelData = @{"NSX Controllers Info" = $nsxControllers, "objectTypeName", "revision", "clientHandle", "isUniversal", "universalRevision", "id", "ipAddress", "status", "upgradeStatus", "version", "upgradeAvailable", "virtualMachineInfo", "hostInfo", "resourcePoolInfo", "clusterInfo", "managedBy", "datastoreInfo", "controllerClusterStatus", "diskLatencyAlertDetected", "vmStatus"; 
@@ -303,13 +311,14 @@ function getNSXComponents {
     "NSX Edge Info" = $nsxEdges, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "vnics", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "hypervisorAssist", "queryDaemon", "edgeSummary";
     "NSX Logical Router Info" = $nsxLogicalRouters, "id", "version", "status", "datacenterMoid", "datacenterName", "tenant", "name", "fqdn", "enableAesni", "enableFips", "vseLogLevel", "appliances", "cliSettings", "features", "autoConfiguration", "type", "isUniversal", "mgmtInterface", "interfaces", "edgeAssistId", "lrouterUuid", "queryDaemon", "edgeSummary"}
     #>
+    $allNSXComponentExcelDataSummary =@{"NSX-Management" = $nsxManagementSummary, $nsxManagementLabels; "Security" = $nsxSecuritySummary, $nsxSecurityLables; "Routing & Switching" = $nsxRASSummary, $nsxRASLables}
     $allNSXComponentExcelDataMgr =@{"NSX Manager Info" = $nsxManagerSummary, "all"; "NSX Manager vCenter Configuration" = $nsxManagerVcenterConfig, "all"; "NSX Manager Role" = $nsxManagerRole, "all"; "NSX Manager Backup" = $nsxManagerBackup, "all"; "NSX Manager Network" = $nsxManagerNetwork, "all"; "NSX Manager SSO Config" = $nsxManagerSsoConfig, "all"; "NSX Manager Syslog Server" = $nsxManagerSyslogServer, "all"; "NSX Manager Time Settings" =  $nsxManagerTimeSettings, "all"; "vCenter Version" = $vCenterVersionInfo, "all"; "NSX Manager License" = $nsxManagerLicense[0], $nsxManagerLicense[1]}
-    
     #### Call Build Excel function here ..pass local variable of NSX Components to plot the info on excel
     
     $currentdocumentpath = "$documentlocation\NSX-Components-{0:yyyy}-{0:MM}-{0:dd}_{0:HH}-{0:mm}.xlsx" -f (get-date)
     $nsxComponentExcelWorkBook = createNewExcel
-    
+
+    $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "Summary" -listOfDataToPlot $allNSXComponentExcelDataSummary
     ####plotDynamicExcel one workBook at a time
     $plotNSXComponentExcelWB = plotDynamicExcelWorkBook -myOpenExcelWBReturn $nsxComponentExcelWorkBook -workSheetName "NSX Manager" -listOfDataToPlot $allNSXComponentExcelDataMgr
     # Creating seperate worksheet for each controller, edge, and dlr 
