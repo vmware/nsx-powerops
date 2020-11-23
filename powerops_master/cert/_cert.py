@@ -37,10 +37,10 @@
 ###
 #############################################################################################################################################################################################
 
-Crt = "/Users/dfoley/OneDrive - VMware, Inc/My Documents/PowerOps/NSX-T/powerops_user_cert/powerops.crt"
-Key = "/Users/dfoley/OneDrive - VMware, Inc/My Documents/PowerOps/NSX-T/powerops_user_cert/powerops.key"
+Crt = "/home/powerops/cert/<CERTIFICATE>.crt"
+Key = "/home/powerops/cert/<CERTIFICATE>.key"
 headers = {'Content-type': 'application/json'}
-nsx_mgr = 'https://nsxtmgr01.dom.salab.local'
+nsx_mgr = '<NSX-T MANAGER FQDN>'
 
 import requests
 import json
