@@ -1,6 +1,6 @@
 NSX Power Operations
 
-Copyright 2017 VMware, Inc.  All rights reserved				
+Copyright 2020 VMware, Inc.  All rights reserved				
 
 The MIT license (the “License”) set forth below applies to all parts of the NSX Power Operations project.  You may not use this file except in compliance with the License. 
 
