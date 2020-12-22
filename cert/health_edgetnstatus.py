@@ -51,9 +51,13 @@ def main():
         print('MPA Connectivity Status: ',edgenode_json["results"][n]["status"]["mpa_connectivity_status"])
         print('MPA Connectivity Status Details: ',edgenode_json["results"][n]["status"]["mpa_connectivity_status_details"])
         print('Host Node Deployment Status: ',edgenode_json["results"][n]["status"]["host_node_deployment_status"])
-        print('NSX Controller IP: ',edgenode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["control_node_ip"])
-        print('NSX Controller Status: ',edgenode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["status"])
-        print('')
+        try:
+            print('NSX Controller IP: ',edgenode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["control_node_ip"])
+            print('NSX Controller Status: ',edgenode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["status"])
+            print('')
+        except:
+            print('NSX Controller IP: UNKNOWN')
+            print('NSX Controller Status: UNKNOWN')
 
 
 if __name__ == "__main__":
