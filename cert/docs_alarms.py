@@ -32,12 +32,14 @@ import urllib3
 import xlwt
 import os
 import datetime
+import pathlib
 
 from vmware.vapi.lib import connect
 from vmware.vapi.bindings.stub import VapiInterface
 from vmware.vapi.bindings.stub import StubConfiguration
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx_client import Alarms
+
 from _cert import Crt, Key, headers, nsx_mgr
 from _createdir import dest
 from xlwt import Workbook
@@ -91,6 +93,14 @@ sheet1.write(0, 8, 'Description', style_db_center)
 sheet1.write(0, 9, 'Recommended Action', style_db_center)
 
 def main():
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("Alarms.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+        
     print('')
     print('Generating NSX-T Alarms output....')
     print('')

@@ -31,12 +31,14 @@ import requests
 import urllib3
 import xlwt
 import os
+import pathlib
 
 from vmware.vapi.lib import connect
 from vmware.vapi.bindings.stub import VapiInterface
 from vmware.vapi.bindings.stub import StubConfiguration
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx.fabric_client import DiscoveredNodes
+
 from _cert import Crt, Key, headers, nsx_mgr
 from _createdir import dest
 from xlwt import Workbook
@@ -128,6 +130,14 @@ sheet1.write(2, 21, 'DAS Host State', style_db_center)
 
 
 def main():  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("Fabric Discovered Nodes.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
     print('')
     print('Generating NSX-T Node output....')
     print('')

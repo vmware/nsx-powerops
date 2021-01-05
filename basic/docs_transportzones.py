@@ -31,6 +31,7 @@ import requests
 import urllib3
 import xlwt
 import os
+import pathlib
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -96,6 +97,14 @@ sheet1.write(0, 10, 'UPLINK TEAMING POLICY NAME', style_db_center)
 
 #Main Function
 def main():
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("Transport Zones.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
     print('')
     print('Generating NSX-T Transport Zone output....')
     print('')

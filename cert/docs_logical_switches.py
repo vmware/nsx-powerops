@@ -31,6 +31,7 @@ import requests
 import urllib3
 import xlwt
 import os
+import pathlib 
 
 from vmware.vapi.lib import connect
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
@@ -92,6 +93,14 @@ sheet1.write(0, 9, 'SUBNET', style_db_center)
 
 #Main Function
 def main():  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("Logical Switches.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
     print('')
     print('Generating NSX-T Segment output....')
     print('')

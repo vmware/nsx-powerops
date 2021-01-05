@@ -31,6 +31,7 @@ import requests
 import urllib3
 import xlwt
 import os
+import pathlib 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -51,6 +52,13 @@ style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
 style_alignleft = xlwt.easyxf('font: colour black, bold True; align: horiz left, wrap True')
 
 def main():
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("Tier-0 Routing.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
 
     print('')
     print('Generating Tier-0 Routing Tables....')
@@ -92,7 +100,7 @@ def main():
         start_row_6 = 6
         start_row_7 = 7
 
-        sheet = t0_routing_wkbk.add_sheet(str(i))
+        sheet = t0_routing_wkbk.add_sheet(str(i), cell_overwrite_ok=True)
         col_width_A = sheet.col(0)
         col_width_A.width = 256 * 30
         col_width_B = sheet.col(1)
@@ -138,7 +146,7 @@ def main():
         except:
             sheet.write(0, 0, 'NO ROUTING TABLE', style_db_center)
 
-    t0_routing_wkbk.save('Tier 0 Routing.xls')
+    t0_routing_wkbk.save('Tier-0 Routing.xls')
     
 if __name__ == "__main__":
     main()

@@ -9,6 +9,7 @@ NSX Power Operations is a platform that provides NSX users a way to document and
 
 ### Releases & Major Branches
 Current version: Supports NSX-T 3.x API (December 2020)
+Current version of NSX-T PowerOps supports 1000 objects per API call.  Pagination issues currently being worked on.
 
 #### Required Pre-Requisites:
 
