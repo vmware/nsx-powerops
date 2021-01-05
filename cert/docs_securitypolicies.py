@@ -31,6 +31,7 @@ import requests
 import urllib3
 import xlwt
 import os
+import pathlib
 
 from _cert import Crt, Key, headers, nsx_mgr
 from _createdir import dest
@@ -73,6 +74,14 @@ sheet1.write(0, 4, 'CATEGORY', style_db_center)
 sheet1.write(0, 5, 'IS STATEFUL', style_db_center)
 
 def main():   
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("Security Policies.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
     print('')
     print('Generating Security Policy output....')
     print('')

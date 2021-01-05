@@ -31,6 +31,7 @@ import requests
 import urllib3
 import xlwt
 import os
+import pathlib
 
 from _createdir import dest
 from _cert import Crt, Key, headers, nsx_mgr
@@ -65,6 +66,13 @@ sheet1.write(0, 2, 'Segment Network', style_db_center)
 sheet1.write(0, 3, 'Connected to Tier1', style_db_center)
 
 def main():
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("Tier-1 Segments.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
 
     print('')
     print('Generating Tier-1 Segment output....')
@@ -103,7 +111,7 @@ def main():
             sheet1.write(start_row, 3, t1_connectivity)
             start_row += 1
     
-    t1_segments_wkbk.save('Tier 1 Segments.xls')
+    t1_segments_wkbk.save('Tier-1 Segments.xls')
     
 if __name__ == "__main__":
     main()

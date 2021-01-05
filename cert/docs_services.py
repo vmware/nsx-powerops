@@ -31,6 +31,7 @@ import requests
 import urllib3
 import xlwt
 import os
+import pathlib
 
 from _cert import Crt, Key, headers, nsx_mgr
 from _createdir import dest
@@ -65,6 +66,14 @@ columnF.width = 256 * 20
 style_wrap = xlwt.easyxf('alignment: wrap True')
 
 def main():   
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("NSX-T Services.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
     print('')
     print('Generating NSX-T Services output....')
     print('')

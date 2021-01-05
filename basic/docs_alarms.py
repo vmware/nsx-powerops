@@ -32,6 +32,7 @@ import urllib3
 import xlwt
 import os
 import datetime
+import pathlib
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -94,6 +95,14 @@ sheet1.write(0, 8, 'Description', style_db_center)
 sheet1.write(0, 9, 'Recommended Action', style_db_center)
 
 def main():
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("Alarms.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+        
     print('')
     print('Generating NSX-T Alarms output....')
     print('')

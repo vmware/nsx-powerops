@@ -31,6 +31,7 @@ import requests
 import urllib3
 import xlwt
 import os
+import pathlib
 
 from _cert import Crt, Key, headers, nsx_mgr
 from _createdir import dest
@@ -53,6 +54,14 @@ style_green = xlwt.easyxf('font: colour green, bold True; align: horiz left, wra
 style_red = xlwt.easyxf('font: colour red, bold True; align: horiz left, wrap True')
 
 def main():
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("Transport Node Tunnels.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
     print('')
     print('Generating Transport Node Tunnel Output....')
     print('')
@@ -70,7 +79,7 @@ def main():
     # Create a tab for each transport node
     for n in range(len(transport_nodes)):
         tnode_dict.update({transport_nodes[n]['node_id']:transport_nodes[n]['display_name']})
-        sheet = tunnel_wkbk.add_sheet(transport_nodes[n]['display_name'])
+        sheet = tunnel_wkbk.add_sheet(transport_nodes[n]['display_name'], cell_overwrite_ok=True)
         
         #Setup Column widths
         columnA = sheet.col(0)

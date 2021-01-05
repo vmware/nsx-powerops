@@ -31,6 +31,7 @@ import requests
 import urllib3
 import xlwt
 import os
+import pathlib
 
 from vmware.vapi.bindings.stub import StubConfiguration
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
@@ -58,6 +59,14 @@ style_green = xlwt.easyxf('font: colour green, bold True; align: horiz left, wra
 style_red = xlwt.easyxf('font: colour red, bold True; align: horiz left, wrap True')
 
 def main():
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    fname = pathlib.Path("NSX-T Managers.xls")
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
     print('')
     print('Generating NSX-T Manager output....')
     print('')
@@ -242,7 +251,7 @@ def main():
     y = 0
 
     while i <= nsxmgr_nodes:
-        sheet = ls_wkbk.add_sheet('NSX Manager Appliance ' + str(i))
+        sheet = ls_wkbk.add_sheet('NSX Manager Appliance ' + str(i), cell_overwrite_ok=True)
         columnA = sheet.col(0)
         columnA.width = 256 * 30
         columnB = sheet.col(1)
