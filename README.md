@@ -112,4 +112,4 @@ This product is licensed to you under the MIT license (the "License").  You may 
 This product may include a number of subcomponents with separate copyright notices and license terms. Your use of these subcomponents is subject to the terms and conditions of the subcomponent's license, as noted in the LICENSE file. 
 
 ### Contact Info
-Puneet Chawla (cpuneet@vmware.com) and Hammad Alam (halam@vmware.com)
+Puneet Chawla (cpuneet@vmware.com) and Dominic Foley (dfoley@vmware.com)
