@@ -3,6 +3,7 @@ ListOfAllHost.txt
 *.xml
 *.txt
 *.zip
+*.pyc
 execute-Request.ps1
 old-HealthCheck-old/
 vdrPort_check-original.ps1

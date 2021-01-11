@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 #############################################################################################################################################################################################
 #                                                                                                                                                                                           #
 # NSX-T Power Operations                                                                                                                                                                    #
@@ -32,7 +34,7 @@ import shutil
 import os
 now = datetime.datetime.today() 
 nTime = now.strftime("%d-%m-%Y-%H-%M-%S")
-source = '/home/powerops/powerops_documentation/POps_doc_'
+source = '/Users/ysimonet/Documents/Scripts/NSX/Python/powerops/powerops_documentation/POps_doc_'
 dest = os.path.join(source+nTime)
     
 if not os.path.exists(dest):

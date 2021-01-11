@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+# coding: utf-8
 #############################################################################################################################################################################################
 #                                                                                                                                                                                           #
 # NSX-T Power Operations                                                                                                                                                                    #
@@ -86,10 +88,9 @@ def main():
 
     t1_id_list = []
     for i in t1_json["results"]:
-        t1_id_list.append(i['id'])
+        t1_id_list.append(i['display_name'])
 
     t1_routing_wkbk = Workbook()
-
     for i in t1_id_list:
 
         start_row_0 = 0
