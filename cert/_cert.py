@@ -33,14 +33,14 @@
 ###  2) CREATE AN NSX-T PRINCIPAL IDENTITY USER WITH THE CERTIFICATE AND KEY FILE FROM STEP 1) - AUDIT RIGHTS IS FINE
 ###  3) COPY THE .crt AND .key FILES to /home/powerops/cert FOLDER
 ###  4) MODIFY THE BELOW 'Crt' & 'Key' LINES TO REFLECT THE CORRECT FILENAMES
-###  5) MODIFY THE 'nsx_mgr' LINE BELOW TO BE THE FQDN OF YOUR NSX-T MANAGER
+###  5) MODIFY THE 'nsx_mgr' LINE BELOW TO BE THE FQDN OF YOUR NSX-T MANAGER - 'https://<FQDN>
 ###
 #############################################################################################################################################################################################
 
 Crt = "/home/powerops/cert/<CERTIFICATE NAME>.crt"
 Key = "/home/powerops/cert/<CERTIFICATE KEY>.key"
 headers = {'Content-type': 'application/json'}
-nsx_mgr = '<NSX MANAGER FQDN>'
+nsx_mgr = 'https://<NSX MANAGER FQDN>'
 
 import requests
 import json
