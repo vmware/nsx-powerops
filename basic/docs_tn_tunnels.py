@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 #############################################################################################################################################################################################
 #                                                                                                                                                                                           #
 # NSX-T Power Operations                                                                                                                                                                    #
@@ -126,9 +128,9 @@ def main():
                 sheet.write(row_e, 0, 'Remote Tunnel IP: ', style_db_left)
                 sheet.write(row_e, 1, tunnel_json['tunnels'][n]['remote_ip'], style_alignleft)
                 sheet.write(row_f, 0, 'Remote Node ID: ', style_db_left)
-                sheet.write(row_f, 1, tunnel_json['tunnels'][n]['remote_node_id'], style_alignleft)
+                if 'remote_node_id' in  tunnel_json['tunnels'][n]: sheet.write(row_f, 1, tunnel_json['tunnels'][n]['remote_node_id'], style_alignleft)
                 sheet.write(row_g, 0, 'Remote Node: ', style_db_left)
-                sheet.write(row_g, 1, tunnel_json['tunnels'][n]['remote_node_display_name'], style_alignleft)
+                if 'remote_node_display_name' in  tunnel_json['tunnels'][n]: sheet.write(row_g, 1, tunnel_json['tunnels'][n]['remote_node_display_name'], style_alignleft)
                 sheet.write(row_h, 0, 'Tunnel Encapsulation: ', style_db_left)
                 sheet.write(row_h, 1, tunnel_json['tunnels'][n]['encap'], style_alignleft)
                 

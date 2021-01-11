@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 #############################################################################################################################################################################################
 #                                                                                                                                                                                           #
 # NSX-T Power Operations                                                                                                                                                                    #
@@ -31,7 +33,7 @@ import requests
 import urllib3
 import xlwt
 import os
-import pathlib 
+import pathlib
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -64,10 +66,12 @@ columnD = sheet1.col(3)
 columnD.width = 256 * 50
 
 #Excel Column Headings
-sheet1.write(0, 0, 'Tier1 Segment ID', style_db_center)
-sheet1.write(0, 1, 'Segment Gateway', style_db_center)
-sheet1.write(0, 2, 'Segment Network', style_db_center)
-sheet1.write(0, 3, 'Connected to Tier1', style_db_center)
+sheet1.write(0, 0, 'Tier1 Segment Name', style_db_center)
+sheet1.write(0, 1, 'Tier1 Segment ID', style_db_center)
+sheet1.write(0, 2, 'Segment Gateway', style_db_center)
+sheet1.write(0, 3, 'Segment Network', style_db_center)
+sheet1.write(0, 4, 'Connected to Tier1 Name', style_db_center)
+sheet1.write(0, 5, 'Connected to Tier1 ID', style_db_center)
 
 def main():
     #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
@@ -91,30 +95,18 @@ def main():
     ########### GET Logical Routers  ###########
     t1_url = '/policy/api/v1/infra/tier-1s'
     t1_json = session.get('https://' + auth_list[0] + str(t1_url), auth=(auth_list[1], auth_list[2]), verify=session.verify).json()
-
-    t1_path_list = []
-    for i in t1_json["results"]:
-        t1_path_list.append(i['path'])
-
-    t1_segment_list = []
-    for i in t1_path_list:
-        t1_segment_url = '/policy/api/v1/search?query=resource_type:Segment&&dsl=segment where connectivity path=' + str(i) + '' 
-        t1_segment_list.append(t1_segment_url)
-
     start_row = 1
-    for i in t1_segment_list:
-        t1_segment_json = session.get('https://' + auth_list[0] + str(i), auth=(auth_list[1], auth_list[2]), verify=session.verify).json()
+    for i in t1_json["results"]:
+        t1_segment_url = '/policy/api/v1/search?query=resource_type:Segment&&dsl=segment where connectivity path=' + str(i['path']) + ''
+        t1_segment_json = session.get('https://' + auth_list[0] + str(t1_segment_url), auth=(auth_list[1], auth_list[2]), verify=session.verify).json()
         for n in t1_segment_json["results"]:
-            sheet1.write(start_row, 0, n['id'])
-            sheet1.write(start_row, 1, n['subnets'][0]['gateway_address'])
-            sheet1.write(start_row, 2, n['subnets'][0]['network'])
-            
-            path_string = str(n['connectivity_path'])
-            split_path_string = (path_string.split("/"))
-            split_string = str((split_path_string[-1]))
-            t1_connectivity = (split_string.split("'")[0])
-            
-            sheet1.write(start_row, 3, t1_connectivity)
+            sheet1.write(start_row, 0, n['display_name'])
+            sheet1.write(start_row, 1, n['id'])
+            sheet1.write(start_row, 2, n['subnets'][0]['gateway_address'])
+            sheet1.write(start_row, 3, n['subnets'][0]['network'])
+            sheet1.write(start_row, 4, i['display_name'])
+            sheet1.write(start_row, 5, str(n['connectivity_path']).split("/")[3])
+
             start_row += 1
     
     t1_segments_wkbk.save('Tier-1 Segments.xls')

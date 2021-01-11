@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 #############################################################################################################################################################################################
 #                                                                                                                                                                                           #
 # NSX-T Power Operations                                                                                                                                                                    #
@@ -59,21 +61,22 @@ def main():
         print('')
         print('Transport Node: ',uuid[1])
         print('')
-        x = (len(tunnel_json['tunnels']))
-        
-        if x > 0:
+        print(tunnel_json)
+        if tunnel_json['result_count'] != 0:
+            x = (len(tunnel_json['tunnels']))
             for n  in range(x):
-                print('Tunnel name: ',tunnel_json['tunnels'][n]['name'])
-                print('Tunnel Status: ',tunnel_json['tunnels'][n]['status'])
-                print('Egress Interface: ',tunnel_json['tunnels'][n]['egress_interface'])
-                print('Local Tunnel IP: ',tunnel_json['tunnels'][n]['local_ip'])
-                print('Remote Tunnel IP: ',tunnel_json['tunnels'][n]['remote_ip'])
-                print('Remote Node ID: ',tunnel_json['tunnels'][n]['remote_node_id'])
-                print('Remote Node: ',tunnel_json['tunnels'][n]['remote_node_display_name'])
-                print('Tunnel Encapsulation: ',tunnel_json['tunnels'][n]['encap'])
+                if 'name' in  tunnel_json['tunnels'][n]: print('Tunnel name: ',tunnel_json['tunnels'][n]['name'])
+                if 'status' in tunnel_json['tunnels'][n]: print('Tunnel Status: ',tunnel_json['tunnels'][n]['status'])
+                if 'egress_interface' in tunnel_json['tunnels'][n]: print('Egress Interface: ',tunnel_json['tunnels'][n]['egress_interface'])
+                if 'local_ip' in tunnel_json['tunnels'][n]: print('Local Tunnel IP: ',tunnel_json['tunnels'][n]['local_ip'])
+                if 'remote_ip' in tunnel_json['tunnels'][n]: print('Remote Tunnel IP: ',tunnel_json['tunnels'][n]['remote_ip'])
+                if 'remote_node_id' in  tunnel_json['tunnels'][n]: print('Remote Node ID: ',tunnel_json['tunnels'][n]['remote_node_id'])
+                if 'remote_node_display_name' in  tunnel_json['tunnels'][n]: print('Remote Node: ',tunnel_json['tunnels'][n]['remote_node_display_name'])
+                if 'encap' in  tunnel_json['tunnels'][n]: print('Tunnel Encapsulation: ',tunnel_json['tunnels'][n]['encap'])
                 print('')
         else:
             print('**** No tunnels exist for this transport node ****')
+
 
 if __name__ == "__main__":
     main()
