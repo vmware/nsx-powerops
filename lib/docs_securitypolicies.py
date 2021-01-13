@@ -47,10 +47,26 @@ from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-
-def DocsSecPol(auth_list):
+def CreateXLSSecPol(auth_list):
     # Setup excel workbook and worksheets 
     secpol_wkbk = Workbook()  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Security_Policies.xls"
+    fname = pathlib.Path(XLS_File)
+
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
+    print('')
+    print('Generating Security Policy output: %s'  % XLS_File)
+    print('')
+    SheetSecPol(auth_list,secpol_wkbk)
+    secpol_wkbk.save(XLS_File)
+
+def SheetSecPol(auth_list, secpol_wkbk):
     sheet1 = secpol_wkbk.add_sheet('Security Policies', cell_overwrite_ok=True)
 
     #Set Excel Styling
@@ -80,20 +96,6 @@ def DocsSecPol(auth_list):
     sheet1.write(0, 4, 'CATEGORY', style_db_center)
     sheet1.write(0, 5, 'IS STATEFUL', style_db_center)
 
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Security_Policies.xls"
-    fname = pathlib.Path(XLS_File)
-
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-
-    print('')
-    print('Generating Security Policy output: %s'  % XLS_File)
-    print('')
-    
     SessionNSX = ConnectNSX(auth_list)
     policies_url = '/policy/api/v1/infra/domains/default/security-policies'
     policies_json = GetAPI(SessionNSX[0],policies_url, auth_list)
@@ -109,4 +111,3 @@ def DocsSecPol(auth_list):
         sheet1.write(start_row, 4, policies_json["results"][i]["category"], style_alignleft)
         sheet1.write(start_row, 5, policies_json["results"][i]["stateful"], style_alignleft)
         start_row +=1
-    secpol_wkbk.save(XLS_File)

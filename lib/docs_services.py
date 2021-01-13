@@ -45,11 +45,27 @@ from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
     create_user_password_security_context
 
-
-def DocsNSXServices(auth_list):
+def CreateXLSNSXServices(auth_list):
     # Setup excel workbook and worksheets 
-    dfw_wkbk = Workbook()  
-    sheet1 = dfw_wkbk.add_sheet('NSX-T Services', cell_overwrite_ok=True)
+    wkbk = Workbook()  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "NSX-T_Services.xls"
+    fname = pathlib.Path(XLS_File)
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
+    print('')
+    print('Generating NSX-T Services output: %s' %XLS_File)
+    print('')
+    SheetNSXServices(auth_list,wkbk)
+    wkbk.save(XLS_File) 
+
+
+def SheetNSXServices(auth_list,wkbk):
+    sheet1 = wkbk.add_sheet('NSX-T Services', cell_overwrite_ok=True)
     style_wrap = xlwt.easyxf('align: wrap True')
     style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
                                     'font: colour white, bold True; align: horiz center')
@@ -69,19 +85,6 @@ def DocsNSXServices(auth_list):
     columnF.width = 256 * 20
 
     style_wrap = xlwt.easyxf('alignment: wrap True')
-
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "NSX-T_Services.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-
-    print('')
-    print('Generating NSX-T Services output: %s' %XLS_File)
-    print('')
 
     SessionNSX = ConnectNSX(auth_list)
     services_url = '/policy/api/v1/infra/services'
@@ -135,5 +138,3 @@ def DocsNSXServices(auth_list):
             else:
                 sheet1.write(start_row, 2, ('IGMP'))
             start_row+=1
-
-    dfw_wkbk.save(XLS_File) 

@@ -48,20 +48,9 @@ from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
 
-def DocsNSXManagerInfo(auth_list):
+def CreateXLSNSXManagerInfo(auth_list):
     # Setup excel workbook and worksheets 
     ls_wkbk = Workbook()  
-    summary = ls_wkbk.add_sheet('NSX-T Summary', cell_overwrite_ok=True)
-
-    #Set Excel Styling
-    style_db_left = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz left, vert centre')
-    style_db_left1 = xlwt.easyxf('pattern: pattern solid, fore_colour pale_blue;'
-                                    'font: colour white, bold True; align: horiz left, vert centre')
-    style_alignleft = xlwt.easyxf('font: colour black, bold False; align: horiz left, wrap True')
-    style_green = xlwt.easyxf('font: colour green, bold True; align: horiz left, wrap True')
-    style_red = xlwt.easyxf('font: colour red, bold True; align: horiz left, wrap True')
-
     #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
     XLS_File = lib.menu.XLS_Dest + os.path.sep + "NSX-T_Managers.xls"
     fname = pathlib.Path(XLS_File)
@@ -74,6 +63,21 @@ def DocsNSXManagerInfo(auth_list):
     print('')
     print('Generating NSX-T Manager output: %s' %XLS_File)
     print('')
+    SheetNSXManagerInfo(auth_list,ls_wkbk)
+    ls_wkbk.save(XLS_File)
+
+
+def SheetNSXManagerInfo(auth_list,ls_wkbk):
+    summary = ls_wkbk.add_sheet('NSX-T Summary', cell_overwrite_ok=True)
+
+    #Set Excel Styling
+    style_db_left = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
+                                    'font: colour white, bold True; align: horiz left, vert centre')
+    style_db_left1 = xlwt.easyxf('pattern: pattern solid, fore_colour pale_blue;'
+                                    'font: colour white, bold True; align: horiz left, vert centre')
+    style_alignleft = xlwt.easyxf('font: colour black, bold False; align: horiz left, wrap True')
+    style_green = xlwt.easyxf('font: colour green, bold True; align: horiz left, wrap True')
+    style_red = xlwt.easyxf('font: colour red, bold True; align: horiz left, wrap True')
     
     SessionNSX = ConnectNSX(auth_list)
     ########### SECTION FOR REPORTING ON NSX-T MANAGER CLUSTER ###########
@@ -301,4 +305,3 @@ def DocsNSXManagerInfo(auth_list):
         y += 1
         i += 1
     
-    ls_wkbk.save(XLS_File)

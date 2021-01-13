@@ -51,10 +51,27 @@ from com.vmware.nsx_policy.infra.domains.groups.members_client import VirtualMac
 from com.vmware.nsx_policy.model_client import PolicyGroupIPMembersListResult
 from vmware.vapi.security.user_password import create_user_password_security_context
 
-
-def DocsSecGrp(auth_list):
+def CreateXLSSecGrp(auth_list):
     # Setup excel workbook and worksheets 
     groups_wkbk = Workbook()  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "NS Groups.xls"
+    fname = pathlib.Path(XLS_File)
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
+    print('')
+    print('Generating NSX-T Groups output: %s' %XLS_File)
+    print('    Please be patient...')
+    print('')
+    SheetSecGrp(auth_list,groups_wkbk)
+    groups_wkbk.save(XLS_File)
+
+
+def SheetSecGrp(auth_list,groups_wkbk):
     sheet1 = groups_wkbk.add_sheet('Groups', cell_overwrite_ok=True)
 
     #Set Excel Styling
@@ -92,20 +109,6 @@ def DocsSecGrp(auth_list):
     sheet1.write(0, 6, 'VIRTUAL MACHINES', style_db_center)
     sheet1.write(0, 7, 'SEGMENTS', style_db_center)
     sheet1.write(0, 8, 'SEGMENT PORTS', style_db_center)
-
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "NS Groups.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-
-    print('')
-    print('Generating NSX-T Groups output: %s' %XLS_File)
-    print('    Please be patient...')
-    print('')
 
     domain_id = 'default'
     # Connection for get Groups criteria - REST/API
@@ -194,8 +197,6 @@ def DocsSecGrp(auth_list):
             sheet1.write(start_row, 8, ', '.join(sgmntprtlist1), style_alignleft) # Segments Ports
 
         start_row +=1
-    
-    groups_wkbk.save(XLS_File)
 
 
 def GetCriteria(SESSION, auth_list, DictExpression):

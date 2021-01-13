@@ -28,7 +28,6 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-
 import requests
 import urllib3
 import xlwt
@@ -48,10 +47,26 @@ from com.vmware.nsx.model_client import TransportZone
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-
-def DocsTZ(auth_list):
+def CreateXLSTZ(auth_list):
     # Setup excel workbook and worksheets 
     ls_wkbk = Workbook()  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Transport_Zones.xls"
+    fname = pathlib.Path(XLS_File)
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
+    print('')
+    print('Generating NSX-T Transport Zone output: %s' %XLS_File)
+    print('')
+    SheetTZ(auth_list,ls_wkbk)
+    ls_wkbk.save(XLS_File)
+
+
+def SheetTZ(auth_list,ls_wkbk):
     sheet1 = ls_wkbk.add_sheet('Transport Zones', cell_overwrite_ok=True)
 
     #Set Excel Styling
@@ -96,19 +111,6 @@ def DocsTZ(auth_list):
     sheet1.write(0, 9, 'TRANSPORT TYPE', style_db_center)
     sheet1.write(0, 10, 'UPLINK TEAMING POLICY NAME', style_db_center)
 
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Transport_Zones.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-
-    print('')
-    print('Generating NSX-T Transport Zone output: %s' %XLS_File)
-    print('')
-
     SessionNSX = ConnectNSX(auth_list)
     stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
 
@@ -131,6 +133,4 @@ def DocsTZ(auth_list):
         sheet1.write(start_row, 9, tz.transport_type)
         sheet1.write(start_row, 10,tz.uplink_teaming_policy_names)
         start_row += 1
-    
-    ls_wkbk.save(XLS_File)
-    
+        

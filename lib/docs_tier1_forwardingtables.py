@@ -45,12 +45,9 @@ from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-def DocsT1ForwardingTable(auth_list):
+def CreateXLST1ForwardingTable(auth_list):
     # Setup excel workbook and worksheets   
-    style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz center, wrap True')
-    style_alignleft = xlwt.easyxf('font: colour black, bold True; align: horiz left, wrap True')
-
+    t1_routing_wkbk = Workbook()
     #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
     XLS_File = lib.menu.XLS_Dest + os.path.sep + "Tier-1_Forwarding.xls"
     fname = pathlib.Path(XLS_File)
@@ -63,6 +60,14 @@ def DocsT1ForwardingTable(auth_list):
     print('')
     print('Generating Tier-1 Forwarding Tables: %s' %XLS_File)
     print('')
+    SheetT1ForwardingTable(auth_list,t1_routing_wkbk)
+    t1_routing_wkbk.save(XLS_File)
+
+
+def SheetT1ForwardingTable(auth_list,t1_routing_wkbk):
+    style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
+                                    'font: colour white, bold True; align: horiz center, wrap True')
+    style_alignleft = xlwt.easyxf('font: colour black, bold True; align: horiz left, wrap True')
 
     SessionNSX = ConnectNSX(auth_list)
     ########### GET Edge Clusters  ###########
@@ -81,7 +86,6 @@ def DocsT1ForwardingTable(auth_list):
     for i in t1_json["results"]:
         t1_id_list.append(i['display_name'])
 
-    t1_routing_wkbk = Workbook()
     for i in t1_id_list:
         start_row_0 = 0
         start_row_1 = 1
@@ -137,6 +141,4 @@ def DocsT1ForwardingTable(auth_list):
                     start_row_7 += 9
         except:
             sheet.write(0, 0, 'NO FORWARDING TABLE', style_db_center)
-
-    t1_routing_wkbk.save(XLS_File)
     

@@ -45,9 +45,26 @@ from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-def DocsRouterSum(auth_list):
+def CreateXLSRouterSum(auth_list):
     # Setup excel workbook and worksheets 
     lr_wkbk = Workbook()  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Logical_Router_Summary.xls"
+    fname = pathlib.Path(XLS_File)
+
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
+    print('')
+    print('Generating Logical Router output: %s' %XLS_File)
+    print('')
+    SheetRouterSum(auth_list,lr_wkbk)
+    lr_wkbk.save(XLS_File)
+
+def SheetRouterSum(auth_list,lr_wkbk):
     lr_summary = lr_wkbk.add_sheet('Logical Router Summary', cell_overwrite_ok=True)
     tier0_lr = lr_wkbk.add_sheet('Tier0 Logical Routers', cell_overwrite_ok=True)
     tier0_vrf_lr = lr_wkbk.add_sheet('Tier0 VRF Logical Routers', cell_overwrite_ok=True)
@@ -76,20 +93,6 @@ def DocsRouterSum(auth_list):
     t1_columnA.width = 256 * 30
     t1_columnB = tier1_lr.col(1)
     t1_columnB.width = 256 * 50
-
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Logical_Router_Summary.xls"
-    fname = pathlib.Path(XLS_File)
-
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-
-    print('')
-    print('Generating Logical Router output: %s' %XLS_File)
-    print('')
 
     SessionNSX = ConnectNSX(auth_list)
    ########### GET Logical Routers  ###########
@@ -235,5 +238,3 @@ def DocsRouterSum(auth_list):
         tier1_lr.write(start_row,1,i['failover_mode'],style_alignleft)
                                       
         start_row += 2
-
-    lr_wkbk.save(XLS_File)

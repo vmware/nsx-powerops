@@ -50,10 +50,27 @@ from vmware.vapi.security.user_password import \
     create_user_password_security_context
 
 
-def DocsFabDiscoveredNodes(auth_list):
+def CreateXLSFabDiscoveredNodes(auth_list):
     # Setup excel workbook and worksheets 
-    d_node_wkbk = Workbook()  
-    sheet1 = d_node_wkbk.add_sheet('Discovered Nodes', cell_overwrite_ok=True)
+    ls_wkbk = Workbook()  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Fabric_Discovered_Nodes.xls"
+    fname = pathlib.Path(XLS_File)
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
+    print('')
+    print('Generating NSX-T Manager output: %s' %XLS_File)
+    print('')
+    SheetFabDiscoveredNodes(auth_list,ls_wkbk)
+    ls_wkbk.save(XLS_File)
+
+
+def SheetFabDiscoveredNodes(auth_list,ls_wkbk):
+    sheet1 = ls_wkbk.add_sheet('Discovered Nodes', cell_overwrite_ok=True)
 
     #Set Excel Styling
     style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
@@ -131,19 +148,6 @@ def DocsFabDiscoveredNodes(auth_list):
     sheet1.write(2, 20, 'Lockdown Mode', style_db_center)
     sheet1.write(2, 21, 'DAS Host State', style_db_center)
 
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Fabri_Discovered_Nodes.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-
-    print('')
-    print('Generating NSX-T Node output: %s' %XLS_File)
-    print('')
-
     SessionNSX = ConnectNSX(auth_list)
     stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
 
@@ -203,4 +207,3 @@ def DocsFabDiscoveredNodes(auth_list):
             
         start_row +=1
     
-    d_node_wkbk.save(XLS_File)

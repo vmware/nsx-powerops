@@ -45,10 +45,26 @@ from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-
-def DocsT1Segments(auth_list):
+def CreateXLST1Segments(auth_list):
     # Setup excel workbook and worksheets 
     t1_segments_wkbk = Workbook()  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Tier-1_Segments.xls"
+    fname = pathlib.Path(XLS_File)
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
+    print('')
+    print('Generating Tier-1 Segment output: %s' % XLS_File)
+    print('')
+    SheetT1Segments(auth_list,t1_segments_wkbk)
+    t1_segments_wkbk.save(XLS_File)
+
+
+def SheetT1Segments(auth_list,t1_segments_wkbk):
     sheet1 = t1_segments_wkbk.add_sheet('Tier1 Segments', cell_overwrite_ok=True)
     style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
                                     'font: colour white, bold True; align: horiz center')
@@ -72,19 +88,6 @@ def DocsT1Segments(auth_list):
     sheet1.write(0, 4, 'Connected to Tier1 Name', style_db_center)
     sheet1.write(0, 5, 'Connected to Tier1 ID', style_db_center)
 
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Tier-1_Segments.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-
-    print('')
-    print('Generating Tier-1 Segment output: %s' % XLS_File)
-    print('')
-
     SessionNSX = ConnectNSX(auth_list)
     t1_url = '/policy/api/v1/infra/tier-1s'
     t1_json = GetAPI(SessionNSX[0],t1_url, auth_list)
@@ -103,5 +106,3 @@ def DocsT1Segments(auth_list):
             sheet1.write(start_row, 5, str(n['connectivity_path']).split("/")[3])
 
             start_row += 1
-    
-    t1_segments_wkbk.save(XLS_File)

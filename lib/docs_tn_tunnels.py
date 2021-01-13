@@ -28,7 +28,6 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-
 import requests
 import urllib3
 import xlwt
@@ -44,18 +43,9 @@ from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-def DocsTunnels(auth_list):
+def CreateXLSTunnels(auth_list):
     # Setup excel workbook and worksheets 
     tunnel_wkbk = Workbook()  
-
-    #Set Excel Styling
-    style_db_left = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz left, vert centre')
-    style_alignleft = xlwt.easyxf('font: colour black, bold False; align: horiz left, wrap True')
-    style_bold = xlwt.easyxf('font: colour black, bold True; align: horiz left, wrap True')
-    style_green = xlwt.easyxf('font: colour green, bold True; align: horiz left, wrap True')
-    style_red = xlwt.easyxf('font: colour red, bold True; align: horiz left, wrap True')
-
     #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
     XLS_File = lib.menu.XLS_Dest + os.path.sep + "Transport_Node_Tunnels.xls"
     fname = pathlib.Path(XLS_File)
@@ -68,6 +58,18 @@ def DocsTunnels(auth_list):
     print('')
     print('Generating Transport Node Tunnel Output: %s' %XLS_File)
     print('')
+    SheetTunnels(auth_list,tunnel_wkbk)    
+    tunnel_wkbk.save(XLS_File)
+
+
+def SheetTunnels(auth_list,tunnel_wkbk):
+    #Set Excel Styling
+    style_db_left = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
+                                    'font: colour white, bold True; align: horiz left, vert centre')
+    style_alignleft = xlwt.easyxf('font: colour black, bold False; align: horiz left, wrap True')
+    style_bold = xlwt.easyxf('font: colour black, bold True; align: horiz left, wrap True')
+    style_green = xlwt.easyxf('font: colour green, bold True; align: horiz left, wrap True')
+    style_red = xlwt.easyxf('font: colour red, bold True; align: horiz left, wrap True')
 
     SessionNSX = ConnectNSX(auth_list)
     transport_node_url = '/api/v1/transport-nodes'
@@ -134,5 +136,3 @@ def DocsTunnels(auth_list):
                 row_f += 9
                 row_g += 9
                 row_h += 9
-
-    tunnel_wkbk.save(XLS_File)

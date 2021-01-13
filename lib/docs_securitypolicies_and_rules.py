@@ -47,10 +47,27 @@ from com.vmware.nsx_policy.infra.domains.security_policies_client import Rules
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-
-def DocsSecDFW(auth_list):
+def CreateXLSSecDFW(auth_list):
     # Setup excel workbook and worksheets 
-    groups_wkbk = Workbook()  
+    groups_wkbk = Workbook() 
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Distributed_Firewall.xls"
+    fname = pathlib.Path(XLS_File)
+
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
+    print('')
+    print('Generating NSX-T Distributed Firewall output: %s' %XLS_File)
+    print('')
+    SheetSecDFW(auth_list,ls_wkbk)
+    ls_wkbk.save(XLS_File)
+
+
+def SheetSecDFW(auth_list,groups_wkbk):
     ethernet = groups_wkbk.add_sheet('Ethernet', cell_overwrite_ok=True)
     emergency = groups_wkbk.add_sheet('Emergency', cell_overwrite_ok=True)
     infrastructure = groups_wkbk.add_sheet('Infrastructure', cell_overwrite_ok=True)
@@ -264,20 +281,6 @@ def DocsSecDFW(auth_list):
     application.write(0, 9, 'DISABLED', style_db_center)
     application.write(0, 10, 'IP PROTOCOL', style_db_center)
     application.write(0, 11, 'LOGGED', style_db_center)
-
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Distributed_Firewall.xls"
-    fname = pathlib.Path(XLS_File)
-
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-
-    print('')
-    print('Generating NSX-T Distributed Firewall output: %s' %XLS_File)
-    print('')
 
     SessionNSX = ConnectNSX(auth_list)
     policies_url = '/policy/api/v1/infra/domains/default/security-policies'
@@ -799,5 +802,3 @@ def DocsSecDFW(auth_list):
             n += 1
             y += 1
     
-    groups_wkbk.save(XLS_File)
-

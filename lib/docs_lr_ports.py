@@ -45,9 +45,26 @@ from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-def DocsRouterPorts(auth_list):
+def CreateXLSRouterPorts(auth_list):
     # Setup excel workbook and worksheets 
     lr_ports_wkbk = Workbook()  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Logical_Router_Ports.xls"
+    fname = pathlib.Path(XLS_File)
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
+    print('')
+    print('Generating Logical Router Port output: %s' %XLS_File)
+    print('')
+    SheetRouterPorts(auth_list,lr_ports_wkbk)
+    lr_ports_wkbk.save(XLS_File)
+
+
+def SheetRouterPorts(auth_list,lr_ports_wkbk):
     lr_ports = lr_ports_wkbk.add_sheet('Logical Router Ports', cell_overwrite_ok=True)
 
     style_db_left = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
@@ -74,19 +91,6 @@ def DocsRouterPorts(auth_list):
     columnH.width = 256 * 40
     columnI = lr_ports.col(8)
     columnI.width = 256 * 15
-
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Logical_Router_Ports.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-
-    print('')
-    print('Generating Logical Router Port output: %s' %XLS_File)
-    print('')
 
     SessionNSX = ConnectNSX(auth_list)
     ########### GET Logical Routers  ###########
@@ -139,6 +143,3 @@ def DocsRouterPorts(auth_list):
         lr_ports.write(start_row,8, i['status']['status']) 
                         
         start_row += 1
-
-    lr_ports_wkbk.save(XLS_File)
-    

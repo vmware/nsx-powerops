@@ -80,7 +80,6 @@ def main():
                 print('')
                 time.sleep(1)
                 result = [ListAuth[1][1],ListAuth[1][2], 'AUTH']
-                print(result)
                 MainMenu(result, dest)
 
 if __name__ == "__main__":

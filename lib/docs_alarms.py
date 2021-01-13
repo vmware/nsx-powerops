@@ -49,12 +49,26 @@ from com.vmware.nsx_client import Alarms
 from vmware.vapi.security.user_password import \
     create_user_password_security_context
 
-
-def DocsAlarms(auth_list):
+def CreateXLSAlarms(auth_list):
     # Setup excel workbook and worksheets 
     ls_wkbk = Workbook()  
-    sheet1 = ls_wkbk.add_sheet('NSX Alarms', cell_overwrite_ok=True)
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Alarms.xls"
+    fname = pathlib.Path(XLS_File)
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+        
+    print('')
+    print('Generating NSX-T Alarms output: %s' % XLS_File)
+    print('')
+    SheetNSXManagerInfo(auth_list,ls_wkbk)
+    ls_wkbk.save(XLS_File)
 
+def SheetAlarms(auth_list,ls_wkbk):
+    sheet1 = ls_wkbk.add_sheet('NSX Alarms', cell_overwrite_ok=True)
     #Set Excel Styling
     style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
                                     'font: colour white, bold True; align: horiz center')
@@ -94,19 +108,6 @@ def DocsAlarms(auth_list):
     sheet1.write(0, 8, 'Description', style_db_center)
     sheet1.write(0, 9, 'Recommended Action', style_db_center)
     
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Alarms.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-        
-    print('')
-    print('Generating NSX-T Alarms output: %s' % XLS_File)
-    print('')
-
     SessionNSX = ConnectNSX(auth_list)
     tn_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes', auth_list)
     stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
@@ -155,4 +156,3 @@ def DocsAlarms(auth_list):
 
         start_row +=1
     
-    ls_wkbk.save(XLS_File)

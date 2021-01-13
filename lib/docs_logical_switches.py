@@ -28,7 +28,6 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-
 import requests
 import urllib3
 import xlwt
@@ -50,10 +49,26 @@ from com.vmware.nsx.model_client import LogicalSwitch
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-
-def DocsSegments(auth_list):
+def CreateXLSSegments(auth_list):
     # Setup excel workbook and worksheets 
     ls_wkbk = Workbook()  
+    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Logical_Switches.xls"
+    fname = pathlib.Path(XLS_File)
+    if fname.exists():
+        print('')
+        print(fname, 'file already exists.  Not attempting to overwite')
+        print('')
+        return
+
+    print('')
+    print('Generating NSX-T Segment output: %s' % XLS_File)
+    print('')
+    SheetSegments(auth_list,ls_wkbk)
+    ls_wkbk.save(XLS_File)
+
+
+def SheetSegments(auth_list,ls_wkbk):
     sheet1 = ls_wkbk.add_sheet('Logical Switching', cell_overwrite_ok=True)
 
     #Set Excel Styling
@@ -95,19 +110,6 @@ def DocsSegments(auth_list):
     sheet1.write(0, 8, 'POLICY PATH', style_db_center)
     sheet1.write(0, 9, 'SUBNET', style_db_center)
 
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Logical_Switches.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
-        return
-
-    print('')
-    print('Generating NSX-T Segment output: %s' % XLS_File)
-    print('')
-    
     SessionNSX = ConnectNSX(auth_list)
     stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
     
@@ -138,5 +140,4 @@ def DocsSegments(auth_list):
                 sheet1.write(start_row, 3, tz_list.results[i].display_name)
                 sheet1.write(start_row, 5, tz_list.results[i].transport_type)
         start_row +=1
-    ls_wkbk.save(XLS_File)
     

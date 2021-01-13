@@ -45,13 +45,8 @@ from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-
-def DocsT0RoutingTable(auth_list):
-    # Setup excel workbook and worksheets   
-    style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz center, wrap True')
-    style_alignleft = xlwt.easyxf('font: colour black, bold True; align: horiz left, wrap True')
-
+def CreateXLST0RoutingTable(auth_list):
+    t0_routing_wkbk = Workbook()
     #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
     XLS_File = lib.menu.XLS_Dest + os.path.sep + "Tier-0_Routing.xls"
     fname = pathlib.Path(XLS_File)
@@ -64,6 +59,15 @@ def DocsT0RoutingTable(auth_list):
     print('')
     print('Generating Tier-0 Routing Tables: %s' %XLS_File)
     print('')
+    SheetT0RoutingTable(auth_list,t0_routing_wkbk)
+    t0_routing_wkbk.save(XLS_File)
+
+
+def SheetT0RoutingTable(auth_list,t0_routing_wkbk):
+    # Setup excel workbook and worksheets   
+    style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
+                                    'font: colour white, bold True; align: horiz center, wrap True')
+    style_alignleft = xlwt.easyxf('font: colour black, bold True; align: horiz left, wrap True')
 
     SessionNSX = ConnectNSX(auth_list)
     ########### GET Edge Clusters  ###########
@@ -80,8 +84,6 @@ def DocsT0RoutingTable(auth_list):
     t0_id_list = []
     for i in t0_json["results"]:
         t0_id_list.append(i['id'])
-
-    t0_routing_wkbk = Workbook()
 
     for i in t0_id_list:
         start_row_0 = 0
@@ -137,7 +139,4 @@ def DocsT0RoutingTable(auth_list):
                     start_row_6 += 9
                     start_row_7 += 9
         except:
-            sheet.write(0, 0, 'NO ROUTING TABLE', style_db_center)
-
-    t0_routing_wkbk.save(XLS_File)
-    
+            sheet.write(0, 0, 'NO ROUTING TABLE', style_db_center)    
