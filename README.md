@@ -42,25 +42,14 @@ Example installation using Ubuntu 20.04:
     * NSX-T-PowerOps (/home/powerops/NSX-T-PowerOps)
     * NSX-T-PowerOps/lib/powerops/master (/home/powerops/NSX-T-PowerOps/lib/powerops/master)
     * powerops_documentation (/home/powerops/powerops_documentation)
-7. Create a 'powerops_basic' file under /home/powerops
-    * A single line 'powerops_basic' file as: 'python3 /home/powerops/lib/powerops_master/nsx-powerops/basic/_poweropsmain.py'
-8. Create a 'powerops_cert' file under /home/powerops
-    * A single line 'powerops_cert' file as: 'python3 /home/powerops/lib/powerops_master/nsx-powerops/cert/_poweropsmain.py'
+7. Create a 'powerops' file under /home/powerops
+    * A single line 'powerops' file as: 'python3 /home/powerops/lib/powerops_master/nsx-powerops/_poweropsmain.py'
 
 #### Option Pre-Requisite:
+If you wish to use PowerOps with a Pricipal Identity Certificate Based user, please create your Principal Identity user in NSX-T and have access to the certificate and key files. Files must be in .crt and .key extension.
 
-If you wish to use PowerOps with a Pricipal Identity Certificate Based user, please create your Principal Identity user in NSX-T and have accees to
-the certificate and key files
-
-1.  Copy the certificate and key files to /home/powerops/cert
-2.  Modify the '_cert.py' file with correct filenames (see instructions in file) - CAN ONLY BE DONE AFTER GIT REPO HAS BEEN CLONED
-
-If you wish to use PowerOps with a user different to 'powerops':
-
-1. Modify the following line in the '_createdir.py' file (under both 'cert' and 'basic' folders):
-    * 'source = '/home/powerops/powerops_documentation/POps_doc_' '
-    * Modify 'powerops' to be your username (DO NOT CHANGE the 'powerops_documentation' part of the line)
-2. Modify the /home/<USER>/powerops_cert file 
+1.  Copy the certificate and key files into a folder
+2. Modify the config.yml file with the folder containing cert and key file
 
 ### Build & Run
 To run NSX-T PowerOps:
@@ -69,12 +58,9 @@ To run NSX-T PowerOps:
     * cd /NSX-T-PowerOps/lib/powerops_master
     * `git clone -b NSX-T-PowerOps --single-branch https://github.com/vmware/nsx-powerops.git`
 
-1. Using basic authentication (username / password):
-    * From /home/powerops
-        * source ./powerops_basic
-2. Using certificate based principal identity:
-    * From /home/powerops
-        * source ./powerops_cert
+2. Modify the config.yml with all your informations (NSX IP or FQDN, output folder for XLS files, cert folder)
+    
+3. Execute the _poweropsmain.py in the repo folder or powerops file that you ceate before (step 7 of Pre-Requisites) 
 
 ### Contributing
 The NSX-PowerOps project team welcomes contributions from the community. Before you start working with NSX-PowerOps, please read our [Developer Certificate of Origin](https://cla.vmware.com/dco). All contributions to this repository must be signed as described on that page. Your signature certifies that you wrote the patch or have the right to pass it on as an open-source patch. For more detailed information, refer to the [Contribution Guidelines](CONTRIBUTING.md).
