@@ -55,7 +55,7 @@ def CreateXLSSecGrp(auth_list):
     # Setup excel workbook and worksheets 
     groups_wkbk = Workbook()  
     #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "NS Groups.xls"
+    XLS_File = lib.menu.XLS_Dest + os.path.sep + "NS_Groups.xls"
     fname = pathlib.Path(XLS_File)
     if fname.exists():
         print('')
@@ -124,6 +124,7 @@ def SheetSecGrp(auth_list,groups_wkbk):
     x = len(group_list.results)
     start_row = 1
     for i in range(0,x):
+        print("%s - Treating NS group: %s" %(i+1, group_list.results[i].display_name))
         # Extract Group ID for each group
         grp_id = group_list.results[i].id
         sheet1.write(start_row, 0, group_list.results[i].display_name)
@@ -238,9 +239,12 @@ def GetCriteria(SESSION, auth_list, DictExpression):
     if DictExpression['resource_type'] == 'Condition':
         criteria = DictExpression['member_type'] + ' with ' + DictExpression['key'].lower() + ' ' + DictExpression['operator'].lower()
         ListTAG = DictExpression['value'].split('|')
-        if ListTAG[1] == '': criteria = criteria + ' NoTag scope: ' + ListTAG[0] + '\n'
-        elif ListTAG[0] == '': criteria = criteria + ' ' + ListTAG[1] + '\n'
-        else: criteria = criteria + ' ' + ListTAG[1] + ' scope ' + ListTAG[0]
+        if len(ListTAG) > 1:
+            if ListTAG[1] == '': criteria = criteria + ' NoTag scope: ' + ListTAG[0] + '\n'
+            elif ListTAG[0] == '': criteria = criteria + ' ' + ListTAG[1] + '\n'
+            else: criteria = criteria + ' ' + ListTAG[1] + ' scope ' + ListTAG[0]
+        else:
+            criteria = criteria + ' ' + ListTAG[0]
 
     ListReturn = [criteria, TypeCriteriaList]
     return ListReturn

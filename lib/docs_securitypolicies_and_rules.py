@@ -63,8 +63,8 @@ def CreateXLSSecDFW(auth_list):
     print('')
     print('Generating NSX-T Distributed Firewall output: %s' %XLS_File)
     print('')
-    SheetSecDFW(auth_list,ls_wkbk)
-    ls_wkbk.save(XLS_File)
+    SheetSecDFW(auth_list,groups_wkbk)
+    groups_wkbk.save(XLS_File)
 
 
 def SheetSecDFW(auth_list,groups_wkbk):

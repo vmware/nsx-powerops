@@ -64,7 +64,7 @@ def CreateXLSAlarms(auth_list):
     print('')
     print('Generating NSX-T Alarms output: %s' % XLS_File)
     print('')
-    SheetNSXManagerInfo(auth_list,ls_wkbk)
+    SheetAlarms(auth_list,ls_wkbk)
     ls_wkbk.save(XLS_File)
 
 def SheetAlarms(auth_list,ls_wkbk):
