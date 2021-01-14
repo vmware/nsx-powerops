@@ -123,30 +123,30 @@ def MainMenu(authlist,dest):
             current_menu = current_menu.parent
         else:
 ##### Debug
-            inpt = int(inpt)
-            if not current_menu.choices[inpt].choices:
-                if current_menu.choices[inpt].func == 'Back':
-                    current_menu = current_menu.parent
-                    continue
-                else:
-                    current_menu.choices[inpt].func(authlist)
-                    continue
-                
-            current_menu = current_menu.choices[inpt]
-
+#            inpt = int(inpt)
+#            if not current_menu.choices[inpt].choices:
+#                if current_menu.choices[inpt].func == 'Back':
+#                    current_menu = current_menu.parent
+#                    continue
+#                else:
+#                    current_menu.choices[inpt].func(authlist)
+#                    continue
+#                
+#            current_menu = current_menu.choices[inpt]
+#
 ####
-#            try:
-#                inpt = int(inpt)
-#                if not current_menu.choices[inpt].choices:
-#                    if current_menu.choices[inpt].func == 'Back':
-#                        current_menu = current_menu.parent
-#                        continue
-#                    else:
-#                        current_menu.choices[inpt].func(authlist)
-#                        continue
-#                    
-#                current_menu = current_menu.choices[inpt]
-#            except Exception as error:
-#                print("!! ==> Invalid input")
-#                print(error)
+            try:
+                inpt = int(inpt)
+                if not current_menu.choices[inpt].choices:
+                    if current_menu.choices[inpt].func == 'Back':
+                        current_menu = current_menu.parent
+                        continue
+                    else:
+                        current_menu.choices[inpt].func(authlist)
+                        continue
+                    
+                current_menu = current_menu.choices[inpt]
+            except Exception as error:
+                print("!! ==> Invalid input")
+                print(error)
             
