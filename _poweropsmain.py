@@ -54,23 +54,30 @@ def main():
     YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
     # Check if all cert files are present and ask credential if not
     result = CheckCertFiles(YAML_DICT['CERT_PATH'])
-    if result[0] and result[1] != "":
+    if result[0] != "" and result[1] != "":
         print("Found all certifications files needed (.crt and .key) - used Principal Identity User")
-        print('\nSuccessful authentication.  Generating output directory....\n')
-        dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
-        print('Documentation output directory is: ', dest)
-        print('')
-        time.sleep(1)
-        result.append("CERT")
-        # result is a list with cert, key and CERT
-        MainMenu(result,dest)
-    else:
-        print("No certifications files found - asking credential")
+        ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'],'CERT',result)
+        if ListAuth[0] != 'Failed':
+            print('\nSuccessful authentication.  Generating output directory....\n')
+            dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
+            print('Documentation output directory is: ', dest)
+            print('')
+            time.sleep(1)
+            result.append("CERT")
+            # result is a list with cert, key and CERT
+            MainMenu(result,dest)
+        else:
+            print('\nAuthentication with certificates failed.\n')
+            result[0] = ""
+            result[1] = ""
+
+    if result[0] == "" and result[1] == "":
+        print("Asking credential")
         print("Found NSX Manager IP or FQDN in yaml configuration file: %s" % YAML_DICT['NSX_MGR_IP'])
         print("\n")
         response = ""
         while response != '<Response [200]>':
-            ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'])
+            ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'],'AUTH',result)
             response = ListAuth[0]
             if response != '<Response [200]>':
                 print('\nIncorrect FQDN, Username or Password entered.  Please re-enter credentials:\n')
@@ -80,7 +87,7 @@ def main():
                 print('Documentation output directory is: ', dest)
                 print('')
                 time.sleep(1)
-                result = [ListAuth[1][1],ListAuth[1][2], 'AUTH']
+                result = [ListAuth[1][0],ListAuth[1][1], 'AUTH']
                 # result is a list with login, password and AUTH
                 MainMenu(result, dest)
 

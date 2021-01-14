@@ -14,12 +14,19 @@ from vmware.vapi.security.user_password import \
 
 YAML_CFG_FILE = 'config.yml'
 
-def GetAPI(session,url, auth_list):
+def GetAPI(session,url, auth_list, resp_type = ''):
     YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
-    if auth_list[2] == 'AUTH':
-        return session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url), auth=(auth_list[0], auth_list[1]), verify=session.verify).json()
-    if auth_list[2] == 'CERT':
-        return requests.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url), headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify).json()
+    if resp_type == 'NOJSON':
+        if auth_list[2] == 'AUTH':
+            return session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url), auth=(auth_list[0], auth_list[1]), verify=session.verify)
+        if auth_list[2] == 'CERT':
+            return requests.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url), headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify)
+    else:
+        if auth_list[2] == 'AUTH':
+            return session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url), auth=(auth_list[0], auth_list[1]), verify=session.verify).json()
+        if auth_list[2] == 'CERT':
+            return requests.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url), headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify).json()
+
 
 def ConnectNSX(auth_list):
     YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)

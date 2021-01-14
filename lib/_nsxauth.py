@@ -28,32 +28,29 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-
 import requests
 import getpass
 import urllib, urllib3
+from lib.system import *
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def auth_nsx(nsx_mgr_fqdn):
-    auth_list_1 = []
-    # Capture credential inputs
-    auth_list_1.append(nsx_mgr_fqdn)
-    username = input('Enter NSX-T Manager Username: ')
-    auth_list_1.append(username)
-    password = getpass.getpass(prompt='Enter NSX Manager password: ') #Note password not displayed on screen
-    auth_list_1.append(password)
+def auth_nsx(nsx_mgr_fqdn,authmethod,cert):
+    url_test = '/api/v1/node'
 
-    session = requests.session()
-    session.verify = False
+    if authmethod == 'AUTH':
+        # Capture credential inputs
+        username = input('Enter NSX-T Manager Username: ')
+        password = getpass.getpass(prompt='Enter NSX Manager password: ') #Note password not displayed on screen
+        auth_list = [username,password,authmethod]
+    else:
+        auth_list = [cert[0],cert[1],authmethod]
+
     try:
-        req = session.get('https://' + auth_list_1[0] + '/api/v1/node', auth=(auth_list_1[1], auth_list_1[2]), verify=session.verify)
-        auth_list = []
-        auth_list.append(auth_list_1[0])
-        auth_list.append(auth_list_1[1])
-        auth_list.append(auth_list_1[2])
+        SessionNSX = ConnectNSX(auth_list)
+        req = GetAPI(SessionNSX[0],url_test, auth_list,'NOJSON')
         response = [str(req), auth_list]
     except:
         response = ['Failed',[]]
         quit
-    
+
     return response
