@@ -34,7 +34,6 @@ import xlwt
 import os
 import pathlib
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 from lib. _nsxauth import *
 from lib.system import *
 import lib.menu
@@ -129,11 +128,12 @@ def SheetSegments(auth_list,ls_wkbk):
         sheet1.write(start_row, 6, ls.replication_mode)
         sheet1.write(start_row, 7, ls.admin_state)
         newlist = []
-        for i in range(len(ls.tags)):
-            newlist.append(ls.tags[i].tag)
-        if len(newlist) > 1:
-            sheet1.write(start_row, 8,(str(newlist[0])))
-            sheet1.write(start_row, 9,(str(newlist.pop())))
+        if ls.tags != None:
+            for i in range(len(ls.tags)):
+                newlist.append(ls.tags[i].tag)
+            if len(newlist) > 1:
+                sheet1.write(start_row, 8,(str(newlist[0])))
+                sheet1.write(start_row, 9,(str(newlist.pop())))
         x = len(tz_list.results)
         for i in range(0,x):
             if ls.transport_zone_id == tz_list.results[i].id:

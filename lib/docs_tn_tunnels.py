@@ -44,7 +44,7 @@ from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
 def CreateXLSTunnels(auth_list):
-    # Setup excel workbook and worksheets 
+    # Setup excel workbook and worksheets
     tunnel_wkbk = Workbook()  
     #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
     XLS_File = lib.menu.XLS_Dest + os.path.sep + "Transport_Node_Tunnels.xls"
@@ -77,11 +77,14 @@ def SheetTunnels(auth_list,tunnel_wkbk):
 
     transport_nodes = (transport_node_json['results'])
     tnode_dict = {}
-    
     # Create a tab for each transport node
     for n in range(len(transport_nodes)):
+        # Excel sheet title can't exceeded 31 caracters
+        if len(transport_nodes[n]['display_name']) > 31: TitleSheet = transport_nodes[n]['display_name'][0:30]
+        else: TitleSheet = transport_nodes[n]['display_name'] 
+
         tnode_dict.update({transport_nodes[n]['node_id']:transport_nodes[n]['display_name']})
-        sheet = tunnel_wkbk.add_sheet(transport_nodes[n]['display_name'], cell_overwrite_ok=True)
+        sheet = tunnel_wkbk.add_sheet(TitleSheet, cell_overwrite_ok=True)
         
         #Setup Column widths
         columnA = sheet.col(0)

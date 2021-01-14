@@ -62,6 +62,7 @@ def main():
         print('')
         time.sleep(1)
         result.append("CERT")
+        # result is a list with cert, key and CERT
         MainMenu(result,dest)
     else:
         print("No certifications files found - asking credential")
@@ -80,6 +81,7 @@ def main():
                 print('')
                 time.sleep(1)
                 result = [ListAuth[1][1],ListAuth[1][2], 'AUTH']
+                # result is a list with login, password and AUTH
                 MainMenu(result, dest)
 
 if __name__ == "__main__":

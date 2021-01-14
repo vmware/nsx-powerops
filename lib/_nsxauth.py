@@ -30,21 +30,13 @@
 #############################################################################################################################################################################################
 
 import requests
-import json
-import urllib, urllib3
 import getpass
-
-from vmware.vapi.lib import connect
-from vmware.vapi.security.user_password import \
-        create_user_password_security_context
-
+import urllib, urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def auth_nsx(nsx_mgr_fqdn):
     auth_list_1 = []
-
     # Capture credential inputs
-    #nsx_mgr_fqdn = input('Enter NSX-T Manager FQDN: ')
     auth_list_1.append(nsx_mgr_fqdn)
     username = input('Enter NSX-T Manager Username: ')
     auth_list_1.append(username)

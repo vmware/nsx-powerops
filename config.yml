@@ -3,6 +3,7 @@
 # -------------------------------------------------------------------------------
 
 CERT_PATH: /Users/ysimonet/Documents/Scripts/NSX/Python/powerops/cert
-NSX_MGR_IP: "10.100.10.12"
+#NSX_MGR_IP: "10.100.10.12"
+NSX_MGR_IP: "10.92.26.52"
 OUTPUT_PATH: '/Users/ysimonet/Documents/Scripts/NSX/Python/powerops/powerops_documentation/'
 PREFIX_FOLDER: 'POps_doc_'
