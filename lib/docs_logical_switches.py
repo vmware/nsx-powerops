@@ -34,7 +34,6 @@ import xlwt
 import os
 import pathlib
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-from lib. _nsxauth import *
 from lib.system import *
 import lib.menu
 from xlwt import Workbook

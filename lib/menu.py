@@ -53,9 +53,9 @@ class Menu:
         self.short_view = short_view
         self.func = func
         if submenus != None:
-            self.choices = dict(enumerate(submenus, 1))
+            self.choices = dict(enumerate(submenus, 1)) #create dictionnary of submenus
             for sub in submenus:
-                sub.parent = self
+                sub.parent = self # Definition of parent menu for each submenu
         else:
             self.choices = {}
             

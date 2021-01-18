@@ -35,8 +35,6 @@ import xlwt
 import os
 import pathlib
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-from lib. _nsxauth import *
 from lib.system import *
 import lib.menu
 from xlwt import Workbook
@@ -117,10 +115,10 @@ def SheetSecGrp(auth_list,groups_wkbk):
     SessionNSX = ConnectNSX(auth_list)
     Groups_list_json = GetAPI(SessionNSX[0],Groups_list_url, auth_list)
     stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
-        
     group_list = []
     group_svc = Groups(stub_config)
     group_list = group_svc.list(domain_id)
+
     x = len(group_list.results)
     start_row = 1
     for i in range(0,x):

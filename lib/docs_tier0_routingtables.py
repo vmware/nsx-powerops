@@ -36,7 +36,6 @@ import os
 import pathlib 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-from lib. _nsxauth import *
 from lib.system import *
 import lib.menu
 from xlwt import Workbook
@@ -95,7 +94,7 @@ def SheetT0RoutingTable(auth_list,t0_routing_wkbk):
         start_row_6 = 6
         start_row_7 = 7
 
-        sheet = t0_routing_wkbk.add_sheet(str(i), cell_overwrite_ok=True)
+        sheet = t0_routing_wkbk.add_sheet(str(i) + "_Table", cell_overwrite_ok=True)
         col_width_A = sheet.col(0)
         col_width_A.width = 256 * 30
         col_width_B = sheet.col(1)
