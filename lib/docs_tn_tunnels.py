@@ -28,16 +28,10 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import requests
-import urllib3
 import xlwt
-import os
 import pathlib
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 from lib.system import *
 import lib.menu
-from xlwt import Workbook
 
 from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
@@ -45,18 +39,15 @@ from vmware.vapi.security.user_password import \
 
 def CreateXLSTunnels(auth_list):
     # Setup excel workbook and worksheets
-    tunnel_wkbk = Workbook()  
+    tunnel_wkbk = xlwt.Workbook()  
     #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
     XLS_File = lib.menu.XLS_Dest + os.path.sep + "Transport_Node_Tunnels.xls"
     fname = pathlib.Path(XLS_File)
     if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
+        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
         return
 
-    print('')
-    print('Generating Transport Node Tunnel Output: %s' %XLS_File)
+    print('\nGenerating Transport Node Tunnel Output: ' + style.ORANGE + XLS_File + style.NORMAL)
     print('')
     SheetTunnels(auth_list,tunnel_wkbk)    
     tunnel_wkbk.save(XLS_File)

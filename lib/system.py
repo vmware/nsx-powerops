@@ -1,6 +1,33 @@
 #!/usr/bin/env python
 # coding: utf-8
-#
+#############################################################################################################################################################################################
+#                                                                                                                                                                                           #
+# NSX-T Power Operations                                                                                                                                                                    #
+#                                                                                                                                                                                           #
+# Copyright 2020 VMware, Inc.  All rights reserved				                                                                                                                            #
+#                                                                                                                                                                                           #
+# The MIT license (the “License”) set forth below applies to all parts of the NSX Power Operations project.  You may not use this file except in compliance with the License.               #
+#                                                                                                                                                                                           #
+# MIT License                                                                                                                                                                               #
+#                                                                                                                                                                                           #
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"),                                        #
+# to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,                                        #
+# and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:                                                #
+#                                                                                                                                                                                           #
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.                                                            #
+#                                                                                                                                                                                           #
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,                                       #
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,                             #
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                                #
+#                                                                                                                                                                                           #
+# *--------------------------------------------------------------------------------------* #                                                                                                #
+# **************************************************************************************** #                                                                                                #
+#   VMware NSX-T PowerOps by @dominicfoley & @stephensauer                                 #                                                                                                #
+#   A day 2 operations tool for helping to document and healthcheck an NSX-T environment   #                                                                                                #
+# **************************************************************************************** #                                                                                                #
+# *--------------------------------------------------------------------------------------* #                                                                                                #
+#                                                                                                                                                                                           #
+#############################################################################################################################################################################################
 import requests
 import urllib3
 import getpass
@@ -14,6 +41,12 @@ from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
 YAML_CFG_FILE = 'config.yml'
+
+class style:
+    RED = '\33[31m'
+    ORANGE = '\33[33m'
+    GREEN = '\33[32m'
+    NORMAL = '\033[0m'
 
 def CreateOutputFolder(PATH):
     """
@@ -149,10 +182,10 @@ def CheckCertFiles(PATH):
     TAG = [0,0]
     for fname in os.listdir(PATH):
         if fname.endswith('.crt'):
-            print("Found .crt file: %s" % fname)
+            print("==> Found .crt file: \x1b[0;33;40m%s\x1b[0m" % fname)
             TAG[0] = PATH + '/' + fname
         if fname.endswith('.key'):
-            print("Found .key file: %s" % fname)
+            print("==> Found .key file: \x1b[0;33;40m%s\x1b[0m" % fname)
             TAG[1] = PATH + '/' + fname
     
     return TAG

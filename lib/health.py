@@ -36,10 +36,11 @@ def GetHealthNSXCluster(auth_list):
     nsxclstr_json = GetAPI(SessionNSX[0],'/api/v1/cluster/status', auth_list)
     
     print("\n========================================================================================================")
-    print('\nNSX-T Cluster Status:         ',nsxclstr_json['mgmt_cluster_status']['status'])
-    print('NSX-T Control Cluster Status: ',nsxclstr_json['control_cluster_status']['status'])
-    print('NSX-T Overall Cluster Status: ',nsxclstr_json['detailed_cluster_status']['overall_status'])
-    print('')
+    if nsxclstr_json['mgmt_cluster_status']['status'] == 'STABLE': print('NSX-T Cluster Status:\t\t' + style.GREEN +  nsxclstr_json['mgmt_cluster_status']['status'] + style.NORMAL)
+    else: print('NSX-T Cluster Status:\t\t' + style.RED + nsxclstr_json['mgmt_cluster_status']['status'] + style.NORMAL)
+    if nsxclstr_json['control_cluster_status']['status'] == 'STABLE': print('NSX-T Control Cluster Status:\t' + style.GREEN + nsxclstr_json['control_cluster_status']['status'] + style.NORMAL)
+    if nsxclstr_json['detailed_cluster_status']['overall_status'] == 'STABLE': print('NSX-T Overall Cluster:\t\t' +style.GREEN + nsxclstr_json['detailed_cluster_status']['overall_status'] + style. NORMAL)
+    else: print('NSX-T Overall Cluster:\t\t' +style.RED + nsxclstr_json['detailed_cluster_status']['overall_status'] + style. NORMAL)
     online_nodes = len(nsxclstr_json['mgmt_cluster_status']['online_nodes'])
 
     groups = nsxclstr_json['detailed_cluster_status']['groups']
@@ -47,13 +48,11 @@ def GetHealthNSXCluster(auth_list):
     base = nsxmgr_json["nodes"]
 
     for n in range(online_nodes):
-        print('')
-        print('NSX-T Manager Appliance: ',base[n]['fqdn'])
-        print('')
+        print('\nNSX-T Manager Appliance: ' + style.ORANGE + base[n]['fqdn'] + style.NORMAL)
         for n in range(len(groups)):
-            print('Group Type:   ',groups[n]['group_type'])
-            print('Group Status: ',groups[n]['group_status'])
-            print('')
+            print('\nGroup Type:\t' + groups[n]['group_type'].strip())
+            if groups[n]['group_status'] == 'STABLE': print('Group Status:\t' + style.GREEN + groups[n]['group_status'] + style.NORMAL)
+            else: print('Group Status:\t\t' + style.RED + groups[n]['group_status'] + style.NORMAL)
     print("========================================================================================================")
 
 
@@ -67,18 +66,21 @@ def GetTNStatus(auth_list):
     print("\n========================================================================================================")
     for n in range(hostnodes):
         print('')
-        print('Host Node: ',hostnode_json["results"][n]["display_name"])
-        print('LCP Connectivity Status: ',hostnode_json["results"][n]["status"]["lcp_connectivity_status"])
-        print('MPA Connectivity Status: ',hostnode_json["results"][n]["status"]["mpa_connectivity_status"])
-        print('MPA Connectivity Status Details: ',hostnode_json["results"][n]["status"]["mpa_connectivity_status_details"])
-        print('Host Node Deployment Status: ',hostnode_json["results"][n]["status"]["host_node_deployment_status"])
+        print('Host Node: ' + style.ORANGE +hostnode_json["results"][n]["display_name"] + style.NORMAL)
+        if hostnode_json["results"][n]["status"]["lcp_connectivity_status"] == 'UP': print('LCP Connectivity Status: ' + style.GREEN + hostnode_json["results"][n]["status"]["lcp_connectivity_status"]+ style.NORMAL)
+        else: print('LCP Connectivity Status: ' + style.RED + hostnode_json["results"][n]["status"]["lcp_connectivity_status"]+ style.NORMAL)
+        if hostnode_json["results"][n]["status"]["mpa_connectivity_status"] == 'UP': print('MPA Connectivity Status: ' + style.GREEN + hostnode_json["results"][n]["status"]["mpa_connectivity_status"]+ style.NORMAL)
+        else: print('MPA Connectivity Status: ' + style.RED + hostnode_json["results"][n]["status"]["mpa_connectivity_status"]+ style.NORMAL) 
+        print('MPA Connectivity Status Details: ' + style.ORANGE + hostnode_json["results"][n]["status"]["mpa_connectivity_status_details"]+ style.NORMAL)
+        if 'INSTALL_SUCCESSFUL' in hostnode_json["results"][n]["status"]["host_node_deployment_status"]: print('Host Node Deployment Status: ' + style.GREEN + hostnode_json["results"][n]["status"]["host_node_deployment_status"]+ style.NORMAL)
+        else: print('Host Node Deployment Status: ' + style.RED + hostnode_json["results"][n]["status"]["host_node_deployment_status"] + style.NORMAL)
         try:
-            print('NSX Controller IP: ',hostnode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["control_node_ip"])
-            print('NSX Controller Status: ',hostnode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["status"])
+            print('NSX Controller IP: ' + style.ORANGE + hostnode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["control_node_ip"] + style.NORMAL)
+            print('NSX Controller Status: ' + style.GREEN + hostnode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["status"] + style.NORMAL)
             print('')
         except:
-            print('NSX Controller IP: UNKNOWN')
-            print('NSX Controller Status: UNKNOWN')
+            print('NSX Controller IP: ' + style.RED + 'UNKNOWN'+ style.NORMAL)
+            print('NSX Controller Status: ' + style.RED + 'UNKNOWN'+ style.NORMAL)
             print('')
     print("========================================================================================================")
 
@@ -101,23 +103,18 @@ def GetLRSum(auth_list):
         elif i['router_type'] == 'TIER1':
             tier1s +=1
 
-    print("\n========================================================================================================")
-    print('')
-    print('Tier0 Logical Routers: ',tier0s)
-    print('Tier0 VRFs: ',tier0vrfs)
-    print('Tier1 Logical Routers: ',tier1s)
-    print('')
-    print('Total Number of Logical Routers: ',total_lrs)
-    print('')
+    print("\n========================================================================================================\n")
+    print('Tier0 Logical Routers:\t' + style.ORANGE + str(tier0s) + style.NORMAL)
+    print('Tier0 VRFs:\t\t' + style.ORANGE + str(tier0vrfs) + style.NORMAL)
+    print('Tier1 Logical Routers:\t' + style.ORANGE + str(tier1s) + style.NORMAL)
+    print('\nTotal Number of Logical Routers: ' + style.ORANGE + str(total_lrs) + style.NORMAL + "\n")
     
     for i in lr_list_json["results"]:
-        print('')
-        print('Name: ',i['display_name'])
-        print('Router Type: ',i['router_type'])
-        print('HA Mode: ',i['high_availability_mode'])
+        print('\nName:\t\t' + style.ORANGE + i['display_name'] + style.NORMAL)
+        print('Router Type:\t' + style.ORANGE + i['router_type'] + style.NORMAL)
+        print('HA Mode:\t' + style.ORANGE + i['high_availability_mode'] + style.NORMAL)
     
-    print('')
-    print("========================================================================================================")
+    print("\n========================================================================================================")
 
 ########### SECTION FOR REPORTING ON NSX-T Compute Manager Detail ###########
 def GetComputeDetail(auth_list):
@@ -126,17 +123,14 @@ def GetComputeDetail(auth_list):
     cmp_managers = cmp_mgr_json["result_count"]
 
     print("\n========================================================================================================")
-    print('')
-    print('Number of Compute Managers: ',cmp_managers)
+    print('\nNumber of Compute Managers: ' + style.ORANGE + str(cmp_managers) + style.NORMAL)
 
     for i in range(cmp_mgr_json["result_count"]):
-        print('')
-        print('Compute Manager ID:     ',cmp_mgr_json["results"][i]["id"])
-        print('Compute Manager Server: ',cmp_mgr_json["results"][i]["server"])
-        print('Compute Manager Origin: ',cmp_mgr_json["results"][i]["origin_type"])     
-        print('Compute Manager Build:  ',cmp_mgr_json["results"][i]["origin_properties"][0].get("value"))
-        print('')
-    print("========================================================================================================")
+        print('\nCompute Manager ID:\t' +style.ORANGE + cmp_mgr_json["results"][i]["id"]+ style.NORMAL)
+        print('Compute Manager Server:\t' +style.ORANGE + cmp_mgr_json["results"][i]["server"]+ style.NORMAL)
+        print('Compute Manager Origin:\t' +style.ORANGE + cmp_mgr_json["results"][i]["origin_type"]+ style.NORMAL)
+        print('Compute Manager Build:\t' +style.ORANGE + cmp_mgr_json["results"][i]["origin_properties"][0].get("value")+ style.NORMAL)
+    print("\n========================================================================================================")
 
 ########### SECTION FOR REPORTING ON NSX-T Edge Cluster Detail ###########
 def GetEdgeCLDetail(auth_list):
@@ -147,10 +141,10 @@ def GetEdgeCLDetail(auth_list):
     print("\n========================================================================================================")
     for n in range(edgeclusters):
         print('')
-        print('Edge Cluster: ',edgecluster_json["results"][n]["display_name"])
-        print('Resource Type: ',edgecluster_json["results"][n]["resource_type"])
-        print('Deployment Type: ',edgecluster_json["results"][n]["deployment_type"])
-        print('Member Node Type: ',edgecluster_json["results"][n]["member_node_type"])
+        print('Edge Cluster: ' + style.ORANGE + edgecluster_json["results"][n]["display_name"] + style.NORMAL)
+        print('Resource Type: ' + style.ORANGE + edgecluster_json["results"][n]["resource_type"] + style.NORMAL)
+        print('Deployment Type: ' + style.ORANGE + edgecluster_json["results"][n]["deployment_type"] + style.NORMAL)
+        print('Member Node Type: ' + style.ORANGE + edgecluster_json["results"][n]["member_node_type"] + style.NORMAL)
         print('')
     print("========================================================================================================")
 
@@ -160,21 +154,23 @@ def GetEdgeStatus(auth_list):
     edgenode_json = GetAPI(SessionNSX[0],'/api/v1/search/query?query=resource_type:Edgenode', auth_list)
     edgenodes = (edgenode_json["result_count"])
     
-    print("\n========================================================================================================")
+    print("\n========================================================================================================\n")
     for n in range(edgenodes):
-        print('')
-        print('Edge Node: ',edgenode_json["results"][n]["display_name"])
-        print('LCP Connectivity Status: ',edgenode_json["results"][n]["status"]["lcp_connectivity_status"])
-        print('MPA Connectivity Status: ',edgenode_json["results"][n]["status"]["mpa_connectivity_status"])
-        print('MPA Connectivity Status Details: ',edgenode_json["results"][n]["status"]["mpa_connectivity_status_details"])
-        print('Host Node Deployment Status: ',edgenode_json["results"][n]["status"]["host_node_deployment_status"])
+        print('Edge Node: ' + style.ORANGE +edgenode_json["results"][n]["display_name"] + style.NORMAL)
+        if edgenode_json["results"][n]["status"]["lcp_connectivity_status"] == 'UP': print('LCP Connectivity Status: ' + style.GREEN + edgenode_json["results"][n]["status"]["lcp_connectivity_status"]+ style.NORMAL)
+        else: print('LCP Connectivity Status: ' + style.RED + edgenode_json["results"][n]["status"]["lcp_connectivity_status"]+ style.NORMAL)
+        if edgenode_json["results"][n]["status"]["mpa_connectivity_status"] == 'UP': print('MPA Connectivity Status: ' + style.GREEN + edgenode_json["results"][n]["status"]["mpa_connectivity_status"]+ style.NORMAL)
+        else: print('MPA Connectivity Status: ' + style.RED + edgenode_json["results"][n]["status"]["mpa_connectivity_status"]+ style.NORMAL) 
+        print('MPA Connectivity Status Details: ' + style.ORANGE + edgenode_json["results"][n]["status"]["mpa_connectivity_status_details"]+ style.NORMAL)
+        if 'READY' in edgenode_json["results"][n]["status"]["host_node_deployment_status"]: print('Edge Node Deployment Status: ' + style.GREEN + edgenode_json["results"][n]["status"]["host_node_deployment_status"]+ style.NORMAL)
+        else: print('Edge Node Deployment Status: ' + style.RED + edgenode_json["results"][n]["status"]["host_node_deployment_status"] + style.NORMAL)
         try:
-            print('NSX Controller IP: ',edgenode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["control_node_ip"])
-            print('NSX Controller Status: ',edgenode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["status"])
+            print('NSX Controller IP: ' + style.GREEN + edgenode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["control_node_ip"] + style.NORMAL)
+            print('NSX Controller Status: ' + style.GREEN + edgenode_json["results"][n]["status"]["lcp_connectivity_status_details"][0]["status"] + style.NORMAL)
             print('')
         except:
-            print('NSX Controller IP: UNKNOWN')
-            print('NSX Controller Status: UNKNOWN')
+            print('NSX Controller IP: ' + style.RED + 'UNKNOWN'+ style.NORMAL)
+            print('NSX Controller Status: ' + style.RED + 'UNKNOWN'+ style.NORMAL)
     print("\n========================================================================================================")
 
 
@@ -183,33 +179,32 @@ def GetNetworkUsage(auth_list):
     SessionNSX = ConnectNSX(auth_list)
     nsx_net_cap_json = GetAPI(SessionNSX[0],'/api/v1/capacity/usage?category=networking', auth_list)
     print("\n========================================================================================================")
-    print('')
-    print('----------------------------------- NSX NETWORKING CAPACITY ---------------------------------')
+    print('\n----------------------------------- NSX NETWORKING CAPACITY ---------------------------------')
     print('|  Name                                                | Current  | Max Supported | Usage % |')
     print('---------------------------------------------------------------------------------------------')
 
     data = nsx_net_cap_json['capacity_usage']
     cap_net = len(data)
     for n in range(cap_net):
-        print('{:<60s}{:>4d}{:>12d}{:>15.1f}'.format(data[n]['display_name'],data[n]['current_usage_count'],data[n]['max_supported_count'],data[n]['current_usage_percentage']))
+        if data[n]['current_usage_percentage'] > 70: print('{:<60s}{:>4d}{:>12d}\x1b[0;31;40m{:>15.1f}\x1b[0m'.format(data[n]['display_name'],data[n]['current_usage_count'],data[n]['max_supported_count'],data[n]['current_usage_percentage']))
+        else: print('{:<60s}{:>4d}{:>12d}{:>15.1f}'.format(data[n]['display_name'],data[n]['current_usage_count'],data[n]['max_supported_count'],data[n]['current_usage_percentage']))
     print('---------------------------------------------------------------------------------------------')
-    print('')
-    print("========================================================================================================")
+    print("\n========================================================================================================")
 
 ########### SECTION FOR REPORTING ON NSX-T MANAGER CAPACITY NETWORKING ###########
 def GetSecurityUsage(auth_list):
     SessionNSX = ConnectNSX(auth_list)
     nsx_sec_cap_json = GetAPI(SessionNSX[0],'/api/v1/capacity/usage?category=security', auth_list)
     print("\n========================================================================================================")
-    print('')
-    print('------------------------------------ NSX SECURITY CAPACITY -----------------------------------')
+    print('\n------------------------------------ NSX SECURITY CAPACITY -----------------------------------')
     print('|  Name                                                 | Current  | Max Supported | Usage % |')
     print('----------------------------------------------------------------------------------------------')
 
     data = nsx_sec_cap_json['capacity_usage']
     cap_sec = len(data)
     for n in range(cap_sec):
-        print('{:<60s}{:>4d}{:>12d}{:>15.1f}'.format(data[n]['display_name'],data[n]['current_usage_count'],data[n]['max_supported_count'],data[n]['current_usage_percentage']))
+        if data[n]['current_usage_percentage'] > 70: print('{:<60s}{:>4d}{:>12d}\x1b[0;31;40m{:>15.1f}\x1b[0m'.format(data[n]['display_name'],data[n]['current_usage_count'],data[n]['max_supported_count'],data[n]['current_usage_percentage']))
+        else: print('{:<60s}{:>4d}{:>12d}{:>15.1f}'.format(data[n]['display_name'],data[n]['current_usage_count'],data[n]['max_supported_count'],data[n]['current_usage_percentage']))
     print('----------------------------------------------------------------------------------------------')
     print('')
     print("========================================================================================================")
@@ -219,15 +214,14 @@ def GetInventoryUsage(auth_list):
     SessionNSX = ConnectNSX(auth_list)
     nsx_inv_cap_json = GetAPI(SessionNSX[0],'/api/v1/capacity/usage?category=inventory', auth_list)
     print("\n========================================================================================================")
-    print('')
-    print('------------------------------------ NSX INVENTORY CAPACITY -----------------------------------')
+    print('\n------------------------------------ NSX INVENTORY CAPACITY -----------------------------------')
     print('|  Name                                                 | Current  | Max Supported | Usage %  |')
     print('-----------------------------------------------------------------------------------------------')
 
     data = nsx_inv_cap_json['capacity_usage']
     cap_inv = len(data)
     for n in range(cap_inv):
-        print('{:<60s}{:>4d}{:>12d}{:>15.1f}'.format(data[n]['display_name'],data[n]['current_usage_count'],data[n]['max_supported_count'],data[n]['current_usage_percentage']))
+        if data[n]['current_usage_percentage'] > 70: print('{:<60s}{:>4d}{:>12d}\x1b[0;31;40m{:>15.1f}\x1b[0m'.format(data[n]['display_name'],data[n]['current_usage_count'],data[n]['max_supported_count'],data[n]['current_usage_percentage']))
+        else: print('{:<60s}{:>4d}{:>12d}{:>15.1f}'.format(data[n]['display_name'],data[n]['current_usage_count'],data[n]['max_supported_count'],data[n]['current_usage_percentage']))
     print('-----------------------------------------------------------------------------------------------')
-    print('')
-    print("========================================================================================================")
+    print("\n========================================================================================================")

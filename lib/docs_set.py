@@ -47,18 +47,17 @@ from lib.docs_tn_tunnels import *
 from lib.system import *
 import lib.menu
 import time
+import xlwt
 
 def DocsSetOne(auth_list):
     start_time = time.time()
     # Setup excel workbook and worksheets 
-    ls_wkbk = Workbook()  
+    ls_wkbk = xlwt.Workbook()  
     #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
     XLS_File = lib.menu.XLS_Dest + os.path.sep + "Audit_NSX.xls"
     fname = pathlib.Path(XLS_File)
     if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
+        print(fname + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
         return
 
     print('')

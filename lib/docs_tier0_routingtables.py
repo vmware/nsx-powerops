@@ -28,36 +28,25 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-
-import requests
-import urllib3
 import xlwt
-import os
-import pathlib 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
+import pathlib
 from lib.system import *
 import lib.menu
-from xlwt import Workbook
 
 from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
 def CreateXLST0RoutingTable(auth_list):
-    t0_routing_wkbk = Workbook()
+    t0_routing_wkbk = xlwt.Workbook()
     #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
     XLS_File = lib.menu.XLS_Dest + os.path.sep + "Tier-0_Routing.xls"
     fname = pathlib.Path(XLS_File)
     if fname.exists():
-        print('')
-        print(fname, 'file already exists.  Not attempting to overwite')
-        print('')
+        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
         return
 
-    print('')
-    print('Generating Tier-0 Routing Tables: %s' %XLS_File)
-    print('')
+    print('\nGenerating Tier-0 Routing Tables: ' + style.ORANGE + XLS_File + style.NORMAL + '\n')
     SheetT0RoutingTable(auth_list,t0_routing_wkbk)
     t0_routing_wkbk.save(XLS_File)
 

@@ -44,44 +44,40 @@ def main():
     print('################################################################################################')
     print('')
     # Open and Treatment of YAML configuration file
-    print("\n========================================================================================================")
-    print("==> Read YAML config file: %s--------" % YAML_CFG_FILE)
-    print("========================================================================================================")
+    print("\n==> Read YAML config file: " + style.ORANGE + YAML_CFG_FILE + style.NORMAL)
 
     YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
     # Check if all cert files are present and ask credential if not
     result = CheckCertFiles(YAML_DICT['CERT_PATH'])
     if result[0] != "" and result[1] != "":
-        print("Found all certifications files needed (.crt and .key) - used Principal Identity User")
+        print(style.GREEN + "==> Found all certifications files needed (.crt and .key)"+style.NORMAL+"\n==> Trying to use certification authentication")
         ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'],'CERT',result)
         if ListAuth[0] != 'Failed':
-            print('\nSuccessful authentication.  Generating output directory....\n')
+            print(style.GREEN + 'Successful authentication.' +style.NORMAL+ '\nGenerating output directory....')
             dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
-            print('Documentation output directory is: ', dest)
-            print('')
+            print('Documentation output directory is: '+ style.ORANGE +  dest + style.NORMAL)
             time.sleep(1)
             result.append("CERT")
             # result is a list with cert, key and CERT
             MainMenu(result,dest)
         else:
-            print('\nAuthentication with certificates failed.\n')
+            print(style.RED + 'Authentication with certificates failed.\n' + style.NORMAL)
             result[0] = ""
             result[1] = ""
 
     if result[0] == "" and result[1] == "":
-        print("Asking credential")
-        print("Found NSX Manager IP or FQDN in yaml configuration file: %s" % YAML_DICT['NSX_MGR_IP'])
-        print("\n")
+        print("==> Asking credential")
+        print(style.GREEN + "==> Found NSX Manager IP or FQDN in yaml configuration file: " + style.ORANGE + YAML_DICT['NSX_MGR_IP'] + style.NORMAL)
         response = ""
         while response != '<Response [200]>':
             ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'],'AUTH',result)
             response = ListAuth[0]
             if response != '<Response [200]>':
-                print('\nIncorrect FQDN, Username or Password entered.  Please re-enter credentials:\n')
+                print(style.RED + "\nIncorrect FQDN, Username or Password entered.  Please re-enter credentials:\n" + style.NORMAL)
             else: 
-                print('\nSuccessful authentication.  Generating output directory....\n')
+                print(style.GREEN + "\nSuccessful authentication." + style.NORMAL + "\nGenerating output directory....\n")
                 dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
-                print('Documentation output directory is: ', dest)
+                print('Documentation output directory is: ' + style.ORANGE + dest + style.NORMAL)
                 print('')
                 time.sleep(1)
                 result = [ListAuth[1][0],ListAuth[1][1], 'AUTH']

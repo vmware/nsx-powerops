@@ -27,7 +27,6 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-
 from lib.health import *
 from lib.docs_alarms import *
 from lib.docs_groups import *
@@ -46,7 +45,9 @@ from lib.docs_transportzones import *
 from lib.docs_services import *
 from lib.docs_tn_tunnels import *
 from lib.docs_set import *
+import lib.system
 
+# Definition of one menu
 class Menu:
     def __init__(self, content, short_view, submenus = None, func = None):
         self.content = content
@@ -116,37 +117,35 @@ def MainMenu(authlist,dest):
     while True:
         print("\n")
         print("\n".join([f"{num}) {current_menu.choices[num].short_view}" for num in current_menu.choices]))
-        inpt = input("Choice: ")
+        inpt = input("Choice ('back' to previous menu, 'exit' to exit program): ")
         if inpt == "exit":
             break
         elif inpt == "back":
             current_menu = current_menu.parent
         else:
-##### Debug
-#            inpt = int(inpt)
-#            if not current_menu.choices[inpt].choices:
-#                if current_menu.choices[inpt].func == 'Back':
-#                    current_menu = current_menu.parent
-#                    continue
-#                else:
-#                    current_menu.choices[inpt].func(authlist)
-#                    continue
-#                
-#            current_menu = current_menu.choices[inpt]
-#
-####
-            try:
-                inpt = int(inpt)
-                if not current_menu.choices[inpt].choices:
-                    if current_menu.choices[inpt].func == 'Back':
-                        current_menu = current_menu.parent
-                        continue
-                    else:
-                        current_menu.choices[inpt].func(authlist)
-                        continue
-                    
-                current_menu = current_menu.choices[inpt]
-            except Exception as error:
-                print("!! ==> Invalid input")
-                print(error)
-            
+#### Debug
+            inpt = int(inpt)
+            if not current_menu.choices[inpt].choices:
+                if current_menu.choices[inpt].func == 'Back':
+                    current_menu = current_menu.parent
+                    continue
+                else:
+                    current_menu.choices[inpt].func(authlist)
+                    continue
+                
+            current_menu = current_menu.choices[inpt]
+
+###
+#            try:
+#                inpt = int(inpt)
+#                if not current_menu.choices[inpt].choices:
+#                    if current_menu.choices[inpt].func == 'Back':
+#                        current_menu = current_menu.parent
+#                        continue
+#                    else:
+#                        current_menu.choices[inpt].func(authlist)
+#                        continue
+#                    
+#                current_menu = current_menu.choices[inpt]
+#            except Exception as error:
+#                print(style.RED + "==> Invalid input: " + str(error) + style.NORMAL)
