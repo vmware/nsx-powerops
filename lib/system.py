@@ -183,10 +183,10 @@ def CheckCertFiles(PATH):
     TAG = [0,0]
     for fname in os.listdir(PATH):
         if Path(fname).suffix == '.crt':
-            print("==> Found .crt file: \x1b[0;33;40m%s\x1b[0m" % fname)
+            print("==> Found .crt file: " + style.ORANGE + fname + style.NORMAL)
             TAG[0] = PATH + os.path.pathsep + fname
         if Path(fname).suffix == '.key':
-            print("==> Found .key file: \x1b[0;33;40m%s\x1b[0m" % fname)
+            print("==> Found .key file: " +  style.ORANGE + fname + style.NORMAL)
             TAG[1] = PATH + os.path.pathsep + fname
     
     return TAG
@@ -196,7 +196,7 @@ def ReadYAMLCfgFile(YAML_CFG_FILE):
     """
     ReadYAMLCfgFile(YAML_CFG_FILE)
     Read a YAML File and return Dictionnary
-    Return
+    Returns
     ----------
     Dictionnary of Yaml information
     Parameters
@@ -210,8 +210,8 @@ def ReadYAMLCfgFile(YAML_CFG_FILE):
             YAML_DICT = yaml.load(ymlfile, Loader=yaml.FullLoader)
             return YAML_DICT
     except Exception as e:
-        print("File %s not found in INPUT directory" % (YAML_CFG_FILE))
-        print(e)
+        print(style.RED + YAML_CFG_FILE + " not found in directory" + style.NORMAL)
+        print(style.ORANGE + e + style.NORMAL)
         sys.exit(1)
 
 

@@ -34,7 +34,6 @@ from lib.menu import MainMenu
 
 YAML_CFG_FILE = 'config.yml'
 
-
 def main():
     print('')
     print('')
@@ -51,6 +50,8 @@ def main():
     # Check if all cert files are present and ask credential if not
     result = CheckCertFiles(YAML_DICT['CERT_PATH'])
     if result[0] != 0 and result[1] != 0:
+        result[0] = 0
+        result[1] = 0
         print(style.GREEN + "==> Found all certifications files needed (.crt and .key)"+style.NORMAL+"\n==> Trying to use certification authentication")
         ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'],'CERT',result)
         if ListAuth[0] != 'Failed':
@@ -64,7 +65,7 @@ def main():
         else:
             print(style.RED + 'Authentication with certificates failed.\n' + style.NORMAL)
     
-    else:
+    if result[0] == 0 and result[1] == 0:
         print(style.RED + "==> Missing certifications files (.crt and .key)"+style.NORMAL+"\n==> Trying to normal authentication")
         print("==> Asking credential")
         print(style.GREEN + "==> Found NSX Manager IP or FQDN in yaml configuration file: " + style.ORANGE + YAML_DICT['NSX_MGR_IP'] + style.NORMAL)
