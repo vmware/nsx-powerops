@@ -45,7 +45,7 @@ from lib.docs_transportzones import CreateXLSTZ
 from lib.docs_services import CreateXLSNSXServices
 from lib.docs_tn_tunnels import CreateXLSTunnels
 from lib.docs_set import DocsSetMultiple, DocsSetOne
-
+from lib.system import style
 
 # Definition of one menu
 class Menu:
@@ -124,28 +124,28 @@ def MainMenu(authlist,dest):
             current_menu = current_menu.parent
         else:
 #### Debug
-            inpt = int(inpt)
-            if not current_menu.choices[inpt].choices:
-                if current_menu.choices[inpt].func == 'Back':
-                    current_menu = current_menu.parent
-                    continue
-                else:
-                    current_menu.choices[inpt].func(authlist)
-                    continue
-                
-            current_menu = current_menu.choices[inpt]
+#            inpt = int(inpt)
+#            if not current_menu.choices[inpt].choices:
+#                if current_menu.choices[inpt].func == 'Back':
+#                    current_menu = current_menu.parent
+#                    continue
+#                else:
+#                    current_menu.choices[inpt].func(authlist)
+#                    continue
+#                
+#            current_menu = current_menu.choices[inpt]
 
 ###
-#            try:
-#                inpt = int(inpt)
-#                if not current_menu.choices[inpt].choices:
-#                    if current_menu.choices[inpt].func == 'Back':
-#                        current_menu = current_menu.parent
-#                        continue
-#                    else:
-#                        current_menu.choices[inpt].func(authlist)
-#                        continue
-#                    
-#                current_menu = current_menu.choices[inpt]
-#            except Exception as error:
-#                print(style.RED + "==> Invalid input: " + str(error) + style.NORMAL)
+            try:
+                inpt = int(inpt)
+                if not current_menu.choices[inpt].choices:
+                    if current_menu.choices[inpt].func == 'Back':
+                        current_menu = current_menu.parent
+                        continue
+                    else:
+                        current_menu.choices[inpt].func(authlist)
+                        continue
+                    
+                current_menu = current_menu.choices[inpt]
+            except Exception as error:
+                print(style.RED + "==> Invalid input: " + str(error) + style.NORMAL)
