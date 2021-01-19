@@ -71,7 +71,7 @@ def SheetNSXManagerInfo(auth_list,ls_wkbk):
     ########### SECTION FOR REPORTING ON NSX-T MANAGER CLUSTER ###########
     nsxclstr_url = '/api/v1/cluster/status'
     nsxclstr_json = GetAPI(SessionNSX[0],nsxclstr_url, auth_list)
-    
+
     columnA = summary.col(0)
     columnA.width = 256 * 35
     columnB = summary.col(1)
