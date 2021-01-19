@@ -71,7 +71,7 @@ def SheetTunnels(auth_list,tunnel_wkbk):
     # Create a tab for each transport node
     for n in range(len(transport_nodes)):
         # Excel sheet title can't exceeded 31 caracters
-        if len(transport_nodes[n]['display_name']) > 26: TitleSheet = transport_nodes[n]['display_name'][0:30]
+        if len(transport_nodes[n]['display_name']) > 26: TitleSheet = transport_nodes[n]['display_name'][0:26]
         else: TitleSheet = transport_nodes[n]['display_name'] 
 
         tnode_dict.update({transport_nodes[n]['node_id']:transport_nodes[n]['display_name']})
