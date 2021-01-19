@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import time
-from lib.system import *
-from lib.menu import *
+from lib.system import CheckCertFiles, ReadYAMLCfgFile, CreateOutputFolder, style, auth_nsx
+from lib.menu import MainMenu
 
 YAML_CFG_FILE = 'config.yml'
 

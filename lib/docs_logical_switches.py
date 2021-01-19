@@ -28,10 +28,9 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt
-import pathlib
-from lib.system import *
+import xlwt, pathlib
 import lib.menu
+from lib.system import style, GetAPI, ConnectNSX, os
 
 from vmware.vapi.lib import connect
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory

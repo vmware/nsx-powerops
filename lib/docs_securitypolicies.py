@@ -30,7 +30,7 @@
 #############################################################################################################################################################################################
 import xlwt
 import pathlib
-from lib.system import *
+from lib.system import style, GetAPI, ConnectNSX, os
 import lib.menu
 
 from vmware.vapi.bindings.stub import StubConfiguration

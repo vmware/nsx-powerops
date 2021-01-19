@@ -30,7 +30,7 @@
 #############################################################################################################################################################################################
 import xlwt
 import pathlib
-from lib.system import *
+from lib.system import style, GetAPI, ConnectNSX, os
 import lib.menu
 
 from vmware.vapi.lib import connect
@@ -57,7 +57,6 @@ def SheetT1Segments(auth_list,t1_segments_wkbk):
     sheet1 = t1_segments_wkbk.add_sheet('Tier1 Segments', cell_overwrite_ok=True)
     style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
                                     'font: colour white, bold True; align: horiz center')
-    style_alignleft = xlwt.easyxf('font: colour black, bold True; align: horiz left, wrap True')
 
     #Setup Column widths
     columnA = sheet1.col(0)

@@ -28,26 +28,25 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-from lib.docs_alarms import *
-from lib.docs_groups import *
-from lib.docs_securitypolicies import *
-from lib.docs_securitypolicies_and_rules import *
-from lib.docs_tier1_segments import *
-from lib.docs_lr_summary import *
-from lib.docs_lr_ports import *
-from lib.docs_tier1_segments import *
-from lib.docs_logical_switches import *
-from lib.docs_tier0_routingtables import *
-from lib.docs_tier1_forwardingtables import *
-from lib.docs_nsxmanagers import *
-from lib.docs_discovered_nodes import *
-from lib.docs_transportzones import *
-from lib.docs_services import *
-from lib.docs_tn_tunnels import *
-from lib.system import *
+from lib.docs_alarms import CreateXLSAlarms, SheetAlarms
+from lib.docs_groups import CreateXLSSecGrp, SheetSecGrp
+from lib.docs_securitypolicies import CreateXLSSecPol, SheetSecPol
+from lib.docs_securitypolicies_and_rules import CreateXLSSecDFW, SheetSecDFW
+from lib.docs_tier1_segments import CreateXLST1Segments, SheetT1Segments
+from lib.docs_lr_summary import CreateXLSRouterSum, SheetRouterSum
+from lib.docs_lr_ports import CreateXLSRouterPorts, SheetRouterPorts
+from lib.docs_tier1_segments import CreateXLST1Segments, SheetT1Segments
+from lib.docs_logical_switches import CreateXLSSegments, SheetSegments
+from lib.docs_tier0_routingtables import CreateXLST0RoutingTable, SheetT0RoutingTable
+from lib.docs_tier1_forwardingtables import CreateXLST1ForwardingTable, SheetT1ForwardingTable
+from lib.docs_nsxmanagers import CreateXLSNSXManagerInfo, SheetNSXManagerInfo
+from lib.docs_discovered_nodes import CreateXLSFabDiscoveredNodes, SheetFabDiscoveredNodes
+from lib.docs_transportzones import CreateXLSTZ, SheetTZ
+from lib.docs_services import CreateXLSNSXServices, SheetNSXServices
+from lib.docs_tn_tunnels import CreateXLSTunnels, SheetTunnels
+from lib.system import style, os
 import lib.menu
-import time
-import xlwt
+import time, pathlib, xlwt
 
 def DocsSetOne(auth_list):
     start_time = time.time()

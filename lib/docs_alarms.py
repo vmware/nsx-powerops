@@ -28,9 +28,8 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt
-import pathlib
-from lib.system import *
+import xlwt, pathlib
+from lib.system import style, GetAPI, ConnectNSX, os, datetime
 import lib.menu
 
 from vmware.vapi.lib import connect

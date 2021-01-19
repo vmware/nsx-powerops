@@ -27,25 +27,25 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-from lib.health import *
-from lib.docs_alarms import *
-from lib.docs_groups import *
-from lib.docs_securitypolicies import *
-from lib.docs_securitypolicies_and_rules import *
-from lib.docs_tier1_segments import *
-from lib.docs_lr_summary import *
-from lib.docs_lr_ports import *
-from lib.docs_tier1_segments import *
-from lib.docs_logical_switches import *
-from lib.docs_tier0_routingtables import *
-from lib.docs_tier1_forwardingtables import *
-from lib.docs_nsxmanagers import *
-from lib.docs_discovered_nodes import *
-from lib.docs_transportzones import *
-from lib.docs_services import *
-from lib.docs_tn_tunnels import *
-from lib.docs_set import *
-import lib.system
+from lib.health import GetHealthNSXCluster, GetTNStatus, GetComputeDetail, GetEdgeCLDetail, GetEdgeStatus, GetLRSum, GetNetworkUsage, GetSecurityUsage, GetInventoryUsage
+from lib.docs_alarms import CreateXLSAlarms
+from lib.docs_groups import CreateXLSSecGrp
+from lib.docs_securitypolicies import CreateXLSSecPol
+from lib.docs_securitypolicies_and_rules import CreateXLSSecDFW
+from lib.docs_tier1_segments import CreateXLST1Segments
+from lib.docs_lr_summary import CreateXLSRouterSum
+from lib.docs_lr_ports import CreateXLSRouterPorts
+from lib.docs_tier1_segments import CreateXLST1Segments
+from lib.docs_logical_switches import CreateXLSSegments
+from lib.docs_tier0_routingtables import CreateXLST0RoutingTable
+from lib.docs_tier1_forwardingtables import CreateXLST1ForwardingTable
+from lib.docs_nsxmanagers import CreateXLSNSXManagerInfo
+from lib.docs_discovered_nodes import CreateXLSFabDiscoveredNodes
+from lib.docs_transportzones import CreateXLSTZ
+from lib.docs_services import CreateXLSNSXServices
+from lib.docs_tn_tunnels import CreateXLSTunnels
+from lib.docs_set import DocsSetMultiple, DocsSetOne
+
 
 # Definition of one menu
 class Menu:

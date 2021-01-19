@@ -30,7 +30,7 @@
 #############################################################################################################################################################################################
 import xlwt
 import pathlib
-from lib.system import *
+from lib.system import style, GetAPI, ConnectNSX, os, datetime
 import lib.menu
 
 from vmware.vapi.lib import connect
@@ -62,7 +62,6 @@ def SheetTZ(auth_list,ls_wkbk):
     #Set Excel Styling
     style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
                                     'font: colour white, bold True; align: horiz center')
-    style_alignleft = xlwt.easyxf('font: colour black, bold False; align: horiz left')
 
     #Setup Column widths
     columnA = sheet1.col(0)
