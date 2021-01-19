@@ -34,6 +34,7 @@ from lib.menu import MainMenu
 
 YAML_CFG_FILE = 'config.yml'
 
+
 def main():
     print('')
     print('')
