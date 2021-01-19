@@ -31,6 +31,7 @@
 import requests
 import urllib3
 import getpass
+from pathlib import Path
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from sys import platform
 import sys, getopt, os, datetime
@@ -181,12 +182,12 @@ def CheckCertFiles(PATH):
     """
     TAG = [0,0]
     for fname in os.listdir(PATH):
-        if fname.endswith('.crt'):
+        if Path(fname).suffix == '.crt':
             print("==> Found .crt file: \x1b[0;33;40m%s\x1b[0m" % fname)
-            TAG[0] = PATH + '/' + fname
-        if fname.endswith('.key'):
+            TAG[0] = PATH + os.path.pathsep + fname
+        if Path(fname).suffix == '.key':
             print("==> Found .key file: \x1b[0;33;40m%s\x1b[0m" % fname)
-            TAG[1] = PATH + '/' + fname
+            TAG[1] = PATH + os.path.pathsep + fname
     
     return TAG
         
