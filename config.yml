@@ -1,8 +1,0 @@
-# -------------------------------------------------------------------------------
-# Globals parameters
-# -------------------------------------------------------------------------------
-
-CERT_PATH: /home/powerops/cert
-NSX_MGR_IP: "a.b.c.d" # Your NSX-T Manager IP
-OUTPUT_PATH: '/home/powerops/powerops_documentation/'
-PREFIX_FOLDER: 'POps_doc_'
