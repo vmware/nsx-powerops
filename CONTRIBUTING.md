@@ -69,3 +69,7 @@ and commits.
 ## Reporting Bugs and Creating Issues
 
 When opening a new issue, try to roughly follow the commit message format conventions above.
+
+## Thankyou
+
+Thankyou for contrbuting to NSX PowerOps.  Dom & Stephen
