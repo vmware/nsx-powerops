@@ -184,10 +184,10 @@ def CheckCertFiles(PATH):
     for fname in os.listdir(PATH):
         if Path(fname).suffix == '.crt':
             print("==> Found .crt file: " + style.ORANGE + fname + style.NORMAL)
-            TAG[0] = PATH + os.path.pathsep + fname
+            TAG[0] = PATH + os.path.sep + fname
         if Path(fname).suffix == '.key':
             print("==> Found .key file: " +  style.ORANGE + fname + style.NORMAL)
-            TAG[1] = PATH + os.path.pathsep + fname
+            TAG[1] = PATH + os.path.sep + fname
     
     return TAG
         
