@@ -1,7 +1,0 @@
-{
-    "python.linting.pylintEnabled": true,
-    "python.linting.pylintArgs": ["--enable=W0614"],
-    "gotoSymbolStack.currentStackPosition": 0,
-    "gotoSymbolStack.maxStackPosition": 0,
-    "gotoSymbolStack.filePositionInfo": []
-}
