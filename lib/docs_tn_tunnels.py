@@ -28,11 +28,9 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt
-import pathlib
+import xlwt, pathlib
 from lib.system import style, GetAPI, ConnectNSX, os
 import lib.menu
-
 from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
