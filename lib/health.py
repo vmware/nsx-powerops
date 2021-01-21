@@ -28,7 +28,7 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-from lib.system import style, GetAPI, ConnectNSX, os
+from lib.system import style, GetAPI, ConnectNSX, os, YAML_CFG_FILE, ReadYAMLCfgFile
 
 ########### SECTION FOR REPORTING ON NSX-T MANAGER CLUSTER ###########
 def GetHealthNSXCluster(auth_list):
@@ -84,6 +84,86 @@ def GetTNStatus(auth_list):
             print('')
     print("========================================================================================================")
 
+
+########### SECTION FOR REPORTING ON NSX-T Transport Nodes Tunnels ###########
+def GetTNTunnels(auth_list):
+    SessionNSX = ConnectNSX(auth_list)
+    transport_node_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes', auth_list)
+    transport_nodes = (transport_node_json['results'])
+    tnode_dict = {}
+    
+    for n in range(len(transport_nodes)):
+        tnode_dict.update({transport_nodes[n]['node_id']:transport_nodes[n]['display_name']})
+        
+    for uuid in tnode_dict.items():
+        try:
+            tunnel_url = '/api/v1/transport-nodes/' + str(uuid[0]) + '/tunnels'
+            tunnel_json = GetAPI(SessionNSX[0],tunnel_url, auth_list)
+            print('\nTransport Node: ' + style.ORANGE + uuid[1] + style.NORMAL)
+            print('')
+            x = (len(tunnel_json['tunnels']))
+            
+            if x > 0:
+                for n  in range(x):
+                    print('Tunnel name: ',tunnel_json['tunnels'][n]['name'])
+                    if tunnel_json['tunnels'][n]['status'] == 'UP': print('Tunnel Status: ' + style.GREEN + tunnel_json['tunnels'][n]['status'] + style.NORMAL)
+                    else: print('Tunnel Status: ' + style.RED + tunnel_json['tunnels'][n]['status'] + style.NORMAL)
+                    print('Egress Interface: ',tunnel_json['tunnels'][n]['egress_interface'])
+                    print('Local Tunnel IP: ',tunnel_json['tunnels'][n]['local_ip'])
+                    print('Remote Tunnel IP: ',tunnel_json['tunnels'][n]['remote_ip'])
+                    print('Remote Node ID: ',tunnel_json['tunnels'][n]['remote_node_id'])
+                    print('Remote Node: ',tunnel_json['tunnels'][n]['remote_node_display_name'])
+                    print('Tunnel Encapsulation: ',tunnel_json['tunnels'][n]['encap'])
+                    print('')
+            else:
+                print(style.RED + '**** No tunnels exist for this transport node ****' + style.NORMAL)
+        except:
+            print(style.RED + '**** No tunnels exist for this transport node ****\n' + style.NORMAL)
+
+
+def GetNSXSummary(auth_list):
+    SessionNSX = ConnectNSX(auth_list)
+
+    t0_gateway_url = '/policy/api/v1/infra/tier-0s'
+    t1_gateway_url = '/policy/api/v1/infra/tier-1s'
+    segment_url = '/policy/api/v1/infra/segments'
+    groups_url = '/policy/api/v1/infra/domains/default/groups'
+    ctx_profiles_url = '/policy/api/v1/infra/context-profiles'
+    services_url = '/policy/api/v1/infra/services'
+    deployed_mgmt_nodes_url = '/api/v1/cluster'
+    online_mgmt_nodes_url = '/api/v1/cluster/status'
+    edge_clstr_url = '/api/v1/edge-clusters'
+    edge_tn_url = '/api/v1/search/query?query=resource_type:Edgenode'
+    host_tn_url = '/api/v1/search/query?query=resource_type:Hostnode'
+    
+    deployed_json = GetAPI(SessionNSX[0],deployed_mgmt_nodes_url, auth_list)
+    deployed = len(deployed_json["nodes"])
+    online_nodes_json = GetAPI(SessionNSX[0],online_mgmt_nodes_url, auth_list)
+    online_nodes = len(online_nodes_json['mgmt_cluster_status']['online_nodes'])
+    edge_clstr_json = GetAPI(SessionNSX[0],edge_clstr_url, auth_list)
+    edge_tn_json = GetAPI(SessionNSX[0],edge_tn_url, auth_list)
+    host_tn_json = GetAPI(SessionNSX[0],host_tn_url, auth_list)
+    t0_gateway_json = GetAPI(SessionNSX[0],t0_gateway_url, auth_list)
+    t1_gateway_json = GetAPI(SessionNSX[0],t1_gateway_url, auth_list)
+    segment_json = GetAPI(SessionNSX[0],segment_url, auth_list)
+    groups_json = GetAPI(SessionNSX[0],groups_url, auth_list)
+    ctx_profiles_json = GetAPI(SessionNSX[0],ctx_profiles_url, auth_list)
+    services_json = GetAPI(SessionNSX[0],services_url, auth_list)
+    YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
+
+    #Display Summary Output
+    print('\nNSX Manager Summary for: https://' + style.ORANGE + YAML_DICT['NSX_MGR_IP'] + style.NORMAL)
+    print('\nDeployed NSX Manager Nodes:\t' + style.ORANGE +  str(deployed) + style.NORMAL)
+    print('Online NSX Manager Nodes:\t' + style.ORANGE + str(online_nodes) + style.NORMAL)
+    print('\nEdge Clusters:\t\t' + style.ORANGE + str(edge_clstr_json["result_count"]) + style.NORMAL)
+    print('Edge Transport Nodes:\t' + style.ORANGE + str(edge_tn_json["result_count"]) + style.NORMAL)
+    print('Host Transport Nodes:\t' + style.ORANGE + str(host_tn_json["result_count"]) + style.NORMAL)
+    print('\nT0 Gateways:\t' + style.ORANGE + str(t0_gateway_json["result_count"]) + style.NORMAL)
+    print('T1 Gateways:\t' + style.ORANGE + str(t1_gateway_json["result_count"]) + style.NORMAL)
+    print('Segments:\t' + style.ORANGE + str(segment_json["result_count"]) + style.NORMAL)
+    print('\nNS Groups:\t\t' + style.ORANGE + str(groups_json["result_count"]) + style.NORMAL)  
+    print('Context Profiles:\t' + style.ORANGE + str(ctx_profiles_json["result_count"]) + style.NORMAL)  
+    print('Services:\t\t' + style.ORANGE + str(services_json["result_count"]) + style.NORMAL)  
 
 ########### SECTION FOR REPORTING ON NSX-T Logical Router Summary ###########
 def GetLRSum(auth_list):
