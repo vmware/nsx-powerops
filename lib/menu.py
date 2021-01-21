@@ -27,7 +27,7 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-from lib.health import GetHealthNSXCluster, GetTNStatus, GetComputeDetail, GetEdgeCLDetail, GetEdgeStatus, GetLRSum, GetNetworkUsage, GetSecurityUsage, GetInventoryUsage
+from lib.health import GetHealthNSXCluster, GetNSXSummary, GetTNTunnels, GetTNStatus, GetComputeDetail, GetEdgeCLDetail, GetEdgeStatus, GetLRSum, GetNetworkUsage, GetSecurityUsage, GetInventoryUsage
 from lib.docs_alarms import CreateXLSAlarms
 from lib.docs_groups import CreateXLSSecGrp
 from lib.docs_securitypolicies import CreateXLSSecPol
@@ -97,19 +97,21 @@ def MainMenu(authlist,dest):
     DocSet = Menu("\nNSX Document Set", "Create documentation set", [DocSetOneFile,DocSetMultiple,DocSetPrev])
     DocPrev = Menu("", "Return to main menu", None, 'Back')
 
-    subhealth1 = Menu("", "Display NSX-T Manager Cluster & Appliance Status", None, GetHealthNSXCluster)
-    subhealth2 = Menu("", "Display Edge Transport Node Connectivity", None, GetEdgeStatus)
-    subhealth3 = Menu("", "Display Host Transport Node Connectivity", None, GetTNStatus)
-    subhealth4 = Menu("", "Display Edge Cluster Details", None, GetEdgeCLDetail)
-    subhealth5 = Menu("", "Display Compute Manager Details", None, GetComputeDetail)
-    subhealth6 = Menu("", "Display Logical Router Summary", None, GetLRSum)
-    subhealth7 = Menu("", "Display Networking Usage", None, GetNetworkUsage)
-    subhealth8 = Menu("", "Display Security Usage", None, GetSecurityUsage)
-    subhealth9 = Menu("", "Display Inventory Usage", None, GetInventoryUsage)
-    subhealth10 = Menu("", "Return to previous menu", None, 'Back')
+    subhealth1 = Menu("", "Display NSX-T Summary", None, GetNSXSummary)
+    subhealth2 = Menu("", "Display NSX-T Manager Cluster & Appliance Status", None, GetHealthNSXCluster)
+    subhealth3 = Menu("", "Display Transport node tunnels", None, GetTNTunnels)
+    subhealth4 = Menu("", "Display Edge Transport Node Connectivity", None, GetEdgeStatus)
+    subhealth5 = Menu("", "Display Host Transport Node Connectivity", None, GetTNStatus)
+    subhealth6 = Menu("", "Display Edge Cluster Details", None, GetEdgeCLDetail)
+    subhealth7 = Menu("", "Display Compute Manager Details", None, GetComputeDetail)
+    subhealth8 = Menu("", "Display Logical Router Summary", None, GetLRSum)
+    subhealth9 = Menu("", "Display Networking Usage", None, GetNetworkUsage)
+    subhealth10 = Menu("", "Display Security Usage", None, GetSecurityUsage)
+    subhealth11 = Menu("", "Display Inventory Usage", None, GetInventoryUsage)
+    subhealth12 = Menu("", "Return to previous menu", None, 'Back')
 
     Doc = Menu("\nNSX-T Documentation", "NSX-T Documentation", [DocFab, DocVNS, DocSecu, DocMon, DocSet, DocPrev])
-    Health = Menu("\nHealth Checks", "Health Checks", [subhealth1,subhealth2,subhealth3,subhealth4,subhealth5,subhealth6,subhealth7,subhealth8,subhealth9,subhealth10])
+    Health = Menu("\nHealth Checks", "Health Checks", [subhealth1,subhealth2,subhealth3,subhealth4,subhealth5,subhealth6,subhealth7,subhealth8,subhealth9,subhealth10,subhealth11, subhealth12])
 
     main = Menu("Main Menu", "", [Doc, Health])
     main.parent = main
