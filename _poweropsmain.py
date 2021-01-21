@@ -45,7 +45,6 @@ def main():
     print('')
     # Open and Treatment of YAML configuration file
     print("\n==> Read YAML config file: " + style.ORANGE + YAML_CFG_FILE + style.NORMAL)
-
     YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
     # Check if all cert files are present and ask credential if not
     result = CheckCertFiles(YAML_DICT['CERT_PATH'])
@@ -65,24 +64,24 @@ def main():
     else:
         print(style.RED + "==> Missing certifications files (.crt and .key)"+style.NORMAL+"\n==> Trying to normal authentication")
 
-#    if result[0] == 0 and result[1] == 0:
-    print("==> Asking credential")
-    print(style.GREEN + "==> Found NSX Manager IP or FQDN in yaml configuration file: " + style.ORANGE + YAML_DICT['NSX_MGR_IP'] + style.NORMAL)
-    response = ""
-    while response != '<Response [200]>':
-        ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'],'AUTH',result)
-        response = ListAuth[0]
-        if response != '<Response [200]>':
-            print(style.RED + "\nIncorrect FQDN, Username or Password entered.  Please re-enter credentials:\n" + style.NORMAL)
-        else: 
-            print(style.GREEN + "\nSuccessful authentication." + style.NORMAL + "\nGenerating output directory....\n")
-            dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
-            print('Documentation output directory is: ' + style.ORANGE + dest + style.NORMAL)
-            print('')
-            time.sleep(1)
-            result = [ListAuth[1][0],ListAuth[1][1], 'AUTH']
-            # result is a list with login, password and AUTH
-            MainMenu(result, dest)
+    if result[0] == 0 and result[1] == 0:
+        print("==> Asking credential")
+        print(style.GREEN + "==> Found NSX Manager IP or FQDN in yaml configuration file: " + style.ORANGE + YAML_DICT['NSX_MGR_IP'] + style.NORMAL)
+        response = ""
+        while response != '<Response [200]>':
+            ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'],'AUTH',result)
+            response = ListAuth[0]
+            if response != '<Response [200]>':
+                print(style.RED + "\nIncorrect FQDN, Username or Password entered.  Please re-enter credentials:\n" + style.NORMAL)
+            else: 
+                print(style.GREEN + "\nSuccessful authentication." + style.NORMAL + "\nGenerating output directory....\n")
+                dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
+                print('Documentation output directory is: ' + style.ORANGE + dest + style.NORMAL)
+                print('')
+                time.sleep(1)
+                result = [ListAuth[1][0],ListAuth[1][1], 'AUTH']
+                # result is a list with login, password and AUTH
+                MainMenu(result, dest)
 
 if __name__ == "__main__":
     main()

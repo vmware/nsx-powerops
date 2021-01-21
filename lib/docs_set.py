@@ -56,7 +56,7 @@ def DocsSetOne(auth_list):
     XLS_File = lib.menu.XLS_Dest + os.path.sep + "Audit_NSX.xls"
     fname = pathlib.Path(XLS_File)
     if fname.exists():
-        print(fname + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
+        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
         return
 
     print('')
