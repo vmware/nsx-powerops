@@ -11,6 +11,7 @@ The NSX-T PowerOps OVA works in conjunction with NSX-T PowerOps.  For easy insta
 To run NSX-T PowerOps:
 
 1. Download and deploy the nsxt-powerops OVA
+    * `git clone -b NSX-T-PowerOps_OVA --single-branch https://github.com/vmware/nsx-powerops.git`
 
 2. Once deployed, git clone the repo:
     * cd /home/powerops
