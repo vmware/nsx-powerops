@@ -13,12 +13,14 @@ Current version of NSX-T PowerOps supports 1000 objects per API call.  Paginatio
 
 ### PowerOps OVA Install
 1. The easiest method to build and run NSX-T PowerOps is to download the nsxt-powerops ova:
-       * 'https://drive.google.com/file/d/1mS7-SHt3m2uvvJL_Bxj53hxEP-xJNmzp/view?usp=sharing'
+
+       https://drive.google.com/file/d/1mS7-SHt3m2uvvJL_Bxj53hxEP-xJNmzp/view?usp=sharing
 
 2. Once deployed, login to the powerops VM and ensure you are in /home/powerops
 
 3. Git clone the NSX-T-PowerOps repo:
-       * 'git clone https://github.com/vmware/nsx-powerops.git
+       
+       git clone https://github.com/vmware/nsx-powerops.git
 
 #### Required Pre-Requisites for manual installation:
 
