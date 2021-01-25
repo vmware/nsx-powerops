@@ -22,6 +22,13 @@ Current version of NSX-T PowerOps supports 1000 objects per API call.  Paginatio
        
        git clone https://github.com/vmware/nsx-powerops.git
 
+4. Modify the config.yml with all the relevant information (NSX IP or FQDN, cert path, output folder for XLS files)
+
+      Please see 'Optional Pre-Requisite' below for details on Principal Identity certificate authentication
+
+5. Source 'run_powerops' from /home/powerops/nsx-powerops (source ./run_powerops)
+
+
 #### Required Pre-Requisites for manual installation:
 
 If you prefer a manual installation, you will need to prepare an environment (for example an 'NSX-T PowerOps' Virtual Machine) with the following:
