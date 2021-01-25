@@ -18,6 +18,8 @@ Current version of NSX-T PowerOps supports 1000 objects per API call.  Paginatio
 
 2. Once deployed, login to the powerops VM and ensure you are in /home/powerops
 
+       Default Username / Password:  powerops/powerops
+
 3. Git clone the NSX-T-PowerOps repo:
        
        git clone https://github.com/vmware/nsx-powerops.git
