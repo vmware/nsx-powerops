@@ -11,13 +11,13 @@ The NSX-T PowerOps OVA works in conjunction with NSX-T PowerOps.  For easy insta
 To run NSX-T PowerOps:
 
 1. Download and deploy the nsxt-powerops OVA
-    * `git clone -b NSX-T-PowerOps_OVA --single-branch https://github.com/vmware/nsx-powerops.git`
+    * `https://drive.google.com/file/d/1mS7-SHt3m2uvvJL_Bxj53hxEP-xJNmzp/view?usp=sharing`
 
 2. Once deployed, git clone the repo:
     * cd /home/powerops
     * git clone https://github.com/vmware/nsx-powerops.git
 
-2. Modify the config.yml with all your informations (NSX IP or FQDN, output folder for XLS files)
+2. Modify the config.yml with the relevant information (NSX IP or FQDN, cert path, output folder for XLS files)
 
 3. Upload the certificate and key files to /home/powerops/cert if using certificate based Principal Identity
     
