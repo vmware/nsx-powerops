@@ -27,32 +27,36 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-from lib.health import GetHealthNSXCluster, GetNSXSummary, GetTNTunnels, GetTNStatus, GetComputeDetail, GetEdgeCLDetail, GetEdgeStatus, GetLRSum, GetNetworkUsage, GetSecurityUsage, GetInventoryUsage
-from lib.docs_alarms import CreateXLSAlarms
-from lib.docs_groups import CreateXLSSecGrp
-from lib.docs_securitypolicies import CreateXLSSecPol
-from lib.docs_securitypolicies_and_rules import CreateXLSSecDFW
-from lib.docs_tier1_segments import CreateXLST1Segments
-from lib.docs_lr_summary import CreateXLSRouterSum
-from lib.docs_lr_ports import CreateXLSRouterPorts
-from lib.docs_tier1_segments import CreateXLST1Segments
-from lib.docs_logical_switches import CreateXLSSegments
-from lib.docs_tier0_routingtables import CreateXLST0RoutingTable
-from lib.docs_tier1_forwardingtables import CreateXLST1ForwardingTable
-from lib.docs_nsxmanagers import CreateXLSNSXManagerInfo
-from lib.docs_discovered_nodes import CreateXLSFabDiscoveredNodes
-from lib.docs_transportzones import CreateXLSTZ
-from lib.docs_services import CreateXLSNSXServices
-from lib.docs_tn_tunnels import CreateXLSTunnels
+from lib.health import GetBGPSessions, GetHealthNSXCluster, GetNSXSummary, GetTNTunnels, GetTNStatus, GetComputeDetail,\
+    GetEdgeCLDetail, GetEdgeStatus, GetLRSum, GetNetworkUsage, GetSecurityUsage, GetInventoryUsage
+from lib.docs_alarms import SheetAlarms
+from lib.docs_groups import SheetSecGrp
+from lib.docs_securitypolicies import SheetSecPol
+from lib.docs_securitypolicies_and_rules import SheetSecDFW
+from lib.docs_tier1_segments import SheetT1Segments
+from lib.docs_RoutingSessions import SheetBGPSession
+from lib.docs_lr_summary import SheetRouterSum
+from lib.docs_lr_ports import SheetRouterPorts
+from lib.docs_tier1_segments import SheetT1Segments
+from lib.docs_logical_switches import SheetSegments
+from lib.docs_tier0_routingtables import SheetT0RoutingTable
+from lib.docs_tier1_forwardingtables import SheetT1ForwardingTable
+from lib.docs_nsxmanagers import SheetNSXManagerInfo
+from lib.docs_discovered_nodes import SheetFabDiscoveredNodes
+from lib.docs_transportzones import SheetTZ
+from lib.docs_services import SheetNSXServices
+from lib.docs_tn_tunnels import SheetTunnels
 from lib.docs_set import DocsSetMultiple, DocsSetOne
 from lib.system import style
+from lib.excel import CreateXLSFile
 
 # Definition of one menu
 class Menu:
-    def __init__(self, content, short_view, submenus = None, func = None):
+    def __init__(self, content, short_view, submenus = None, func = None, xlsfile = None):
         self.content = content
         self.short_view = short_view
         self.func = func
+        self.xlsfile = xlsfile
         if submenus != None:
             self.choices = dict(enumerate(submenus, 1)) #create dictionnary of submenus
             for sub in submenus:
@@ -63,27 +67,28 @@ class Menu:
 def MainMenu(authlist,dest):
     global XLS_Dest
     XLS_Dest = dest
-    FabManager = Menu("","NSX-T Manager Info", None, CreateXLSNSXManagerInfo)
-    FabNodes = Menu("","Fabric Discovered Nodes", None, CreateXLSFabDiscoveredNodes)
-    FabTZ = Menu("","Transport Zones", None, CreateXLSTZ)
-    FabServices = Menu("","NSX-T Services", None, CreateXLSNSXServices)
-    FabTunnles = Menu("","Transport Node Tunnels", None, CreateXLSTunnels)
+    FabManager = Menu("","NSX-T Manager Info", None, SheetNSXManagerInfo, "NSX_Managers_Info")
+    FabNodes = Menu("","Fabric Discovered Nodes", None, SheetFabDiscoveredNodes, "Fabric_Discovered_Nodes")
+    FabTZ = Menu("","Transport Zones", None, SheetTZ, "Transport_Zones")
+    FabServices = Menu("","NSX-T Services", None, SheetNSXServices, "Services")
+    FabTunnles = Menu("","Transport Node Tunnels", None, SheetTunnels,"Transport_Node_Tunnels")
     FabPrev = Menu("","Return to previous menu", None, 'Back')
     
-    VNSSegment = Menu("","Export Segments", None, CreateXLSSegments)
-    VNSRouterSum = Menu("", "Export Logical Router Summary", None, CreateXLSRouterSum)
-    VNSRouterPort = Menu("", "Export Logical Router Ports", None, CreateXLSRouterPorts)
-    VNST1Segment = Menu("", "Export Tier-1 Segment Connectivity", None, CreateXLST1Segments)
-    VNST0 = Menu("", "Export Tier-0 Routing Tables", None, CreateXLST0RoutingTable)
-    VNST1Tables = Menu("", "Export Tier-1 Forwarding Tables", None, CreateXLST1ForwardingTable)
+    VNSSegment = Menu("","Export Segments", None, SheetSegments, "Segments")
+    VNSRouterSum = Menu("", "Export Logical Router Summary", None, SheetRouterSum,"Logical_Router_Summary")
+    VNSRouterPort = Menu("", "Export Logical Router Ports", None, SheetRouterPorts, "Logical_Router_Ports")
+    VNST1Segment = Menu("", "Export Tier-1 Segment Connectivity", None, SheetT1Segments, "Tier1_Segments")
+    VNST1RoutingSessions = Menu("", "Export Tier-0 BGP Sessions", None, SheetBGPSession, "Tier0_BGP_Sessions")
+    VNST0 = Menu("", "Export Tier-0 Routing Tables", None, SheetT0RoutingTable, "Tier0_Routing_Tables")
+    VNST1Tables = Menu("", "Export Tier-1 Forwarding Tables", None, SheetT1ForwardingTable, "Tier1_Forwarding_Tables")
     VNSPrev = Menu("", "Return to previous menu", None, 'Back')
 
-    SecGrp = Menu("","Export Security Group Info", None, CreateXLSSecGrp)
-    SecPol = Menu("","Export Security Policies", None, CreateXLSSecPol)
-    SecDFW = Menu("","Export Distributed Firewall", None, CreateXLSSecDFW)
+    SecGrp = Menu("","Export Security Group Info", None, SheetSecGrp, "Security_Groups")
+    SecPol = Menu("","Export Security Policies", None, SheetSecPol, "Security_Policies")
+    SecDFW = Menu("","Export Distributed Firewall", None, SheetSecDFW, "Rules_Distributed_Firewall")
     SecPrev = Menu("","Return to previous menu", None, 'Back')
 
-    MonAlarm = Menu("", "Export Alarms", None, CreateXLSAlarms)
+    MonAlarm = Menu("", "Export Alarms", None, SheetAlarms,"Alarms")
     MonPrev = Menu("", "Return to previous menu", None, 'Back')
 
     DocSetOneFile = Menu("","One Excel file", None, DocsSetOne)
@@ -91,7 +96,7 @@ def MainMenu(authlist,dest):
     DocSetPrev = Menu("", "Return to previous menu", None, 'Back')
 
     DocFab = Menu("\nNSX-T Fabric Documents", "NSX-T Fabric Options", [FabManager, FabNodes, FabTZ, FabServices, FabTunnles, FabPrev])
-    DocVNS = Menu("\nVirtual Networking Documents", "Virtual Networking Options", [VNSSegment,VNSRouterSum,VNSRouterPort,VNST1Segment,VNST0,VNST1Tables,VNSPrev])
+    DocVNS = Menu("\nVirtual Networking Documents", "Virtual Networking Options", [VNSSegment,VNSRouterSum,VNSRouterPort,VNST1Segment,VNST1RoutingSessions, VNST0,VNST1Tables,VNSPrev])
     DocSecu = Menu("\nSecurity Documents", "Security Options" ,[SecGrp, SecPol, SecDFW, SecPrev])
     DocMon = Menu("\nMonitoring & Alarm Documents", "Monitoring & Alarm Options" ,[MonAlarm, MonPrev])
     DocSet = Menu("\nNSX Document Set", "Create documentation set", [DocSetOneFile,DocSetMultiple,DocSetPrev])
@@ -105,13 +110,14 @@ def MainMenu(authlist,dest):
     subhealth6 = Menu("", "Display Edge Cluster Details", None, GetEdgeCLDetail)
     subhealth7 = Menu("", "Display Compute Manager Details", None, GetComputeDetail)
     subhealth8 = Menu("", "Display Logical Router Summary", None, GetLRSum)
-    subhealth9 = Menu("", "Display Networking Usage", None, GetNetworkUsage)
-    subhealth10 = Menu("", "Display Security Usage", None, GetSecurityUsage)
-    subhealth11 = Menu("", "Display Inventory Usage", None, GetInventoryUsage)
-    subhealth12 = Menu("", "Return to previous menu", None, 'Back')
+    subhealth9 = Menu("", "Display BGP Sessions Summary", None, GetBGPSessions)
+    subhealth10 = Menu("", "Display Networking Usage", None, GetNetworkUsage)
+    subhealth11 = Menu("", "Display Security Usage", None, GetSecurityUsage)
+    subhealth12 = Menu("", "Display Inventory Usage", None, GetInventoryUsage)
+    subhealth13 = Menu("", "Return to previous menu", None, 'Back')
 
     Doc = Menu("\nNSX-T Documentation", "NSX-T Documentation", [DocFab, DocVNS, DocSecu, DocMon, DocSet, DocPrev])
-    Health = Menu("\nHealth Checks", "Health Checks", [subhealth1,subhealth2,subhealth3,subhealth4,subhealth5,subhealth6,subhealth7,subhealth8,subhealth9,subhealth10,subhealth11, subhealth12])
+    Health = Menu("\nHealth Checks", "Health Checks", [subhealth1,subhealth2,subhealth3,subhealth4,subhealth5,subhealth6,subhealth7,subhealth8,subhealth9,subhealth10,subhealth11, subhealth12, subhealth13])
 
     main = Menu("Main Menu", "", [Doc, Health])
     main.parent = main
@@ -125,18 +131,28 @@ def MainMenu(authlist,dest):
         elif inpt == "back":
             current_menu = current_menu.parent
         else:
-#### Debug
+##### Debug
 #            inpt = int(inpt)
 #            if not current_menu.choices[inpt].choices:
 #                if current_menu.choices[inpt].func == 'Back':
 #                    current_menu = current_menu.parent
 #                    continue
 #                else:
-#                    current_menu.choices[inpt].func(authlist)
-#                    continue
+#                    # Create one file
+#                    if 'Sheet' in current_menu.choices[inpt].func.__name__:
+#                        WB = CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile)
+#                        # Creation of sheet
+#                        TN_WS = WB[0].active
+#                        TN_WS.title = current_menu.choices[inpt].xlsfile
+#                        current_menu.choices[inpt].func(authlist,WB[0],TN_WS)
+#                        WB[0].save(WB[1])
+#                        continue
+#                    # For Health and documentations set
+#                    else:
+#                        current_menu.choices[inpt].func(authlist)
+#                        continue
 #                
 #            current_menu = current_menu.choices[inpt]
-
 ###
             try:
                 inpt = int(inpt)
@@ -145,8 +161,19 @@ def MainMenu(authlist,dest):
                         current_menu = current_menu.parent
                         continue
                     else:
-                        current_menu.choices[inpt].func(authlist)
-                        continue
+                        # Create one file
+                        if 'Sheet' in current_menu.choices[inpt].func.__name__:
+                            WB = CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile)
+                            # Creation of sheet
+                            TN_WS = WB[0].active
+                            TN_WS.title = current_menu.choices[inpt].xlsfile
+                            current_menu.choices[inpt].func(authlist,WB[0],TN_WS)
+                            WB[0].save(WB[1])
+                            continue
+                        # For Health and documentations set
+                        else:
+                            current_menu.choices[inpt].func(authlist)
+                            continue
                     
                 current_menu = current_menu.choices[inpt]
             except Exception as error:

@@ -28,106 +28,77 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt
-import pathlib
+import pathlib, lib.menu
+from lib.excel import FillSheet, Workbook
 from lib.system import style, GetAPI, ConnectNSX, os
-import lib.menu
-
-from vmware.vapi.lib import connect
-from vmware.vapi.security.user_password import \
-        create_user_password_security_context
-
-def CreateXLST1ForwardingTable(auth_list):
-    # Setup excel workbook and worksheets   
-    t1_routing_wkbk = xlwt.Workbook()
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Tier-1_Forwarding.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
-        return
-
-    print('\nGenerating Tier-1 Forwarding Tables: ' + style.ORANGE + XLS_File + style.NORMAL)
-    print('')
-    SheetT1ForwardingTable(auth_list,t1_routing_wkbk)
-    t1_routing_wkbk.save(XLS_File)
 
 
-def SheetT1ForwardingTable(auth_list,t1_routing_wkbk):
-    style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz center, wrap True')
-    style_alignleft = xlwt.easyxf('font: colour black, bold True; align: horiz left, wrap True')
-
+def SheetT1ForwardingTable(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+    NSX_Config['T1ForwardingTable'] = []
+    Dict_T1 = {}
+    # Connect NSX
     SessionNSX = ConnectNSX(auth_list)
     ########### GET Edge Clusters  ###########
-    edge_list_url = '/api/v1/search/query?query=resource_type:Edgenode'
-    edge_list_json = GetAPI(SessionNSX[0],edge_list_url, auth_list)
-    ########### CREATE LIST OF TUPLES - EDGE-ID / EDGE NAME ###########
-    edge_list = []
-    for i in edge_list_json["results"]:
-        edge_list.append(tuple((i['id'],i['display_name'])))
-
+    #edge_list_url = '/api/v1/search/query?query=resource_type:Edgenode'
+    #edge_list_json = GetAPI(SessionNSX[0],edge_list_url, auth_list)
     ########### GET Tier-1 Gateways  ###########
     t1_url = '/policy/api/v1/infra/tier-1s'
     t1_json = GetAPI(SessionNSX[0],t1_url, auth_list)
+    ########### CREATE LIST OF TUPLES - EDGE-ID / EDGE NAME ###########
+    #edge_list = []
+    #if edge_list_json["result_count"] > 0:
+    #    for edge in edge_list_json["results"]:
+    #        edge_list.append(tuple((edge['id'],edge['display_name'])))
 
     t1_id_list = []
-    for i in t1_json["results"]:
-        t1_id_list.append(i['display_name'])
+    XLS_Lines = []
+    TN_HEADER_ROW = ('T1 Router','Edge Node Path', 'Edge ID', 'HA Status','Route Type', 'Network', 'Admin Distance', 'Next Hop', 'LR Component ID', 'LR Component Type')
 
-    for i in t1_id_list:
-        start_row_0 = 0
-        start_row_1 = 1
-        start_row_2 = 2
-        start_row_3 = 3
-        start_row_4 = 4
-        start_row_5 = 5
-        start_row_6 = 6
-        start_row_7 = 7
+    if t1_json["result_count"] > 0:
+        for T1 in t1_json["results"]:
+            t1_id_list.append(T1['display_name'])
 
-        sheet = t1_routing_wkbk.add_sheet(str(i) + "_Table", cell_overwrite_ok=True)
-        col_width_A = sheet.col(0)
-        col_width_A.width = 256 * 30
-        col_width_B = sheet.col(1)
-        col_width_B.width = 256 * 150
-        try:
-            t1_routingtable_json = GetAPI(SessionNSX[0],t1_url + '/' + str(i) + '/forwarding-table', auth_list)
-            for n in t1_routingtable_json["results"]:
-                route_entries = n['route_entries']
+        for T1 in t1_id_list:
+            forwardingURL = t1_url + '/' + str(T1) + '/forwarding-table'
+            # Get T1 State
+            t1_state_json = GetAPI(SessionNSX[0],t1_url + '/' + str(T1) + '/state', auth_list)
+            nb_routes = 0
+            if isinstance(t1_state_json, dict) and 'tier1_status' in t1_state_json:
+                if 'per_node_status' in t1_state_json['tier1_status']:
+                    for node in t1_state_json['tier1_status']['per_node_status']:
+                        if node['high_availability_status'] != 'STANDBY':
+                            EdgeID = node['transport_node_id']
+                            HAStatus = node['high_availability_status']
+                            forwardingURL = t1_url + '/' + str(T1) + '/forwarding-table?edge_id=' + EdgeID
 
-                edge_string = str(n['edge_node'])
-                split_edge_string = (edge_string.split("/"))
-                split_string = str((split_edge_string[-1]))
-                e_node = (split_string.split("'")[0])
+            # Get T1 forwardoing table
+            t1_routingtable_json = GetAPI(SessionNSX[0],forwardingURL, auth_list)
+            if isinstance(t1_routingtable_json, dict) and 'results' in t1_routingtable_json and t1_routingtable_json['result_count'] > 0:
+                for n in t1_routingtable_json["results"]:
+                    # Get routes
+                    nb_routes = len(n['route_entries'])
+                    for entry in n['route_entries']:
+                        Dict_T1['edge_name'] = n['edge_node']
+                        Dict_T1['edge_id'] = EdgeID
+                        Dict_T1['ha'] = HAStatus
+                        Dict_T1['T0_name'] = T1
+                        Dict_T1['route_type'] = entry['route_type']
+                        Dict_T1['network'] = entry['network']
+                        Dict_T1['ad'] = entry['admin_distance']
+                        Dict_T1['next_hop'] = entry['next_hop']
+                        Dict_T1['lr_id']= entry['lr_component_id']
+                        Dict_T1['lr_type'] = entry['lr_component_type']
+                        NSX_Config['T1ForwardingTable'].append(Dict_T1)
+                        XLS_Lines.append([T1, n['edge_node'], EdgeID,HAStatus,entry['route_type'], entry['network'],entry['admin_distance'], entry['next_hop'],entry['lr_component_id'],entry['lr_component_type']])
+            elif not t1_routingtable_json:
+                XLS_Lines.append([T1,"No Forwarding table found","","","","","","","",""])
+            else:
+                XLS_Lines.append([T1,"T1 not deployed on Edge Cluster. DR Only","","","","","","","",""])
+            
+            print(" --> Get forwarding tables of " + style.ORANGE + T1 + style.NORMAL + " Router: " + style.ORANGE + str(nb_routes) + style.NORMAL + " route(s)")
 
-                for entry in route_entries:
-                    sheet.write(start_row_0, 0, 'Edge Node', style_db_center)
-                    for edge in edge_list:
-                        if e_node == edge[0]:
-                            sheet.write(start_row_0, 1, edge[1], style_alignleft)                   
-                    sheet.write(start_row_1, 0, 'Edge Node Path', style_db_center)
-                    sheet.write(start_row_1, 1, n['edge_node'], style_alignleft)
-                    sheet.write(start_row_2, 0, 'Route Type', style_db_center)
-                    sheet.write(start_row_2, 1, entry['route_type'], style_alignleft)
-                    sheet.write(start_row_3, 0, 'Network', style_db_center)
-                    sheet.write(start_row_3, 1, entry['network'], style_alignleft)
-                    sheet.write(start_row_4, 0, 'Admin Distance', style_db_center)
-                    sheet.write(start_row_4, 1, entry['admin_distance'], style_alignleft)
-                    sheet.write(start_row_5, 0, 'Next Hop', style_db_center)
-                    sheet.write(start_row_5, 1, entry['next_hop'], style_alignleft)
-                    sheet.write(start_row_6, 0, 'LR Component ID', style_db_center)
-                    sheet.write(start_row_6, 1, entry['lr_component_id'], style_alignleft)
-                    sheet.write(start_row_7, 0, 'LR Component Type', style_db_center)
-                    sheet.write(start_row_7, 1, entry['lr_component_type'], style_alignleft)
-                
-                    start_row_0 += 9
-                    start_row_1 += 9
-                    start_row_2 += 9
-                    start_row_3 += 9
-                    start_row_4 += 9
-                    start_row_5 += 9
-                    start_row_6 += 9
-                    start_row_7 += 9
-        except:
-            sheet.write(0, 0, 'NO FORWARDING TABLE', style_db_center)
-    
+    else:
+        XLS_Lines.append(["No Forwarding table found","","","","","","","","",""])
+
+    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+        

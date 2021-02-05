@@ -28,59 +28,18 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt
-import pathlib
+import pathlib, lib.menu,  pprint
+from lib.excel import FillSheet, Workbook
 from lib.system import style, GetAPI, ConnectNSX, os
-import lib.menu
-
 from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
-def CreateXLSRouterSum(auth_list):
-    # Setup excel workbook and worksheets 
-    lr_wkbk = xlwt.Workbook()  
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Logical_Router_Summary.xls"
-    fname = pathlib.Path(XLS_File)
 
-    if fname.exists():
-        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
-        return
-
-    print('\nGenerating Logical Router output: ' + style.ORANGE + XLS_File + style.NORMAL + '\n')
-    SheetRouterSum(auth_list,lr_wkbk)
-    lr_wkbk.save(XLS_File)
-
-def SheetRouterSum(auth_list,lr_wkbk):
-    lr_summary = lr_wkbk.add_sheet('Logical Router Summary', cell_overwrite_ok=True)
-    tier0_lr = lr_wkbk.add_sheet('Tier0 Logical Routers', cell_overwrite_ok=True)
-    tier0_vrf_lr = lr_wkbk.add_sheet('Tier0 VRF Logical Routers', cell_overwrite_ok=True)
-    tier1_lr = lr_wkbk.add_sheet('Tier1 Logical Routers', cell_overwrite_ok=True)
-
-    style_db_left = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz left, vert centre')
-    style_alignleft = xlwt.easyxf('font: colour black, bold False; align: horiz left, wrap True')
-
-    sum_columnA = lr_summary.col(0)
-    sum_columnA.width = 256 * 35
-    sum_columnB = lr_summary.col(1)
-    sum_columnB.width = 256 * 15
-
-    t0_columnA = tier0_lr.col(0)
-    t0_columnA.width = 256 * 30
-    t0_columnB = tier0_lr.col(1)
-    t0_columnB.width = 256 * 50
-
-    t0vrf_columnA = tier0_vrf_lr.col(0)
-    t0vrf_columnA.width = 256 * 30
-    t0vrf_columnB = tier0_vrf_lr.col(1)
-    t0vrf_columnB.width = 256 * 50
-
-    t1_columnA = tier1_lr.col(0)
-    t1_columnA.width = 256 * 30
-    t1_columnB = tier1_lr.col(1)
-    t1_columnB.width = 256 * 50
+def SheetRouterSum(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+    if 'LR' not in NSX_Config:
+        NSX_Config['LR'] = []
+    Dict_LR = {}
 
     SessionNSX = ConnectNSX(auth_list)
    ########### GET Logical Routers  ###########
@@ -89,140 +48,49 @@ def SheetRouterSum(auth_list,lr_wkbk):
     ########### GET Edge Clusters  ###########
     edge_list_url = '/api/v1/edge-clusters'
     edge_list_json = GetAPI(SessionNSX[0],edge_list_url, auth_list)
-
     ########### CREATE LIST OF TUPLES - EDGE-ID / EDGE NAME ###########
     edge_list = []
-    for i in edge_list_json["results"]:
-        edge_list.append(tuple((i['id'],i['display_name'])))
-    
-    total_lrs = lr_list_json["result_count"]
-    
-    tier0s = 0
-    tier0vrfs = 0
-    tier1s = 0
+    if edge_list_json['result_count'] > 0:
+        for i in edge_list_json["results"]:
+            edge_list.append(tuple((i['id'],i['display_name'])))
 
-    tier0slist = []
-    tier0vrflist = []
-    tier1slist = []
+    XLS_Lines = []
+    TN_HEADER_ROW = ('Logical Router Name', 'Logical Router ID', 'Edge Cluster Name', 'Edge Custer ID', 'Logical Router Type', 'High Availability Mode', 'Enable Standby Relocation', 'Failover Mode')
+    if lr_list_json['result_count'] > 0:
+        for LR in lr_list_json['results']:
+            HA = ""
+            RELOC = ""
+            FAILOVER = ""
+            LRType = ""
+            EdgeClusterName = ""
+            LRID = ""
+            if 'edge_cluster_id' in LR:
+                LRID = LR['edge_cluster_id']
+                # Get Edge Cluster Name
+                for ec in edge_list:
+                        if LR['edge_cluster_id'] == ec[0]:
+                            EdgeClusterName = ec[1]
 
-    for i in lr_list_json["results"]:
-        if i['router_type'] == 'TIER0': 
-            tier0s +=1
-            tier0slist.append(i)
-        elif i['router_type'] == 'VRF': 
-            tier0vrfs +=1
-            tier0vrflist.append(i)
-        elif i['router_type'] == 'TIER1':
-            tier1s +=1
-            tier1slist.append(i)
-    
-    lr_summary.write(0,0, 'Total Logical Routers', style_db_left)
-    lr_summary.write(0,1, total_lrs, style_alignleft)
-    lr_summary.write(1,0, 'Tier0 Logical Routers:', style_db_left)
-    lr_summary.write(1,1, tier0s, style_alignleft)
-    lr_summary.write(2,0, 'Tier0 VRF Logical Routers:', style_db_left)
-    lr_summary.write(2,1, tier0vrfs, style_alignleft)
-    lr_summary.write(3,0, 'Tier1 Logical Routers:', style_db_left)
-    lr_summary.write(3,1, tier1s, style_alignleft)
+            if 'router_type' in LR:
+                LRType = LR['router_type']
+            if 'high_availability_mode' in LR:
+                HA = LR['high_availability_mode']
+            if 'allocation_profile' in LR:
+                RELOC = LR['allocation_profile']['enable_standby_relocation']
+            if 'failover_mode' in LR:
+                FAILOVER = LR['failover_mode']
+            Dict_LR['name'] = LR['display_name']
+            Dict_LR['id'] = LR['id']
+            Dict_LR['edge_cluster_name'] = EdgeClusterName
+            Dict_LR['edge_cluster_id'] = LRID
+            Dict_LR['router_type'] = LRType
+            Dict_LR['failover_mode'] = FAILOVER
+            Dict_LR['ha_mode'] = HA
+            Dict_LR['relocation'] = RELOC
+            NSX_Config['LR'].append(Dict_LR)
+            XLS_Lines.append([LR['display_name'], LR['id'],EdgeClusterName, LRID, LRType, HA, RELOC, FAILOVER])
 
-    start_row = 0
-    for i in tier0slist:
-        tier0_lr.write(start_row,0, 'Logical Router Name', style_db_left)
-        tier0_lr.write(start_row,1,i['display_name'],style_alignleft)
-        start_row += 1
-        tier0_lr.write(start_row,0, 'Logical Router ID', style_db_left)
-        tier0_lr.write(start_row,1,i['id'],style_alignleft)
-        start_row += 1
-        tier0_lr.write(start_row,0, 'Edge Cluster Name', style_db_left)
-        for ec in edge_list:
-            if i['edge_cluster_id'] == ec[0]:
-                tier0_lr.write(start_row,1,ec[1],style_alignleft)
-        start_row += 1
-        tier0_lr.write(start_row,0, 'Edge Cluster ID', style_db_left)
-        tier0_lr.write(start_row,1,i['edge_cluster_id'],style_alignleft)
-        start_row += 1
-        tier0_lr.write(start_row,0, 'Logical Router Type', style_db_left)
-        tier0_lr.write(start_row,1,i['router_type'],style_alignleft)
-        start_row += 1
-        tier0_lr.write(start_row,0, 'High Availability Mode', style_db_left)
-        tier0_lr.write(start_row,1,i['high_availability_mode'],style_alignleft)
-        start_row += 1
-        tier0_lr.write(start_row,0, 'Enable Standby Relocation', style_db_left)
-        for n in i['allocation_profile']:
-            tier0_lr.write(start_row,1,i['allocation_profile'][n],style_alignleft)
-                                      
-        start_row += 2
-    
-    start_row = 0
-    for i in tier0vrflist:
-        tier0_vrf_lr.write(start_row,0, 'Logical Router Name', style_db_left)
-        tier0_vrf_lr.write(start_row,1,i['display_name'],style_alignleft)
-        start_row += 1
-        tier0_vrf_lr.write(start_row,0, 'Logical Router ID', style_db_left)
-        tier0_vrf_lr.write(start_row,1,i['id'],style_alignleft)
-        start_row += 1
-        tier0_vrf_lr.write(start_row,0, 'Edge Cluster Name', style_db_left)
-        for ec in edge_list:
-            if i['edge_cluster_id'] == ec[0]:
-                tier0_vrf_lr.write(start_row,1,ec[1],style_alignleft)
-        start_row += 1
-        tier0_vrf_lr.write(start_row,0, 'Edge Cluster ID', style_db_left)
-        tier0_vrf_lr.write(start_row,1,i['edge_cluster_id'],style_alignleft)
-        start_row += 1
-        tier0_vrf_lr.write(start_row,0, 'Logical Router Type', style_db_left)
-        tier0_vrf_lr.write(start_row,1,i['router_type'],style_alignleft)
-        start_row += 1
-        tier0_vrf_lr.write(start_row,0, 'High Availability Mode', style_db_left)
-        tier0_vrf_lr.write(start_row,1,i['high_availability_mode'],style_alignleft)
-        start_row += 1
-        tier0_vrf_lr.write(start_row,0, 'Enable Standby Relocation', style_db_left)
-        for n in i['allocation_profile']:
-            tier0_vrf_lr.write(start_row,1,i['allocation_profile'][n],style_alignleft)
-        start_row += 1
-        tier0_vrf_lr.write(start_row,0, 'Failover Mode', style_db_left)
-        tier0_vrf_lr.write(start_row,1,i['failover_mode'],style_alignleft)
-                                      
-        start_row += 2
-    
-    start_row = 0
-    for i in tier1slist:
-        tier1_lr.write(start_row,0, 'Logical Router Name', style_db_left)
-        tier1_lr.write(start_row,1,i['display_name'],style_alignleft)
-        start_row += 1
+    else:
+        XLS_Lines.append(['No results', "", "", "", "", "", "", ""])
 
-        tier1_lr.write(start_row,0, 'Logical Router ID', style_db_left)
-        tier1_lr.write(start_row,1,i['id'],style_alignleft)
-        start_row += 1
-
-        tier1_lr.write(start_row,0, 'Edge Cluster Name', style_db_left)
-        try:
-            for ec in edge_list:
-                if i['edge_cluster_id'] == ec[0]:
-                    tier1_lr.write(start_row,1,ec[1],style_alignleft)
-        except:
-            tier1_lr.write(start_row,1,'No Edge Cluster Assignment',style_alignleft)
-        start_row += 1
-
-        tier1_lr.write(start_row,0, 'Edge Cluster ID', style_db_left)
-        try:
-            tier1_lr.write(start_row,1,i['edge_cluster_id'],style_alignleft)
-        except:
-            tier1_lr.write(start_row,1,'No Edge Cluster Assignment',style_alignleft)
-        start_row += 1
-
-        tier1_lr.write(start_row,0, 'Logical Router Type', style_db_left)
-        tier1_lr.write(start_row,1,i['router_type'],style_alignleft)
-        start_row += 1
-
-        tier1_lr.write(start_row,0, 'High Availability Mode', style_db_left)
-        tier1_lr.write(start_row,1,i['high_availability_mode'],style_alignleft)
-        start_row += 1
-
-        tier1_lr.write(start_row,0, 'Enable Standby Relocation', style_db_left)
-        tier1_lr.write(start_row,1,i['allocation_profile']['enable_standby_relocation'],style_alignleft)
-        start_row += 1
-
-        tier1_lr.write(start_row,0, 'Failover Mode', style_db_left)
-        tier1_lr.write(start_row,1,i['failover_mode'],style_alignleft)
-                                      
-        start_row += 2
+    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
