@@ -28,9 +28,7 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import requests
-import urllib3
-import getpass
+import requests, urllib3, pprint, getpass
 from pathlib import Path
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from sys import platform
@@ -99,8 +97,8 @@ def auth_nsx(nsx_mgr_fqdn,authmethod,cert):
 
     try:
         SessionNSX = ConnectNSX(auth_list)
-        req = GetAPI(SessionNSX[0],url_test, auth_list,'NOJSON')
-        response = [str(req), auth_list]
+        req = GetAPI(SessionNSX[0],url_test, auth_list)
+        response = [req, auth_list]
     except:
         response = ['Failed',[]]
         quit
@@ -108,7 +106,7 @@ def auth_nsx(nsx_mgr_fqdn,authmethod,cert):
     return response
 
 
-def GetAPI(session,url, auth_list, resp_type = ''):
+def GetAPI(session,url, auth_list, cursor=None, result_list = []):
     """
     GetAPI(session, url, auth_list, reponse_type)
     Realize a get in REST/API depending if wants a Json reponse, with authentication with certification or login
@@ -120,20 +118,33 @@ def GetAPI(session,url, auth_list, resp_type = ''):
         URL of the request without protocol and IP/FQDN
     auth_list : list
         list with authentication parameters (login/cert, password/key, AUTH or CERT)
-    response_type: str
-        NOJSON must be used for a REST/API request which return no Json response
+    cursor : str
+        cursor REST/API in case of pagination
+    result_list : list
+        for recursive purpose for pagination
     """
     YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
-    if resp_type == 'NOJSON':
-        if auth_list[2] == 'AUTH':
-            return session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url), auth=(auth_list[0], auth_list[1]), verify=session.verify)
-        if auth_list[2] == 'CERT':
-            return requests.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url), headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify)
-    else:
-        if auth_list[2] == 'AUTH':
-            return session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url), auth=(auth_list[0], auth_list[1]), verify=session.verify).json()
-        if auth_list[2] == 'CERT':
-            return requests.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url), headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify).json()
+    if cursor  is not None: cursor = '?cursor=' + cursor
+    else: cursor = ""
+
+    if auth_list[2] == 'AUTH':
+        result =  session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor, auth=(auth_list[0], auth_list[1]), verify=session.verify)
+
+    if auth_list[2] == 'CERT':
+        result =  requests.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor, headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify)
+
+    if result.status_code == 200:
+        resultJSON = result.json()
+        # cursor test
+        if 'cursor' in resultJSON and str(resultJSON['cursor']) != str(resultJSON['result_count']):
+                print(" --> more than " + str(len(result_list + resultJSON['results'])) +  " results for " + style.RED + url + style.NORMAL + " - please wait")
+                resultJSON = GetAPI(session,url, auth_list, cursor=resultJSON['cursor'], result_list=result_list + resultJSON['results'])
+                resultJSON['results'] = result_list + resultJSON['results']
+        
+        return resultJSON
+    
+    else: 
+        return result.status_code
 
 
 def ConnectNSX(auth_list):

@@ -28,101 +28,72 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt
-import pathlib
+import pathlib, lib.menu
+from lib.excel import FillSheet, Workbook
 from lib.system import style, GetAPI, ConnectNSX, os
-import lib.menu
-
-from vmware.vapi.lib import connect
-from vmware.vapi.security.user_password import \
-    create_user_password_security_context
-
-def CreateXLSNSXServices(auth_list):
-    # Setup excel workbook and worksheets 
-    wkbk = xlwt.Workbook()  
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "NSX-T_Services.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
-        return
-
-    print('\nGenerating NSX-T Services output: ' + style.ORANGE + XLS_File + style.NORMAL + '\n')
-    SheetNSXServices(auth_list,wkbk)
-    wkbk.save(XLS_File) 
 
 
-def SheetNSXServices(auth_list,wkbk):
-    sheet1 = wkbk.add_sheet('NSX-T Services', cell_overwrite_ok=True)
-    style_wrap = xlwt.easyxf('align: wrap True')
-    style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz center')
-
-    #Setup Column widths
-    columnA = sheet1.col(0)
-    columnA.width = 256 * 60
-    columnB = sheet1.col(1)
-    columnB.width = 256 * 60
-    columnC = sheet1.col(2)
-    columnC.width = 256 * 20
-    columnD = sheet1.col(3)
-    columnD.width = 256 * 65
-    columnE = sheet1.col(4)
-    columnE.width = 256 * 30
-    columnF = sheet1.col(5)
-    columnF.width = 256 * 20
-
-    style_wrap = xlwt.easyxf('alignment: wrap True')
-
+def SheetNSXServices(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+    NSX_Config['Services'] = []
+    Dict_Services = {}
+    # Connection to NSX
     SessionNSX = ConnectNSX(auth_list)
     services_url = '/policy/api/v1/infra/services'
     services_json = GetAPI(SessionNSX[0],services_url, auth_list)
-    service_count = (services_json["result_count"])
 
-    sheet1.write(0, 0, 'Service Name', style_db_center)
-    sheet1.write(0, 1, 'Service Entries', style_db_center)
-    sheet1.write(0, 2, 'Service Type', style_db_center)
-    sheet1.write(0, 3, 'Port # / Additional Properties', style_db_center)
-    sheet1.write(0, 4, 'Tags', style_db_center)
-    sheet1.write(0, 5, 'Scope', style_db_center)
-
-    start_row = 1
-
-    for i in range(1,service_count):
-        sheet1.write(start_row, 0, (services_json["results"][i]["display_name"]))
-        svc_entries = (services_json["results"][i]["service_entries"])
-        if "tags" in services_json["results"][i]:
-                tag_length = (len(services_json["results"][i]["tags"]))
+    XLS_Lines = []
+    TN_HEADER_ROW = ('Services Name', 'Services Entries', 'Service Type', 'Port # / Additionnal Properties', 'Tags', 'Scope')
+    if services_json['result_count'] > 0:
+        for SR in services_json['results']:
+            TAGS = ""
+            SCOPE = ""
+            if 'tags' in SR:
                 tag_list = []
                 scope_list = []
-                for t in range(0,tag_length):
-                    tag_list.append(services_json["results"][i]["tags"][t]["tag"])
-                    scope_list.append(services_json["results"][i]["tags"][t]["scope"])
-                sheet1.write(start_row, 4, ', '.join(tag_list))
-                sheet1.write(start_row, 5, ', '.join(scope_list), style_wrap)
-        for se in range(0,len(svc_entries)):
-            sheet1.write(start_row, 1, (services_json["results"][i]["service_entries"][se]["id"]))
-            if "l4_protocol" in services_json["results"][i]["service_entries"][se]:
-                sheet1.write(start_row, 2, (services_json["results"][i]["service_entries"][se]["l4_protocol"]))
-                d_ports = ",  "
-                s = (services_json["results"][i]["service_entries"][se]["destination_ports"])
-                sheet1.write(start_row, 3, (d_ports.join(s)))
-            elif "protocol" in services_json["results"][i]["service_entries"][se]:
-                prot = (services_json["results"][i]["service_entries"][se])
-                sheet1.write(start_row, 2, (prot["protocol"]))
-                if "icmp_type" in prot and "icmp_code" in prot:
-                    i_type = str(prot["icmp_type"])
-                    i_code = str(prot["icmp_code"])
-                    sheet1.write(start_row, 3, ('ICMP TYPE: '+i_type, '    ','ICMP CODE: '+i_code))
-            elif "alg" in services_json["results"][i]["service_entries"][se]:
-                sheet1.write(start_row, 2, (services_json["results"][i]["service_entries"][se]["alg"]))
-                sheet1.write(start_row, 3, (services_json["results"][i]["service_entries"][se]["destination_ports"]))
-            elif "protocol_number" in services_json["results"][i]["service_entries"][se]:
-                pn = str(services_json["results"][i]["service_entries"][se]["protocol_number"])
-                sheet1.write(start_row, 2, ('Protocol Number: ',(pn)))
-            elif "ether_type" in services_json["results"][i]["service_entries"][se]:
-                e_type = str(services_json["results"][i]["service_entries"][se]["ether_type"])
-                sheet1.write(start_row, 2, ('Ether Type: ',(e_type)))
-            else:
-                sheet1.write(start_row, 2, ('IGMP'))
-            start_row+=1
+                for tag in SR['tags']:
+                    tag_list.append(tag['tag'])
+                    scope_list.append(tag['scope'])
+
+                TAGS = ", ".join(tag_list)
+                SCOPE = ", ".join(scope_list)
+
+            List_SR = []
+            List_Proto = []
+            List_Ports = []
+            for svc in SR['service_entries']:
+                List_SR.append(svc['display_name'])
+                if 'l4_protocol' in svc: 
+                    List_Proto.append(svc['l4_protocol'])
+                    Ports = ", ".join(svc['destination_ports'])
+                    List_Ports.append(Ports)
+                elif 'protocol' in svc:
+                    List_Proto.append(svc['protocol'])
+                    if "icmp_type" in svc :
+                        List_Ports.append(str(svc['icmp_type']))
+                elif "alg" in svc:
+                    List_Proto.append(svc['alg'])
+                    Ports = ", ".join(svc['destination_ports'])
+                    List_Ports.append(Ports)
+                elif "protocol_number" in svc:
+                    List_Proto.append(svc['protocol_number'])
+                elif "ether_type" in svc:
+                    List_Proto.append(svc['ether_type'])
+                else:
+                    List_Proto.append('IGMP')
+
+            Proto = "\n".join(List_Proto)
+            svc_ports = "\n".join(List_Ports)
+            Dict_Services['name'] = SR['display_name']
+            Dict_Services['tags'] = TAGS
+            Dict_Services['scope'] = SCOPE
+            Dict_Services['ports'] = List_Ports
+            Dict_Services['protocols'] = List_Proto
+            Dict_Services['services_entries'] = List_SR
+            NSX_Config['Services'].append(Dict_Services)
+            # Create Line
+            XLS_Lines.append([SR['display_name'], "\n".join(List_SR), Proto, svc_ports, TAGS, SCOPE])
+
+    else:
+        XLS_Lines.append(['No results', "", "", "", "", ""])
+
+    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")

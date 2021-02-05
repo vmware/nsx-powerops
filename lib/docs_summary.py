@@ -29,31 +29,43 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook
+from lib.excel import FillSheet, Workbook, PatternFill, Font,  ConditionnalFormat
 from lib.system import style, GetAPI, ConnectNSX, os
 
+def GetEntity(json, tab):
+    if 'entities' in json: 
+        for entity in json['entities']:
+            tab.append([entity['entity'], str(entity['count']), str(entity['alarm_count']), entity['status']])
 
-def SheetSecPol(auth_list, WORKBOOK,TN_WS, NSX_Config = {}):
-    NSX_Config['Policies'] = []
-    Dict_Policies = {}
-    # connection to NSX
+    return tab
+
+def SheetSummary(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+    # Connection to NSX
     SessionNSX = ConnectNSX(auth_list)
-    policies_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/domains/default/security-policies', auth_list)
-    # Header of Excel and initialization of lines
-    XLS_Lines = []
-    TN_HEADER_ROW = ('Security Policy ID', 'Security Policy Name', 'NSX Policy Path','Sequence Number', 'Category', 'is Stateful')
-    
-    if isinstance(policies_json, dict) and 'results' in policies_json and policies_json['result_count'] > 0: 
-        for policy in policies_json["results"]:
-            Dict_Policies['id'] = policy['id']
-            Dict_Policies['name'] =  policy['display_name']
-            Dict_Policies['path'] = policy['path']
-            Dict_Policies['sequence_number'] = policy['sequence_number']
-            Dict_Policies['category'] = policy['category']
-            Dict_Policies['stateful'] = policy['stateful']
-            NSX_Config['Policies'].append(Dict_Policies)
-            XLS_Lines.append([policy['id'], policy['display_name'], policy['path'], policy['sequence_number'], policy['category'], policy['stateful']])
-    else:
-        XLS_Lines.append(['No results', "", "", "", "", ""])
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    system_url = '/api/v1/ui-controller/system-aggregate-status'
+    inventory_url = '/api/v1/ui-controller/inventory-aggregate-status'
+    security_url = '/api/v1/ui-controller/security-aggregate-status'
+    network_url = '/api/v1/ui-controller/networking-aggregate-status'
+    fabric_url = '/api/v1/ui-controller/fabric-aggregate-status'
+    inventory_json = GetAPI(SessionNSX[0],inventory_url, auth_list)
+    security_json = GetAPI(SessionNSX[0],security_url, auth_list)
+    network_json = GetAPI(SessionNSX[0],network_url, auth_list)
+    fabric_json = GetAPI(SessionNSX[0],fabric_url, auth_list)
+    system_json = GetAPI(SessionNSX[0],system_url, auth_list)
 
+    XLS_Lines = []
+    TN_HEADER_ROW = (' ', 'Number', 'Alarms', 'Status')
+    XLS_Lines = GetEntity(system_json, XLS_Lines)
+    XLS_Lines = GetEntity(fabric_json, XLS_Lines)
+    XLS_Lines = GetEntity(inventory_json, XLS_Lines)
+    XLS_Lines = GetEntity(network_json, XLS_Lines)
+    XLS_Lines = GetEntity(security_json, XLS_Lines)
+
+    a1 = TN_WS['A1']
+    a1.font = Font(name='Arial', size=16, bold=True)
+    a1.value = "Summary"
+    TN_WS[3]
+    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA", "TableStyleLight9", True, start_cell = 'A4')
+    ConditionnalFormat(TN_WS, 'D5:D' + str(len(XLS_Lines) + 4), 'UP', False, 'GREEN')
+    ConditionnalFormat(TN_WS, 'D5:D' + str(len(XLS_Lines) + 4), 'NONE', False, 'ORANGE')
+    ConditionnalFormat(TN_WS, 'D5:D' + str(len(XLS_Lines) + 4), 'UP')
