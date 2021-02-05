@@ -305,3 +305,35 @@ def GetInventoryUsage(auth_list):
         else: print('{:<60s}{:>4d}{:>12d}{:>15.1f}'.format(data[n]['display_name'],data[n]['current_usage_count'],data[n]['max_supported_count'],data[n]['current_usage_percentage']))
     print('-----------------------------------------------------------------------------------------------')
     print("\n========================================================================================================")
+
+########### SECTION FOR REPORTING ON BGP Sessions ###########
+def GetBGPSessions(auth_list):
+    SessionNSX = ConnectNSX(auth_list)
+    t0_url = '/policy/api/v1/infra/tier-0s'
+    t0_json = GetAPI(SessionNSX[0],t0_url, auth_list)
+
+    print("\n========================================================================================================")
+    print('\n----------------------------------- NSX BGP Sessions ---------------------------------------------')
+    print('| Source IP address | Neighbor IP Address  | Remote AS | In Prefixes | Out Prefixes | Status')
+    print('--------------------------------------------------------------------------------------------------')
+    tab = []
+    if isinstance(t0_json, dict) and 'results' in t0_json and t0_json['result_count'] > 0: 
+        for t0 in t0_json["results"]:
+            bgpstatus_url = "/policy/api/v1/infra/tier-0s/" + t0['display_name'] + "/locale-services/default/bgp/neighbors/status"
+            bgpstatus_json = GetAPI(SessionNSX[0],bgpstatus_url, auth_list)
+            # BGP Sessions treatment
+            if isinstance(bgpstatus_json, dict) and 'results' in bgpstatus_json: 
+                for session in bgpstatus_json['results']:
+                    tab.append([session['source_address'],session['neighbor_address'],session['remote_as_number'],session['total_in_prefix_count'], session['total_out_prefix_count'], session['connection_state']])
+            else:
+                tab.append(['no BGP sessions'])
+            
+    else:
+        tab.append(['no BGP sessions'])
+
+    for i in tab:
+        if len(i) > 1:
+            print('{:<20s} {:<23s} {:<11s} {:^11d} {:^17d}\x1b[0;31;40m{:<13s}\x1b[0m'.format(i[0],i[1],i[2],i[3], i[4], i[5]))
+
+    print('--------------------------------------------------------------------------------------------------')
+    print("\n========================================================================================================")

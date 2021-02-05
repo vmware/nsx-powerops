@@ -28,69 +28,38 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt
-import pathlib
+import pathlib, lib.menu
+from lib.excel import FillSheet, Workbook
 from lib.system import style, GetAPI, ConnectNSX, os
-import lib.menu
-
-from vmware.vapi.lib import connect
-from vmware.vapi.security.user_password import \
-        create_user_password_security_context
-
-def CreateXLST1Segments(auth_list):
-    # Setup excel workbook and worksheets 
-    t1_segments_wkbk = xlwt.Workbook()  
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Tier-1_Segments.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
-        return
-
-    print('\nGenerating Tier-1 Segment output: ' + style.ORANGE + XLS_File + style.NORMAL)
-    print('')
-    SheetT1Segments(auth_list,t1_segments_wkbk)
-    t1_segments_wkbk.save(XLS_File)
 
 
-def SheetT1Segments(auth_list,t1_segments_wkbk):
-    sheet1 = t1_segments_wkbk.add_sheet('Tier1 Segments', cell_overwrite_ok=True)
-    style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz center')
-
-    #Setup Column widths
-    columnA = sheet1.col(0)
-    columnA.width = 256 * 50
-    columnB = sheet1.col(1)
-    columnB.width = 256 * 20
-    columnC = sheet1.col(2)
-    columnC.width = 256 * 20
-    columnD = sheet1.col(3)
-    columnD.width = 256 * 50
-
-    #Excel Column Headings
-    sheet1.write(0, 0, 'Tier1 Segment Name', style_db_center)
-    sheet1.write(0, 1, 'Tier1 Segment ID', style_db_center)
-    sheet1.write(0, 2, 'Segment Gateway', style_db_center)
-    sheet1.write(0, 3, 'Segment Network', style_db_center)
-    sheet1.write(0, 4, 'Connected to Tier1 Name', style_db_center)
-    sheet1.write(0, 5, 'Connected to Tier1 ID', style_db_center)
-
+def SheetT1Segments(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
+    NSX_Config['T1Segments'] = []
+    Dict_Segments = {}
+    # Connect to NSX
     SessionNSX = ConnectNSX(auth_list)
     t1_url = '/policy/api/v1/infra/tier-1s'
     t1_json = GetAPI(SessionNSX[0],t1_url, auth_list)
 
-    start_row = 1
-    for i in t1_json["results"]:
-        t1_segment_url = '/policy/api/v1/search?query=resource_type:Segment&&dsl=segment where connectivity path=' + str(i['path']) + ''
-        t1_segment_json = GetAPI(SessionNSX[0],t1_segment_url, auth_list)
+    XLS_Lines = []
+    TN_HEADER_ROW = ('Tier1 Segment Name', 'Tier1 Segment ID', 'Segment Gateway', 'Segment Network', 'Tier1 Router Name', 'Tier1 Router ID')
+    
+    if isinstance(t1_json, dict) and 'results' in t1_json and t1_json['result_count'] > 0: 
+        for i in t1_json["results"]:
+            t1_segment_url = '/policy/api/v1/search?query=resource_type:Segment&&dsl=segment where connectivity path=' + str(i['path']) + ''
+            t1_segment_json = GetAPI(SessionNSX[0],t1_segment_url, auth_list)
 
-        for n in t1_segment_json["results"]:
-            sheet1.write(start_row, 0, n['display_name'])
-            sheet1.write(start_row, 1, n['id'])
-            sheet1.write(start_row, 2, n['subnets'][0]['gateway_address'])
-            sheet1.write(start_row, 3, n['subnets'][0]['network'])
-            sheet1.write(start_row, 4, i['display_name'])
-            sheet1.write(start_row, 5, str(n['connectivity_path']).split("/")[3])
+            for n in t1_segment_json["results"]:
+                Dict_Segments['id'] = n['id']
+                Dict_Segments['name'] = n['display_name']
+                Dict_Segments['gw'] = n['subnets'][0]['gateway_address']
+                Dict_Segments['subnet'] = n['subnets'][0]['network']
+                Dict_Segments['router'] = i['display_name']
+                Dict_Segments['path'] = str(n['connectivity_path']).split("/")[3]
+                NSX_Config['T1Segments'].append(Dict_Segments)
+                XLS_Lines.append([n['display_name'], n['id'], n['subnets'][0]['gateway_address'], n['subnets'][0]['network'], i['display_name'], str(n['connectivity_path']).split("/")[3]])
 
-            start_row += 1
+    else:
+        XLS_Lines.append(["no result", "", "", "", "", ""])
+    
+    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")

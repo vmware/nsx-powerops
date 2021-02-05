@@ -28,118 +28,63 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt, pathlib
+import pathlib, lib.menu
+from lib.excel import FillSheet, Workbook, ConditionnalFormat
 from lib.system import style, GetAPI, ConnectNSX, os, datetime
-import lib.menu
-
-from vmware.vapi.lib import connect
-from vmware.vapi.bindings.stub import VapiInterface
-from vmware.vapi.bindings.stub import StubConfiguration
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx_client import Alarms
-from vmware.vapi.security.user_password import \
-    create_user_password_security_context
 
-def CreateXLSAlarms(auth_list):
-    # Setup excel workbook and worksheets 
-    ls_wkbk = xlwt.Workbook()  
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Alarms.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
-        return
-        
-    print('\nGenerating NSX-T Alarms output: ' + style.ORANGE + XLS_File + style.NORMAL + '\n')
-    SheetAlarms(auth_list,ls_wkbk)
-    ls_wkbk.save(XLS_File)
 
-def SheetAlarms(auth_list,ls_wkbk):
-    sheet1 = ls_wkbk.add_sheet('NSX Alarms', cell_overwrite_ok=True)
-    #Set Excel Styling
-    style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz center')
-    style_alignleft = xlwt.easyxf('font: colour black, bold False; align: horiz left, wrap True')
-
-    #Setup Column widths
-    columnA = sheet1.col(0)
-    columnA.width = 256 * 20
-    columnB = sheet1.col(1)
-    columnB.width = 256 * 40
-    columnC = sheet1.col(2)
-    columnC.width = 256 * 30
-    columnD = sheet1.col(3)
-    columnD.width = 256 * 20
-    columnE = sheet1.col(4)
-    columnE.width = 256 * 30
-    columnF = sheet1.col(5)
-    columnF.width = 256 * 15
-    columnG = sheet1.col(6)
-    columnG.width = 256 * 20
-    columnH = sheet1.col(7)
-    columnH.width = 256 * 20
-    columnI = sheet1.col(8)
-    columnI.width = 256 * 30
-    columnJ = sheet1.col(9)
-    columnJ.width = 256 * 60
-
-    #Excel Column Headings
-    sheet1.write(0, 0, 'Feature', style_db_center)
-    sheet1.write(0, 1, 'Event Type', style_db_center)
-    sheet1.write(0, 2, 'Reporting Node', style_db_center)
-    sheet1.write(0, 3, 'Node Resource Type', style_db_center)
-    sheet1.write(0, 4, 'Entity Name', style_db_center)
-    sheet1.write(0, 5, 'Severity', style_db_center)
-    sheet1.write(0, 6, 'Last Reported Time', style_db_center)
-    sheet1.write(0, 7, 'Status', style_db_center)
-    sheet1.write(0, 8, 'Description', style_db_center)
-    sheet1.write(0, 9, 'Recommended Action', style_db_center)
-    
+def SheetAlarms(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+    Dict_Alarm = {}     # Dict alarm initialization
+    NSX_Config['Alarms'] = []
+    # Connect NSX
     SessionNSX = ConnectNSX(auth_list)
-    tn_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes', auth_list)
+    TN_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes', auth_list)
+    Edge_json = GetAPI(SessionNSX[0],'/api/v1/cluster/nodes', auth_list)
     stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
-    t_nodes = len(tn_json["results"])
-    mgr_json = GetAPI(SessionNSX[0],'/api/v1/cluster/nodes', auth_list)
-    mgr_nodes = len(mgr_json["results"])
-
     node_dict = {}
-    
-    for res in range(0,t_nodes):
-        node = tn_json["results"][res]
-        node_dict.update({node["node_id"]:node["display_name"]})
-    
-    for res in range(0,mgr_nodes):
-        node = mgr_json["results"][res]
-        node_dict.update({node["id"]:node["display_name"]})
-    
-    alarms_list = []
+    # Construct Dicts of Edge Node and Transport Node for Name from ID
+    if TN_json['result_count'] > 0:
+        for TN in TN_json['results']:
+            node_dict.update({TN["id"]:TN["display_name"]})
+    if Edge_json['result_count'] > 0:
+        for EDGE in Edge_json['results']:
+            node_dict.update({EDGE["id"]:EDGE["display_name"]})
+
+    # Alarms extract
     alarms_svc = Alarms(stub_config)
     alarms_list = alarms_svc.list()
-    x = (len(alarms_list.results))
-    y = alarms_list.results
-    start_row = 1
+    NodeName = ""
+    XLS_Lines = []
+    TN_HEADER_ROW = ('Feature', 'Event Type', 'Reporting Node', 'Node Ressource Type', 'Entity Name', 'Severity', 'Last Reported Time', 'Status', 'Description', 'Recommended Action')
+    if alarms_list.result_count > 0:
+        for alarm in alarms_list.results:
+            # Get Name of Node from ID
+            for key, value in node_dict.items():
+                if key == alarm.entity_id: NodeName = value
+
+            # Transform date and time of alarms
+            dtt = datetime.datetime.fromtimestamp(float(alarm.last_reported_time/1000)).strftime('%Y-%m-%d %H:%M:%S')
+            # Create line
+            XLS_Lines.append([alarm.feature_name,alarm.event_type, NodeName, alarm.node_resource_type,  alarm.entity_id,alarm.severity, dtt, alarm.status, alarm.description, alarm.recommended_action])
+            # Fill alarm Dict
+            Dict_Alarm['feature_name'] = alarm.feature_name
+            Dict_Alarm['event_type'] = alarm.event_type
+            Dict_Alarm['node_name'] = NodeName
+            Dict_Alarm['node_resource_type'] = alarm.node_resource_type
+            Dict_Alarm['entity_id'] = alarm.entity_id
+            Dict_Alarm['severity'] = alarm.severity
+            Dict_Alarm['time'] = dtt
+            Dict_Alarm['status'] = alarm.status
+            Dict_Alarm['description'] = alarm.description
+            Dict_Alarm['recommended_action'] = alarm.recommended_action
+            NSX_Config['Alarms'].append(Dict_Alarm)
+    else:
+        XLS_Lines.append(['No results', "", "", "", "", "", "", "", "", ""])
     
-    for i in range(x):
-        sheet1.write(start_row, 0, y[i].feature_name, style_alignleft)
-        sheet1.write(start_row, 1, y[i].event_type, style_alignleft)
-
-        for key, value in node_dict.items():
-            if key == y[i].node_id:
-                sheet1.write(start_row, 2, value, style_alignleft)
-            # else:
-            #     print(y[i].node_id)
-
-        sheet1.write(start_row, 3, y[i].node_resource_type, style_alignleft)
-        sheet1.write(start_row, 4, y[i].entity_id, style_alignleft)
-        sheet1.write(start_row, 5, y[i].severity, style_alignleft)
-
-        lrt = y[i].last_reported_time
-        dtt = datetime.datetime.fromtimestamp(float(lrt/1000)).strftime('%Y-%m-%d %H:%M:%S')
-        
-        sheet1.write(start_row, 6, dtt, style_alignleft)
-        sheet1.write(start_row, 7, y[i].status, style_alignleft)
-        sheet1.write(start_row, 8, y[i].description, style_alignleft)
-        sheet1.write(start_row, 9, y[i].recommended_action, style_alignleft)
-
-        start_row +=1
-    
+    # Create sheet
+    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    ConditionnalFormat(TN_WS, 'F', 'CRITICAL', True, 'RED')
+    ConditionnalFormat(TN_WS, 'F', 'HIGH', True, 'ORANGE')
+    ConditionnalFormat(TN_WS, 'H', 'RESOLVED', True, 'GREEN')

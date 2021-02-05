@@ -28,10 +28,9 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt, pathlib
+import pathlib, lib.menu
+from lib.excel import FillSheet, Workbook
 from lib.system import style, GetAPI, ConnectNSX, os
-import lib.menu
-
 from vmware.vapi.lib import connect
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx_policy.infra.domains_client import Groups
@@ -40,62 +39,11 @@ from com.vmware.nsx_policy.infra.domains.groups.members_client import SegmentPor
 from com.vmware.nsx_policy.infra.domains.groups.members_client import Segments  
 from com.vmware.nsx_policy.infra.domains.groups.members_client import VirtualMachines  
 from com.vmware.nsx_policy.model_client import PolicyGroupIPMembersListResult
-from vmware.vapi.security.user_password import create_user_password_security_context
-
-def CreateXLSSecGrp(auth_list):
-    # Setup excel workbook and worksheets 
-    groups_wkbk = xlwt.Workbook()  
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "NS_Groups.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
-        return
-
-    print('\nGenerating NSX-T Groups output: ' + style.ORANGE + XLS_File + style.NORMAL)
-    print(style.RED + '    Please be patient...' + style.NORMAL + '\n')
-    SheetSecGrp(auth_list,groups_wkbk)
-    groups_wkbk.save(XLS_File)
 
 
-def SheetSecGrp(auth_list,groups_wkbk):
-    sheet1 = groups_wkbk.add_sheet('Groups', cell_overwrite_ok=True)
-
-    #Set Excel Styling
-    style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz center')
-    style_alignleft = xlwt.easyxf('font: colour black, bold False; align: horiz left, wrap True')
-
-    #Setup Column widths
-    columnA = sheet1.col(0)
-    columnA.width = 256 * 30
-    columnB = sheet1.col(1)
-    columnB.width = 256 * 30
-    columnC = sheet1.col(2)
-    columnC.width = 256 * 30
-    columnD = sheet1.col(3)
-    columnD.width = 256 * 30
-    columnE = sheet1.col(4)
-    columnE.width = 256 * 30
-    columnF = sheet1.col(5)
-    columnF.width = 256 * 30
-    columnG = sheet1.col(5)
-    columnG.width = 256 * 30
-    columnH = sheet1.col(5)
-    columnH.width = 256 * 30
-    columnI = sheet1.col(8)
-    columnI.width = 256 * 50
-
-    #Excel Column Headings
-    sheet1.write(0, 0, 'GROUP NAME', style_db_center)
-    sheet1.write(0, 1, 'TAGS', style_db_center)
-    sheet1.write(0, 2, 'SCOPE', style_db_center)
-    sheet1.write(0, 3, 'CRITERIA TYPE', style_db_center)
-    sheet1.write(0, 4, 'CRITERIA', style_db_center)
-    sheet1.write(0, 5, 'IP ADDRESSES', style_db_center)
-    sheet1.write(0, 6, 'VIRTUAL MACHINES', style_db_center)
-    sheet1.write(0, 7, 'SEGMENTS', style_db_center)
-    sheet1.write(0, 8, 'SEGMENT PORTS', style_db_center)
+def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+    NSX_Config['Groups'] = []
+    Dict_Groups = {}
 
     domain_id = 'default'
     # Connection for get Groups criteria - REST/API
@@ -104,87 +52,88 @@ def SheetSecGrp(auth_list,groups_wkbk):
     SessionNSX = ConnectNSX(auth_list)
     Groups_list_json = GetAPI(SessionNSX[0],Groups_list_url, auth_list)
     stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
-    group_list = []
-    group_svc = Groups(stub_config)
-    group_list = group_svc.list(domain_id)
+    ipsvc = IpAddresses(stub_config)
+    vmsvc = VirtualMachines(stub_config)
+    sgmntsvc = Segments(stub_config)
+    sgmntprtsvc = SegmentPorts(stub_config)
 
-    x = len(group_list.results)
-    start_row = 1
-    for i in range(0,x):
-        print("%s - Treating NS group: %s" %(i+1, group_list.results[i].display_name))
-        # Extract Group ID for each group
-        grp_id = group_list.results[i].id
-        sheet1.write(start_row, 0, group_list.results[i].display_name)
-        # Extract Tags for each group if exist
-        # Bypass system groups for LB
-        if 'NLB.PoolLB' in grp_id or 'NLB.VIP' in grp_id: 
-            pass
-        elif group_list.results[i].tags:
-            result = group_list.results[i].tags
-            x = len(result)
-            tag_list = []
-            scope_list = []
-            for i in range(0,x):
-                tag_list.append(result[i].tag)
-                scope_list.append(result[i].scope)
-            sheet1.write(start_row, 1, ', '.join(tag_list), style_alignleft)    # Tags
-            sheet1.write(start_row, 2, ', '.join(scope_list), style_alignleft)  # Scope
-        
-        # Criteria
-        if Groups_list_json['result_count'] != 0:
-            for gp in Groups_list_json['results']:
-                if gp['id'] == grp_id:
-                    for nbcriteria in gp['expression']:
-                        criteria = GetCriteria(SessionNSX[0], auth_list, nbcriteria)
-                            
-                    sheet1.write(start_row, 3, '\n'.join(criteria[1]), style_alignleft) # Type of Criteria
-                    sheet1.write(start_row, 4, criteria[0], style_alignleft) # Criteria Membership
+    XLS_Lines = []
+    TN_HEADER_ROW = ('Group Name', 'Tags', 'Scope', 'Criteria Type', 'Criteria', 'IP addresses', 'Virtual Machines', 'Segments', 'Segments Ports')
+    
+    if isinstance(Groups_list_json, dict) and 'results' in Groups_list_json and Groups_list_json['result_count'] > 0: 
+        count = 1
+        for group in Groups_list_json['results']:
+            print(str(count) + " - Treating NS group: " + style.ORANGE + group['display_name'] + style.NORMAL)
+            count += 1 
+            # Get Tag and scope
+            List_Tag = []
+            List_Scope = []
+            # Check if tag is in a group
+            if "tags" in group:
+                for tag in group['tags']:
+                    List_Tag.append(tag['tag'])
+                    List_Scope.append(tag['scope'])
+                Tags = ','.join(List_Tag)
+                Scope = ','.join(List_Scope)
+            else:
+                Tags = ""
+                Scope = ""
 
-        # Bypass system groups for LB
-        if 'NLB.PoolLB' in grp_id or 'NLB.VIP' in grp_id:  
-            pass
-        else:     
+             #Criteria Treatment
+            for nbcriteria in group['expression']:
+                criteria = GetCriteria(SessionNSX[0], auth_list, nbcriteria)
+
             # Create IP Address List for each group
-            iplist = []
-            ipsvc = IpAddresses(stub_config)
-            iplist = ipsvc.list(domain_id, grp_id)
-            iprc = len(iplist.results)
-            iplist1 = []
-            for i in range(0,iprc):
-                iplist1.append(iplist.results[i])
-            sheet1.write(start_row, 5, ', '.join(iplist1), style_alignleft) # IP
-            
+            IPList_Obj = ipsvc.list(domain_id, group['id'])
+            IP = ""
+            if IPList_Obj.result_count > 0: 
+                IP = ', '.join(IPList_Obj.results)
+
             # Create Virtual Machine List for each group
-            vmlist = []
-            vmsvc = VirtualMachines(stub_config)
-            vmlist = vmsvc.list(domain_id, grp_id)
-            vmrc = vmlist.result_count
-            vmlist1 = []
-            for i in range(0,vmrc):
-                vmlist1.append(vmlist.results[i].display_name)
-            sheet1.write(start_row, 6, ', '.join(vmlist1), style_alignleft) # VMs
+            VMList_Obj = vmsvc.list(domain_id, group['id'])
+            VM = ""
+            VMList =[]
+            if VMList_Obj.result_count > 0:
+                for vm in VMList_Obj.results:
+                    VMList.append(vm.display_name)
+                    
+                VM = ', '.join(VMList)
 
             # Create Segment List for each group
-            sgmntlist = []
-            sgmntsvc = Segments(stub_config)
-            sgmntlist = sgmntsvc.list(domain_id, grp_id)
-            sgmntrc = sgmntlist.result_count
-            sgmntlist1 = []
-            for i in range(0,sgmntrc):
-                sgmntlist1.append(sgmntlist.results[i].display_name)
-            sheet1.write(start_row, 7, ', '.join(sgmntlist1), style_alignleft) # Segments
+            SegList_Obj = sgmntsvc.list(domain_id, group['id'])
+            Segment = ""
+            SegList = []
+            if SegList_Obj.result_count > 0:
+                for seg in SegList_Obj.results:
+                    SegList.append(seg.display_name)
+                
+                Segment = ', '.join(SegList)
 
             # Create Segment Port/vNIC List for each group
-            sgmntprtlist = []
-            sgmntprtsvc = SegmentPorts(stub_config)
-            sgmntprtlist = sgmntprtsvc.list(domain_id, grp_id)
-            sgmntprtrc = sgmntprtlist.result_count
-            sgmntprtlist1 = []
-            for i in range(0,sgmntprtrc):
-                sgmntprtlist1.append(sgmntprtlist.results[i].display_name)
-            sheet1.write(start_row, 8, ', '.join(sgmntprtlist1), style_alignleft) # Segments Ports
+            SegPortList_Obj = sgmntprtsvc.list(domain_id, group['id'])
+            SegPort = ""
+            SegPortList = []
+            if SegPortList_Obj.result_count > 0: 
+                for segport in SegPortList_Obj.results:
+                    SegPortList.append(segport.display_name)
 
-        start_row +=1
+                SegPort = ', '.join(SegPortList)
+
+            Dict_Groups['name'] = group['display_name']
+            Dict_Groups['tags'] = List_Tag
+            Dict_Groups['scope'] = List_Scope
+            Dict_Groups['type_crtieria'] = criteria[1]
+            Dict_Groups['criteria'] = criteria[0]
+            Dict_Groups['ip'] = IPList_Obj.results
+            Dict_Groups['vm'] = VMList
+            Dict_Groups['segment'] = SegList
+            Dict_Groups['segment_port'] = SegPortList
+            NSX_Config['Groups'].append(Dict_Groups)
+            XLS_Lines.append([group['display_name'],Tags,Scope,'\n'.join(criteria[1]),criteria[0],IP,VM,Segment,SegPort])
+    else:
+        XLS_Lines.append(['No results', "", "", "", "", "", "", "", ""])
+        
+    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
 
 
 def GetCriteria(SESSION, auth_list, DictExpression):

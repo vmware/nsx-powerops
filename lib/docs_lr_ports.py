@@ -28,106 +28,75 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt
-import pathlib
+import pathlib, lib.menu
+from lib.excel import FillSheet, Workbook, ConditionnalFormat
 from lib.system import style, GetAPI, ConnectNSX, os
-import lib.menu
-
-from vmware.vapi.lib import connect
-from vmware.vapi.security.user_password import \
-        create_user_password_security_context
-
-def CreateXLSRouterPorts(auth_list):
-    # Setup excel workbook and worksheets 
-    lr_ports_wkbk = xlwt.Workbook()  
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Logical_Router_Ports.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
-        return
-
-    print('\nGenerating Logical Router Port output: ' + style.ORANGE + XLS_File + style.NORMAL + '\n')
-    SheetRouterPorts(auth_list,lr_ports_wkbk)
-    lr_ports_wkbk.save(XLS_File)
 
 
-def SheetRouterPorts(auth_list,lr_ports_wkbk):
-    lr_ports = lr_ports_wkbk.add_sheet('Logical Router Ports', cell_overwrite_ok=True)
-
-    style_db_left = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz left, vert centre')
-    style_db_centre = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz centre, vert centre')
-    style_alignleft = xlwt.easyxf('font: colour black, bold False; align: horiz left, wrap True')
-
-    columnA = lr_ports.col(0)
-    columnA.width = 256 * 55
-    columnB = lr_ports.col(1)
-    columnB.width = 256 * 15
-    columnC = lr_ports.col(2)
-    columnC.width = 256 * 20
-    columnD = lr_ports.col(3)
-    columnD.width = 256 * 40
-    columnE = lr_ports.col(4)
-    columnE.width = 256 * 20
-    columnF = lr_ports.col(5)
-    columnF.width = 256 * 40
-    columnG = lr_ports.col(6)
-    columnG.width = 256 * 40
-    columnH = lr_ports.col(7)
-    columnH.width = 256 * 40
-    columnI = lr_ports.col(8)
-    columnI.width = 256 * 15
+def SheetRouterPorts(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
+    if 'LRPorts' not in NSX_Config:
+        NSX_Config['LRPorts'] = []
+    Dict_Ports = {}
 
     SessionNSX = ConnectNSX(auth_list)
+    ########### GET LogicalPortDownLink  ###########
+    LRports_Down_url = '/api/v1/search/query?query=resource_type:LogicalRouterDownLinkPort'
+    LRports_Down_json = GetAPI(SessionNSX[0],LRports_Down_url, auth_list)
     ########### GET Logical Routers  ###########
     lr_ports_url = '/api/v1/search/query?query=resource_type:LogicalPort'
     lr_ports_json = GetAPI(SessionNSX[0],lr_ports_url, auth_list)
+    ########### GET Logical Routers  ###########
+    lr_list_url = '/api/v1/logical-routers'
+    lr_list_json = GetAPI(SessionNSX[0],lr_list_url, auth_list)
+    ########### CREATE LIST OF TUPLES - EDGE-ID / EDGE NAME ###########
+    lswitch_list = []
+    XLS_Lines = []
+    TN_HEADER_ROW = ('LR Port Name', 'ID', 'Attachment Type', 'Logical Router Name', 'Attachment ID', 'Logical Switch ID', 'Logical Switch','Create User', 'Admin State', 'Status')
     ########### GET Logical-Switches  ###########
     lswitch_url = '/api/v1/logical-switches'
     lswitch_json = GetAPI(SessionNSX[0],lswitch_url, auth_list)
 
-    ########### CREATE LIST OF TUPLES - EDGE-ID / EDGE NAME ###########
-    lswitch_list = []
     for i in lswitch_json["results"]:
         lswitch_list.append(tuple((i['id'],i['display_name'])))
-    
-    total_lr_ports = lr_ports_json["result_count"]
 
-    lr_ports.write(0,0, 'Total Logical Router Ports',style_db_left)
-    lr_ports.write(0,1,total_lr_ports,style_alignleft)
-    
-    lr_ports.write(2,0, 'LR Port Name',style_db_centre)
-    lr_ports.write(2,1, 'Admin State',style_db_centre)
-    lr_ports.write(2,2, 'Create User',style_db_centre)
-    lr_ports.write(2,3, 'ID',style_db_centre)
-    lr_ports.write(2,4, 'Attachment Type',style_db_centre)
-    lr_ports.write(2,5, 'Attachment ID',style_db_centre)
-    lr_ports.write(2,6, 'Logical Switch ID',style_db_centre)
-    lr_ports.write(2,7, 'Logical Switch',style_db_centre)
-    lr_ports.write(2,8, 'Status',style_db_centre)
+    if lr_ports_json['result_count'] > 0:
+        for port in lr_ports_json["results"]:
+            # Check is attachment key is in Dict
+            if 'attachment' in port: 
+                Attachement_type = port['attachment']['attachment_type']
+                Attachement_ID= port['attachment']['id']
+            else:
+                Attachement_type = 'No Attachment'
+                Attachement_ID = 'No Attachment'
+            # Get the name of LS
+            LS_Name = ""
+            LR_Name = ""
+            for ls in lswitch_list:
+                if port['logical_switch_id'] == ls[0]:
+                    LS_Name = ls[1]
+                    # Get Router Name
+                    for lr in LRports_Down_json['results']:
+                        if 'linked_logical_switch_port_id' in lr:
+                            if port['id'] == lr['linked_logical_switch_port_id']['target_id']:
+                                for router in lr_list_json['results']:
+                                    if lr['logical_router_id'] == router['id']: LR_Name = router['display_name']
 
-    start_row = 3
-    for i in lr_ports_json["results"]:
-        lr_ports.write(start_row,0, i['display_name']) 
-        lr_ports.write(start_row,1, i['admin_state']) 
-        lr_ports.write(start_row,2, i['_create_user']) 
-        lr_ports.write(start_row,3, i['id']) 
-        try:
-            lr_ports.write(start_row,4,list(i['attachment'].values())[0])
-        except:
-            lr_ports.write(start_row,4,'No Attachment')
-        try:
-            lr_ports.write(start_row,5,list(i['attachment'].values())[1])
-        except:
-            lr_ports.write(start_row,5,'No Attachment')
-        lr_ports.write(start_row,6, i['logical_switch_id'])
-
-        for ls in lswitch_list:
-            if i['logical_switch_id'] == ls[0]:
-                lr_ports.write(start_row,7,ls[1])
-               
-        lr_ports.write(start_row,8, i['status']['status']) 
-                        
-        start_row += 1
+            Dict_Ports['name'] = port['display_name']
+            Dict_Ports['state'] =  port['admin_state']
+            Dict_Ports['create_user'] = port['_create_user']
+            Dict_Ports['router'] = LR_Name
+            Dict_Ports['id'] = port['id']
+            Dict_Ports['att_type'] = Attachement_type
+            Dict_Ports['att_id'] = Attachement_ID
+            Dict_Ports['LS_id'] = port['logical_switch_id']
+            Dict_Ports['LS_name'] = LS_Name
+            Dict_Ports['status'] = port['status']['status']
+            NSX_Config['LRPorts'].append(Dict_Ports)
+            XLS_Lines.append([port['display_name'], port['id'],Attachement_type,LR_Name, Attachement_ID, port['logical_switch_id'],LS_Name,port['_create_user'],port['admin_state'], port['status']['status']])
+    else:
+        XLS_Lines.append(['No results', "", "", "", "", "", "", "", ""])
+        
+    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    if len(XLS_Lines) > 0:
+        ConditionnalFormat(TN_WS, 'J2:J' + str(len(XLS_Lines) + 1), 'UP')
+        ConditionnalFormat(TN_WS, 'I2:I' + str(len(XLS_Lines) + 1), 'UP')

@@ -28,168 +28,80 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-import xlwt, pathlib
-from lib.system import style, GetAPI, ConnectNSX, os
-import lib.menu
-from vmware.vapi.lib import connect
-from vmware.vapi.bindings.stub import VapiInterface
+import pathlib, lib.menu
+from lib.excel import FillSheet, Workbook, ConditionnalFormat
+from lib.system import style, GetAPI, ConnectNSX, os, datetime
 from vmware.vapi.bindings.stub import StubConfiguration
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx.fabric_client import DiscoveredNodes
-from vmware.vapi.security.user_password import \
-    create_user_password_security_context
 
 
-def CreateXLSFabDiscoveredNodes(auth_list):
-    # Setup excel workbook and worksheets 
-    ls_wkbk = xlwt.Workbook()  
-    #### Check if script has already been run for this runtime of PowerOps.  If so, skip and do not overwrite ###
-    XLS_File = lib.menu.XLS_Dest + os.path.sep + "Fabric_Discovered_Nodes.xls"
-    fname = pathlib.Path(XLS_File)
-    if fname.exists():
-        print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
-        return
-
-    print('\nGenerating NSX-T Manager output: ' + style.ORANGE + XLS_File + style.NORMAL + '\n')
-    SheetFabDiscoveredNodes(auth_list,ls_wkbk)
-    ls_wkbk.save(XLS_File)
-
-
-def SheetFabDiscoveredNodes(auth_list,ls_wkbk):
-    sheet1 = ls_wkbk.add_sheet('Discovered Nodes', cell_overwrite_ok=True)
-
-    #Set Excel Styling
-    style_db_center = xlwt.easyxf('pattern: pattern solid, fore_colour blue_grey;'
-                                    'font: colour white, bold True; align: horiz center')
-    style_alignleft = xlwt.easyxf('font: colour black, bold True; align: horiz left, wrap True')
-
-    #Setup Column widths
-    columnA = sheet1.col(0)
-    columnA.width = 256 * 30
-    columnB = sheet1.col(1)
-    columnB.width = 256 * 20
-    columnC = sheet1.col(2)
-    columnC.width = 256 * 20
-    columnD = sheet1.col(3)
-    columnD.width = 256 * 20
-    columnE = sheet1.col(4)
-    columnE.width = 256 * 20
-    columnF = sheet1.col(5)
-    columnF.width = 256 * 35
-    columnG = sheet1.col(6)
-    columnG.width = 256 * 15
-    columnH = sheet1.col(7)
-    columnH.width = 256 * 20
-    columnI = sheet1.col(8)
-    columnI.width = 256 * 15
-    columnJ = sheet1.col(9)
-    columnJ.width = 256 * 40
-    columnK = sheet1.col(10)
-    columnK.width = 256 * 15
-    columnL = sheet1.col(11)
-    columnL.width = 256 * 20
-    columnM = sheet1.col(12)
-    columnM.width = 256 * 15
-    columnN = sheet1.col(13)
-    columnN.width = 256 * 20
-    columnO = sheet1.col(14)
-    columnO.width = 256 * 20
-    columnP = sheet1.col(15)
-    columnP.width = 256 * 50
-    columnQ = sheet1.col(16)
-    columnQ.width = 256 * 20
-    columnR = sheet1.col(17)
-    columnR.width = 256 * 25
-    columnS = sheet1.col(18)
-    columnS.width = 256 * 25
-    columnT = sheet1.col(19)
-    columnT.width = 256 * 20
-    columnU = sheet1.col(20)
-    columnU.width = 256 * 20
-    columnV = sheet1.col(21)
-    columnV.width = 256 * 20
-
-    #Excel Column Headings
-    sheet1.write(0, 0, 'Number of discovered nodes: ', style_alignleft)
-    sheet1.write(2, 0, 'Display name', style_db_center)
-    sheet1.write(2, 1, 'OS Type', style_db_center)
-    sheet1.write(2, 2, 'OS Version', style_db_center)
-    sheet1.write(2, 3, 'Node Type', style_db_center)
-    sheet1.write(2, 4, 'Hostname', style_db_center)
-    sheet1.write(2, 5, 'Full Name', style_db_center)
-    sheet1.write(2, 6, 'Management IP', style_db_center)
-    sheet1.write(2, 7, 'Domain name', style_db_center)
-    sheet1.write(2, 8, 'DNS', style_db_center)
-    sheet1.write(2, 9, 'UUID', style_db_center)
-    sheet1.write(2, 10, 'Powerstate', style_db_center)
-    sheet1.write(2, 11, 'In Maintenance Mode', style_db_center)
-    sheet1.write(2, 12, 'Build', style_db_center)
-    sheet1.write(2, 13, 'Vendor', style_db_center)
-    sheet1.write(2, 14, 'Model', style_db_center)
-    sheet1.write(2, 15, 'Serial Number', style_db_center)
-    sheet1.write(2, 16, 'Connection State', style_db_center)
-    sheet1.write(2, 17, 'Licensed Product Name', style_db_center)
-    sheet1.write(2, 18, 'Licensed Product Version', style_db_center)
-    sheet1.write(2, 19, 'Mgmt Server IP', style_db_center)
-    sheet1.write(2, 20, 'Lockdown Mode', style_db_center)
-    sheet1.write(2, 21, 'DAS Host State', style_db_center)
+def SheetFabDiscoveredNodes(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
 
     SessionNSX = ConnectNSX(auth_list)
     stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
-
-    disc_node_list = []
-    disc_node_svc = DiscoveredNodes(stub_config)
-    disc_node_list = disc_node_svc.list()
-    discovered_nodes = disc_node_list.result_count
-    sheet1.write(0, 1, discovered_nodes, style_alignleft)
+    disc_node_list = DiscoveredNodes(stub_config).list()
     
-    start_row = 3
-    for i in range(discovered_nodes):
-        sheet1.write(start_row, 0, disc_node_list.results[i].display_name)
-        sheet1.write(start_row, 1, disc_node_list.results[i].os_type)
-        sheet1.write(start_row, 2, disc_node_list.results[i].os_version)
-        sheet1.write(start_row, 3, disc_node_list.results[i].node_type)
-        
-        origin_list = disc_node_list.results[i].origin_properties
-        origin_dict = dict.fromkeys(origin_list)
+    Dict_DiscoveredNodes = {}     # Dict Discovered nodes initialization
+    NSX_Config['DiscoveredNodes'] = []
+    # Construct Line
+    XLS_Lines = []
+    if disc_node_list.result_count > 0:
+        TN_HEADER_ROW = ('Display name', 'OS Type', 'OS Version', 'Node Type', 'Hostname', 'Full Name', 'Management IP', 'Domain name', 'DNS', 'UUID', 'Powerstate', 'In Maintenance Mode', 'Build', 'Vendor', 'Model', 'Serial Number', 'Connection State', 'Licensed Product Name', 'Licensed Product Version', 'Mgmt Server IP', 'Lockdown Mode', 'DAS Host State')
+        for node in disc_node_list.results:
+            Dict_Properties = {}
+            # Loop in properties
+            for propertie in node.origin_properties:
+                if propertie.key == 'hostName': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'fullName': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'managementIp': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'domainName': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'dnsConfigAddress': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'uuid': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'powerState': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'inMaintenanceMode': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'build': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'vendor': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'model': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'serialNumber': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'connectionState': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'licenseProductName': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'licenseProductVersion': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'managementServerIp': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'lockdownMode': Dict_Properties[propertie.key] = propertie.value
+                if propertie.key == 'dasHostState': Dict_Properties[propertie.key] = propertie.value
+                            
+            # Fill Discovered Nodes Dict
+            Dict_DiscoveredNodes['node_name'] = node.display_name
+            Dict_DiscoveredNodes['event_type'] = node.os_type
+            Dict_DiscoveredNodes['node_name'] = node.os_version
+            Dict_DiscoveredNodes['node_resource_type'] = node.node_type
+            Dict_DiscoveredNodes['hostName'] = Dict_Properties['hostName']
+            Dict_DiscoveredNodes['fullName'] = Dict_Properties['fullName']
+            Dict_DiscoveredNodes['managementIp'] = Dict_Properties['managementIp']
+            Dict_DiscoveredNodes['domainName'] = Dict_Properties['domainName']
+            Dict_DiscoveredNodes['dnsConfigAddress'] = Dict_Properties['dnsConfigAddress']
+            Dict_DiscoveredNodes['uuid'] = Dict_Properties['uuid']
+            Dict_DiscoveredNodes['powerState'] = Dict_Properties['powerState']
+            Dict_DiscoveredNodes['inMaintenanceMode'] = Dict_Properties['inMaintenanceMode']
+            Dict_DiscoveredNodes['build'] = Dict_Properties['build']
+            Dict_DiscoveredNodes['vendor'] = Dict_Properties['vendor']
+            Dict_DiscoveredNodes['model'] = Dict_Properties['model']
+            Dict_DiscoveredNodes['serialNumber'] = Dict_Properties['serialNumber']
+            Dict_DiscoveredNodes['connectionState'] = Dict_Properties['connectionState']
+            Dict_DiscoveredNodes['licenseProductName'] = Dict_Properties['licenseProductName']
+            Dict_DiscoveredNodes['licenseProductVersion'] = Dict_Properties['licenseProductVersion']
+            Dict_DiscoveredNodes['managementServerIp'] = Dict_Properties['managementServerIp']
+            Dict_DiscoveredNodes['lockdownMode'] = Dict_Properties['lockdownMode']
+            Dict_DiscoveredNodes['dasHostState'] = Dict_Properties['dasHostState']
+            NSX_Config['DiscoveredNodes'].append(Dict_DiscoveredNodes)
 
-        for key in origin_dict.keys():
-            if key.key == 'hostName':
-                sheet1.write(start_row, 4, key.value)
-            if key.key == 'fullName':
-                sheet1.write(start_row, 5, key.value)
-            if key.key == 'managementIp':
-                sheet1.write(start_row, 6, key.value)
-            if key.key == 'domainName':
-                sheet1.write(start_row, 7, key.value)
-            if key.key == 'dnsConfigAddress':
-                sheet1.write(start_row, 8, key.value)
-            if key.key == 'uuid':
-                sheet1.write(start_row, 9, key.value)
-            if key.key == 'powerState':
-                sheet1.write(start_row, 10, key.value)
-            if key.key == 'inMaintenanceMode':
-                sheet1.write(start_row, 11, key.value)
-            if key.key == 'build':
-                sheet1.write(start_row, 12, key.value)
-            if key.key == 'vendor':
-                sheet1.write(start_row, 13, key.value)
-            if key.key == 'model':
-                sheet1.write(start_row, 14, key.value)
-            if key.key == 'serialNumber':
-                sheet1.write(start_row, 15, key.value)
-            if key.key == 'connectionState':
-                sheet1.write(start_row, 16, key.value)
-            if key.key == 'licenseProductName':
-                sheet1.write(start_row, 17, key.value)
-            if key.key == 'licenseProductVersion':
-                sheet1.write(start_row, 18, key.value)
-            if key.key == 'managementServerIp':
-                sheet1.write(start_row, 19, key.value)
-            if key.key == 'lockdownMode':
-                sheet1.write(start_row, 20, key.value)
-            if key.key == 'dasHostState':
-                sheet1.write(start_row, 21, key.value)
-            
-        start_row +=1
-    
+            # write one line for a node
+            XLS_Lines.append([node.display_name,node.os_type, node.os_version, node.node_type,Dict_Properties['hostName'], Dict_Properties['fullName'], Dict_Properties['managementIp'], Dict_Properties['domainName'], Dict_Properties['dnsConfigAddress'], Dict_Properties['uuid'], Dict_Properties['powerState'], Dict_Properties['inMaintenanceMode'], Dict_Properties['build'], Dict_Properties['vendor'], Dict_Properties['model'], Dict_Properties['serialNumber'], Dict_Properties['connectionState'], Dict_Properties['licenseProductName'], Dict_Properties['licenseProductVersion'], Dict_Properties['managementServerIp'], Dict_Properties['lockdownMode'], Dict_Properties['dasHostState']])
+    else:
+        XLS_Lines = ('No result', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
+
+    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    ConditionnalFormat(TN_WS, 'K2:K' + str(len(XLS_Lines) + 1), 'poweredOn')
+    ConditionnalFormat(TN_WS, 'L2:L' + str(len(XLS_Lines) + 1), 'false')
+    ConditionnalFormat(TN_WS, 'Q2:Q' + str(len(XLS_Lines) + 1), 'connected')
