@@ -140,12 +140,13 @@ def MainMenu(authlist,dest):
 #                else:
 #                    # Create one file
 #                    if 'Sheet' in current_menu.choices[inpt].func.__name__:
-#                        WB = CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile)
-#                        # Creation of sheet
-#                        TN_WS = WB[0].active
-#                        TN_WS.title = current_menu.choices[inpt].xlsfile
-#                        current_menu.choices[inpt].func(authlist,WB[0],TN_WS)
-#                        WB[0].save(WB[1])
+#                        CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile, current_menu.choices[inpt].func)
+#                        #WB = CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile)
+#                        ## Creation of sheet
+#                        #TN_WS = WB[0].active
+#                        #TN_WS.title = current_menu.choices[inpt].xlsfile
+#                        #current_menu.choices[inpt].func(authlist,WB[0],TN_WS)
+#                        #WB[0].save(WB[1])
 #                        continue
 #                    # For Health and documentations set
 #                    else:
@@ -163,12 +164,13 @@ def MainMenu(authlist,dest):
                     else:
                         # Create one file
                         if 'Sheet' in current_menu.choices[inpt].func.__name__:
-                            WB = CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile)
-                            # Creation of sheet
-                            TN_WS = WB[0].active
-                            TN_WS.title = current_menu.choices[inpt].xlsfile
-                            current_menu.choices[inpt].func(authlist,WB[0],TN_WS)
-                            WB[0].save(WB[1])
+                            CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile, current_menu.choices[inpt].func)
+                            #WB = CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile)
+                            ## Creation of sheet
+                            #TN_WS = WB[0].active
+                            #TN_WS.title = current_menu.choices[inpt].xlsfile
+                            #current_menu.choices[inpt].func(authlist,WB[0],TN_WS)
+                            #WB[0].save(WB[1])
                             continue
                         # For Health and documentations set
                         else:
