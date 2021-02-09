@@ -5,8 +5,8 @@
 CERT_PATH: /Users/ysimonet/Documents/Scripts/NSX/Python/powerops/cert
 # NSX_MGR_IP: "10.100.10.12" # Lab Yann
 #NSX_MGR_IP: "10.92.26.52" # Lab Stephen - admin Admin!23Admin
-NSX_MGR_IP: "10.182.61.180" # Lab Stephen 2 - admin Admin!23Admin - OSPF
+#NSX_MGR_IP: "10.182.61.180" # Lab Stephen 2 - admin Admin!23Admin - OSPF
 
-#NSX_MGR_IP: "10.29.13.111" # Lab Dominic - admin VMware1!vmware
+NSX_MGR_IP: "10.29.13.111" # Lab Dominic - admin VMware1!vmware
 OUTPUT_PATH: '/Users/ysimonet/Documents/Scripts/NSX/Python/powerops/powerops_documentation/'
 PREFIX_FOLDER: 'POps_doc_'

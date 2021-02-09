@@ -83,5 +83,5 @@ def SheetNSXManagerInfo(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
 
     startCell = "A" + str(idx_second_sheet + 1)
     FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA", "TableStyleLight9", False, startCell)
-    ConditionnalFormat(TN_WS, 'G10:G' + str(len(XLS_Lines) + 1, 'UP'))
-    ConditionnalFormat(TN_WS, 'C10:C' + str(len(XLS_Lines) + 1, 'STABLE'))
+    ConditionnalFormat(TN_WS, 'G10:G' + str(len(XLS_Lines) + 1), 'UP')
+    ConditionnalFormat(TN_WS, 'C10:C' + str(len(XLS_Lines) + 1), 'STABLE')
