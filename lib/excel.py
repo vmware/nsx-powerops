@@ -29,7 +29,7 @@ def CreateXLSFile(auth_list,XLS_Files,SheetFunction = None):
 	print('\nGenerating NSX-T Manager output: ' + style.ORANGE + XLS_Files + "_"  + DateString + ".xlsx" + style.NORMAL + '\n')
 	WORKBOOK = Workbook()
 	if SheetFunction != None:
-		TN_WS = WORKBOOK[0].active
+		TN_WS = WORKBOOK.active
 		TN_WS.title = XLS_Files
 		SheetFunction(auth_list,WORKBOOK,TN_WS)
 		WORKBOOK.save(OUTPUT_XLS)
