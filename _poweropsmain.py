@@ -74,7 +74,14 @@ def main():
             if type(ListAuth[0]) == int or ListAuth[0] == 'Failed':
                 print(style.RED + "\nIncorrect FQDN, Username or Password entered.  Please re-enter credentials:\n" + style.NORMAL)
             else:
+                print(style.GREEN + "\nSuccessful authentication." + style.NORMAL + "\nGenerating output directory....\n")
+                dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
+                print('Documentation output directory is: ' + style.ORANGE + dest + style.NORMAL)
+                print('')
+                time.sleep(1)
+                result = [ListAuth[1][0],ListAuth[1][1], 'AUTH']
                 break
+        
         MainMenu(result, dest)
 
 if __name__ == "__main__":
