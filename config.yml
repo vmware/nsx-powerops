@@ -3,6 +3,6 @@
 # -------------------------------------------------------------------------------
 
 CERT_PATH: /home/powerops/cert
-NSX_MGR_IP: "10.29.13.111" 
+NSX_MGR_IP: "a.b.c.d" 
 OUTPUT_PATH: '/home/powerops/powerops_documentation/'
 PREFIX_FOLDER: 'POps_doc_'
