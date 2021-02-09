@@ -135,11 +135,16 @@ def GetAPI(session,url, auth_list, cursor=None, result_list = []):
 
     if result.status_code == 200:
         resultJSON = result.json()
+        # save result_count in case of recursivity
+        count = ""
+        if 'result_count' in resultJSON: count = resultJSON['result_count']
         # cursor test
-        if 'cursor' in resultJSON and str(resultJSON['cursor']) != str(resultJSON['result_count']):
+        if 'cursor' in resultJSON:
+            if 'result_count' not in resultJSON or str(resultJSON['cursor']) != str(resultJSON['result_count']):
                 print(" --> more than " + str(len(result_list + resultJSON['results'])) +  " results for " + style.RED + url + style.NORMAL + " - please wait")
                 resultJSON = GetAPI(session,url, auth_list, cursor=resultJSON['cursor'], result_list=result_list + resultJSON['results'])
                 resultJSON['results'] = result_list + resultJSON['results']
+                resultJSON['result_count'] = count
         
         return resultJSON
     
