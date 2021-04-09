@@ -31,6 +31,7 @@
 import time
 from lib.system import CheckCertFiles, ReadYAMLCfgFile, CreateOutputFolder, style, auth_nsx
 from lib.menu import MainMenu
+import sys
 
 YAML_CFG_FILE = 'config.yml'
 
@@ -43,8 +44,11 @@ def main():
     print('######                                                                                    ######')
     print('################################################################################################')
     print('')
+    # If command used with args, then remove first argument (=pyhton file)
+    sys.argv.pop(0)
+    print ("\n==> CLI args :", str(sys.argv))
     # Open and Treatment of YAML configuration file
-    print("\n==> Read YAML config file: " + style.ORANGE + YAML_CFG_FILE + style.NORMAL)
+    print("==> Read YAML config file: " + style.ORANGE + YAML_CFG_FILE + style.NORMAL)
     YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
     # Check if all cert files are present and ask credential if not
     result = CheckCertFiles(YAML_DICT['CERT_PATH'])
@@ -58,7 +62,7 @@ def main():
             time.sleep(1)
             result.append("CERT")
             # result is a list with cert, key and CERT
-            MainMenu(result,dest)
+            MainMenu(result,dest,sys.argv)
         else:
             print(style.RED + 'Authentication with certificates failed.\n' + style.NORMAL)
             result = [0,0]
@@ -82,7 +86,7 @@ def main():
                 result = [ListAuth[1][0],ListAuth[1][1], 'AUTH']
                 break
         
-        MainMenu(result, dest)
+        MainMenu(result,dest,sys.argv)
 
 if __name__ == "__main__":
     main()
