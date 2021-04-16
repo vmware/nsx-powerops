@@ -2,7 +2,12 @@
 # Globals parameters
 # -------------------------------------------------------------------------------
 
+# MANDATORY
 CERT_PATH: /home/powerops/cert
 NSX_MGR_IP: "a.b.c.d" 
 OUTPUT_PATH: '/home/powerops/powerops_documentation/'
 PREFIX_FOLDER: 'POps_doc_'
+
+# OPTIONAL
+#MENU: [ 1, 3, 2 ] #EXAMPLE
+MENU: [ [ 1, 3, 3 ], [ 1, 3, 2 ] ] #EXAMPLE

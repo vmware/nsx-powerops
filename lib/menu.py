@@ -64,7 +64,7 @@ class Menu:
         else:
             self.choices = {}
             
-def MainMenu(authlist,dest):
+def MainMenu(authlist,dest,menu_path):
     global XLS_Dest
     XLS_Dest = dest
     FabManager = Menu("","NSX-T Manager Info", None, SheetNSXManagerInfo, "NSX_Managers_Info")
@@ -125,7 +125,15 @@ def MainMenu(authlist,dest):
     while True:
         print("\n")
         print("\n".join([f"{num}) {current_menu.choices[num].short_view}" for num in current_menu.choices]))
-        inpt = input("Choice ('back' to previous menu, 'exit' to exit program): ")
+        inpt = None
+        # If cli args inputs for menu navigation
+        if len(menu_path) > 0:
+            # Read the first arg of cli then pop this arg.
+            inpt = menu_path[0]
+            menu_path.pop(0)
+        # Else ask user for menu navigation
+        else:
+            inpt = input("Choice ('back' to previous menu, 'exit' to exit program): ")
         if inpt == "exit":
             break
         elif inpt == "back":
