@@ -63,6 +63,8 @@ def SheetT1ForwardingTable(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             # Get T1 State
             t1_state_json = GetAPI(SessionNSX[0],t1_url + '/' + str(T1) + '/state', auth_list)
             nb_routes = 0
+            EdgeID = None
+            HAStatus = None
             if isinstance(t1_state_json, dict) and 'tier1_status' in t1_state_json:
                 if 'per_node_status' in t1_state_json['tier1_status']:
                     for node in t1_state_json['tier1_status']['per_node_status']:

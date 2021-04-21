@@ -29,7 +29,7 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import time
-from lib.system import CheckCertFiles, ReadYAMLCfgFile, CreateOutputFolder, style, auth_nsx
+from lib.system import CheckCertFiles, ReadYAMLCfgFile, CreateOutputFolder, style, auth_nsx, DeleteOutputFolder
 from lib.menu import MainMenu
 import sys
 import argparse
@@ -81,6 +81,8 @@ def print_help():
 
 def main():
     YAML_CFG_FILE = 'config.yml'
+    OUTPUT_DOC_FOLDER = ''
+    MENU_MODE = False
 
     # HELP COMMAND CHECKING
     # If command used with args, then remove first argument (=pyhton file)
@@ -113,6 +115,7 @@ def main():
     if "menu" in args:
         sys.argv = args.menu
         sys.argv.append("exit")
+        MENU_MODE = True
     # Mode run (use YAML config file of CLI)
     if "run" in args:
         YAML_CFG_FILE = args.run
@@ -130,24 +133,25 @@ def main():
         print(style.GREEN + "==> Found all certifications files needed (.crt and .key)"+style.NORMAL+"\n==> Trying to use certification authentication")
         ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'],'CERT',result)
         if ListAuth[0] != 'Failed':
-            print(style.GREEN + 'Successful authentication.' +style.NORMAL+ '\nGenerating output directory....')
+            print(style.GREEN + 'Successful authentication.')
             dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
+            OUTPUT_DOC_FOLDER = dest
             print('Documentation output directory is: '+ style.ORANGE +  dest + style.NORMAL)
             time.sleep(1)
             result.append("CERT")
             # result is a list with cert, key and CERT
             # If using yaml file for automatic sub-menu navigation
-            if 'MENU' in YAML_DICT and not args.interactive:
+            if 'MENU' in YAML_DICT and not args.interactive and not ("menu" in args):
                 # If multiple sub-menu navigation commands (list inside another list)
                 if isinstance(YAML_DICT['MENU'][0], list):
                     for cur_nav_option in YAML_DICT['MENU']:
                         cur_nav_option.append('exit')
-                        MainMenu(result,dest,cur_nav_option)
+                        MainMenu(result,dest,cur_nav_option,MENU_MODE)
                 else:
                     YAML_DICT['MENU'].append('exit')
-                    MainMenu(result,dest,YAML_DICT['MENU'])
+                    MainMenu(result,dest,YAML_DICT['MENU'],MENU_MODE)
             else:
-                MainMenu(result,dest,sys.argv)
+                MainMenu(result,dest,sys.argv,MENU_MODE)
         else:
             print(style.RED + 'Authentication with certificates failed.\n' + style.NORMAL)
             result = [0,0]
@@ -165,6 +169,7 @@ def main():
             else:
                 print(style.GREEN + "\nSuccessful authentication." + style.NORMAL + "\nGenerating output directory....\n")
                 dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
+                OUTPUT_DOC_FOLDER = dest
                 print('Documentation output directory is: ' + style.ORANGE + dest + style.NORMAL)
                 print('')
                 time.sleep(1)
@@ -172,17 +177,22 @@ def main():
                 break
         
         # If using yaml file for automatic sub-menu navigation
-        if 'MENU' in YAML_DICT and not args.interactive:
+        if 'MENU' in YAML_DICT and not args.interactive and not ("menu" in args):
             # If multiple sub-menu navigation commands (list inside another list)
             if isinstance(YAML_DICT['MENU'][0], list):
                 for cur_nav_option in YAML_DICT['MENU']:
                     cur_nav_option.append('exit')
-                    MainMenu(result,dest,cur_nav_option)
+                    MainMenu(result,dest,cur_nav_option,MENU_MODE)
             else:
                 YAML_DICT['MENU'].append('exit')
-                MainMenu(result,dest,YAML_DICT['MENU'])
+                MainMenu(result,dest,YAML_DICT['MENU'],MENU_MODE)
         else:
-            MainMenu(result,dest,sys.argv)
+            MainMenu(result,dest,sys.argv,MENU_MODE)
 
+    # Remove output directory if empty
+    isDeleted = DeleteOutputFolder(OUTPUT_DOC_FOLDER)
+    if isDeleted:
+        print('Documentation output directory deleted: '+ style.ORANGE + OUTPUT_DOC_FOLDER + style.NORMAL)
+    time.sleep(1)
 if __name__ == "__main__":
     main()
