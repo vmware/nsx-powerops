@@ -79,7 +79,10 @@ def SheetFabDiscoveredNodes(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             Dict_DiscoveredNodes['hostName'] = Dict_Properties['hostName']
             Dict_DiscoveredNodes['fullName'] = Dict_Properties['fullName']
             Dict_DiscoveredNodes['managementIp'] = Dict_Properties['managementIp']
-            Dict_DiscoveredNodes['domainName'] = Dict_Properties['domainName']
+            try:
+                Dict_DiscoveredNodes['domainName'] = Dict_Properties['domainName']
+            except:
+                Dict_Properties['domainName'] = 'No Domain Name'
             Dict_DiscoveredNodes['dnsConfigAddress'] = Dict_Properties['dnsConfigAddress']
             Dict_DiscoveredNodes['uuid'] = Dict_Properties['uuid']
             Dict_DiscoveredNodes['powerState'] = Dict_Properties['powerState']
