@@ -69,6 +69,24 @@ def CreateOutputFolder(PATH):
     
     return XLS_dest
 
+def DeleteOutputFolder(PATH):
+    """
+    DeleteOutputFolder(PATH)
+    Delete Folder for Excel Files
+    Returns
+    ----------
+    Return True if folder deleted. Return  if folder not deleted
+    Args
+    ----------
+    PATH : str
+        path to the folder of output.
+    """
+    try:
+        os.rmdir(PATH)
+        return True
+    except OSError:
+        return False
+
 def auth_nsx(nsx_mgr_fqdn,authmethod,cert):
     """
     AuthNSX(IP, authMethod, Cert)
