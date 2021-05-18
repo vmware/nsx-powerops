@@ -64,7 +64,7 @@ class Menu:
         else:
             self.choices = {}
             
-def MainMenu(authlist,dest,menu_path):
+def MainMenu(authlist,dest,menu_path,menu_mode):
     global XLS_Dest
     XLS_Dest = dest
     FabManager = Menu("","NSX-T Manager Info", None, SheetNSXManagerInfo, "NSX_Managers_Info")
@@ -123,8 +123,9 @@ def MainMenu(authlist,dest,menu_path):
     main.parent = main
     current_menu = main
     while True:
-        print("\n")
-        print("\n".join([f"{num}) {current_menu.choices[num].short_view}" for num in current_menu.choices]))
+        if not menu_mode:
+            print("\n")
+            print("\n".join([f"{num}) {current_menu.choices[num].short_view}" for num in current_menu.choices]))
         inpt = None
         # If cli args inputs for menu navigation
         if len(menu_path) > 0:
