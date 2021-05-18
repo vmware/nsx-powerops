@@ -319,14 +319,17 @@ def GetBGPSessions(auth_list):
     tab = []
     if isinstance(t0_json, dict) and 'results' in t0_json and t0_json['result_count'] > 0: 
         for t0 in t0_json["results"]:
-            bgpstatus_url = "/policy/api/v1/infra/tier-0s/" + t0['display_name'] + "/locale-services/default/bgp/neighbors/status"
-            bgpstatus_json = GetAPI(SessionNSX[0],bgpstatus_url, auth_list)
-            # BGP Sessions treatment
-            if isinstance(bgpstatus_json, dict) and 'results' in bgpstatus_json: 
-                for session in bgpstatus_json['results']:
-                    tab.append([session['source_address'],session['neighbor_address'],session['remote_as_number'],session['total_in_prefix_count'], session['total_out_prefix_count'], session['connection_state']])
-            else:
-                tab.append(['no BGP sessions'])
+            t0_localeservice_url = "/policy/api/v1/infra/tier-0s/" + t0['display_name'] + "/locale-services/"
+            t0_localeservices_json = GetAPI(SessionNSX[0],t0_localeservice_url, auth_list)
+            for t0_localeservice in t0_localeservices_json['results']:
+                bgpstatus_url = "/policy/api/v1/infra/tier-0s/" + t0['display_name'] + "/locale-services/" + t0_localeservice['id'] + "/bgp/neighbors/status"
+                bgpstatus_json = GetAPI(SessionNSX[0],bgpstatus_url, auth_list)
+                # BGP Sessions treatment
+                if isinstance(bgpstatus_json, dict) and 'results' in bgpstatus_json:
+                    for session in bgpstatus_json['results']:
+                        tab.append([session['source_address'],session['neighbor_address'],session['remote_as_number'],session['total_in_prefix_count'], session['total_out_prefix_count'], session['connection_state']])
+                else:
+                    tab.append(['no BGP sessions'])
             
     else:
         tab.append(['no BGP sessions'])
