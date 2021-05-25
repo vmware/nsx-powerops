@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook, ConditionnalFormat
-from lib.system import style, GetAPI, ConnectNSX, os
+from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV
+from lib.system import style, GetAPI, ConnectNSX, os, GetCSV
 
 
 def SheetBGPSession(auth_list,WORKBOOK,TN_WS, NSX_Config ={} ):
@@ -93,6 +93,10 @@ def SheetBGPSession(auth_list,WORKBOOK,TN_WS, NSX_Config ={} ):
     else:
         XLS_Lines.append(["No T0 router found","","","","","","","","","",""])
 
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    if GetCSV():
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
     ConditionnalFormat(TN_WS, 'K2:K' + str(len(XLS_Lines) + 1), 'ESTABLISHED')
     ConditionnalFormat(TN_WS, 'B2:B' + str(len(XLS_Lines) + 1), 'TRUE')

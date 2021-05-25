@@ -29,7 +29,7 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import time
-from lib.system import CheckCertFiles, ReadYAMLCfgFile, CreateOutputFolder, style, auth_nsx, DeleteOutputFolder
+from lib.system import CheckCertFiles, ReadYAMLCfgFile, CreateOutputFolder, style, auth_nsx, DeleteOutputFolder, GetVersion
 from lib.menu import MainMenu
 import sys
 import argparse
@@ -109,7 +109,7 @@ def main():
     
     # Read the first arg of cli then pop this arg.
     sys.argv.pop(0)
-    print ("\n==> CLI args :", str(sys.argv))
+    print ("\n==> CLI args :" + style.ORANGE, str(sys.argv) + style.NORMAL)
     
     # Mode menu (use menu path of CLI)
     if "menu" in args:
@@ -133,12 +133,16 @@ def main():
         print(style.GREEN + "==> Found all certifications files needed (.crt and .key)"+style.NORMAL+"\n==> Trying to use certification authentication")
         ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'],'CERT',result)
         if ListAuth[0] != 'Failed':
+            result.append("CERT")
             print(style.GREEN + 'Successful authentication.')
+            # Get and print NSX-T Version
+            nsx_version = GetVersion(result)
+            print(style.NORMAL + "NSX-T Version : " + style.ORANGE + nsx_version + style.NORMAL)
+            # Create documentation folder
             dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
             OUTPUT_DOC_FOLDER = dest
             print('Documentation output directory is: '+ style.ORANGE +  dest + style.NORMAL)
             time.sleep(1)
-            result.append("CERT")
             # result is a list with cert, key and CERT
             # If using yaml file for automatic sub-menu navigation
             if 'MENU' in YAML_DICT and not args.interactive and not ("menu" in args):
@@ -167,13 +171,17 @@ def main():
             if type(ListAuth[0]) == int or ListAuth[0] == 'Failed':
                 print(style.RED + "\nIncorrect FQDN, Username or Password entered.  Please re-enter credentials:\n" + style.NORMAL)
             else:
-                print(style.GREEN + "\nSuccessful authentication." + style.NORMAL + "\nGenerating output directory....\n")
+                result = [ListAuth[1][0],ListAuth[1][1], 'AUTH']
+                print(style.GREEN + "\nSuccessful authentication." )
+                # Get and print NSX-T Version
+                nsx_version = GetVersion(result)
+                print(style.NORMAL + "NSX-T Version : " + style.ORANGE + nsx_version + style.NORMAL)
+                # Create documentation folder
                 dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
                 OUTPUT_DOC_FOLDER = dest
+                print ("\nGenerating output directory....")
                 print('Documentation output directory is: ' + style.ORANGE + dest + style.NORMAL)
-                print('')
                 time.sleep(1)
-                result = [ListAuth[1][0],ListAuth[1][1], 'AUTH']
                 break
         
         # If using yaml file for automatic sub-menu navigation

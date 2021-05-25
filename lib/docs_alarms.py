@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook, ConditionnalFormat
-from lib.system import style, GetAPI, ConnectNSX, os, datetime
+from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV
+from lib.system import style, GetAPI, ConnectNSX, os, datetime, GetCSV
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx_client import Alarms
 
@@ -84,7 +84,11 @@ def SheetAlarms(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
         XLS_Lines.append(['No results', "", "", "", "", "", "", "", "", ""])
     
     # Create sheet
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    if GetCSV():
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
     ConditionnalFormat(TN_WS, 'F', 'CRITICAL', True, 'RED')
     ConditionnalFormat(TN_WS, 'F', 'HIGH', True, 'ORANGE')
     ConditionnalFormat(TN_WS, 'H', 'RESOLVED', True, 'GREEN')

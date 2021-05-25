@@ -46,12 +46,15 @@ from lib.docs_discovered_nodes import SheetFabDiscoveredNodes
 from lib.docs_transportzones import SheetTZ
 from lib.docs_services import SheetNSXServices
 from lib.docs_tn_tunnels import SheetTunnels
-from lib.system import style, os
+from lib.system import GetCSV, style, os
 from lib.excel import CreateXLSFile
 import lib.menu
 import time, pathlib, pprint
 
 def DocsSetOne(auth_list):
+    if GetCSV():
+        print(style.RED + " ==> Invalid: CSV output incompatible with single file documentation set " + style.NORMAL)
+        return
     global NSX_Config
     NSX_Config = {}
     start_time = time.time()

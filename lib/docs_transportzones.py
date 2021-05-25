@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook
-from lib.system import style, GetAPI, ConnectNSX, os
+from lib.excel import FillSheet, Workbook, FillSheetCSV
+from lib.system import style, GetAPI, ConnectNSX, os, GetCSV
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx_client import TransportZones
 from com.vmware.nsx.model_client import TransportZone
@@ -68,5 +68,9 @@ def SheetTZ(auth_list,WORKBOOK,TN_WS, NSX_Config ={} ):
         # Create line
         XLS_Lines.append([tz.display_name, tz.description, tz.id, tz.resource_type, tz.host_switch_id, tz.host_switch_mode, tz.host_switch_name, tz.is_default, tz.nested_nsx, tz.transport_type, TZ_Teaming])
 
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    if GetCSV():
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
         

@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook
-from lib.system import style, GetAPI, ConnectNSX, os
+from lib.excel import FillSheet, Workbook, FillSheetCSV
+from lib.system import style, GetAPI, ConnectNSX, os, GetCSV
 from vmware.vapi.lib import connect
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx_policy.infra.domains_client import Groups
@@ -132,8 +132,12 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             XLS_Lines.append([group['display_name'],Tags,Scope,'\n'.join(criteria[1]),criteria[0],IP,VM,Segment,SegPort])
     else:
         XLS_Lines.append(['No results', "", "", "", "", "", "", "", ""])
-        
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+
+    if GetCSV():
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
 
 
 def GetCriteria(SESSION, auth_list, DictExpression):

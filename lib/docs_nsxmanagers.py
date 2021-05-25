@@ -29,8 +29,9 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook, PatternFill, Font,  ConditionnalFormat
-from lib.system import style, GetAPI, ConnectNSX, os
+from typing import ClassVar
+from lib.excel import FillSheet, Workbook, PatternFill, Font,  ConditionnalFormat, FillSheetCSV
+from lib.system import style, GetAPI, ConnectNSX, os, GetVersion, GetCSV
 
 
 def SheetNSXManagerInfo(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
@@ -50,7 +51,9 @@ def SheetNSXManagerInfo(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
         offline_nodes = str(len(nsxclstr_json['mgmt_cluster_status']['offline_nodes']))
     else:
         offline_nodes = "0"
-    
+    # check Version NSX-T
+    nsx_version = GetVersion(auth_list)
+
     NSX_Config['NSXManager']['Cluster_id'] = nsxclstr_json['cluster_id']
     NSX_Config['NSXManager']['Cluster_status'] = nsxclstr_json['mgmt_cluster_status']['status']
     NSX_Config['NSXManager']['Cluster_ctrl_status'] = nsxclstr_json['control_cluster_status']['status']
@@ -58,7 +61,7 @@ def SheetNSXManagerInfo(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     NSX_Config['NSXManager']['Cluster_online_nodes'] = online_nodes
     NSX_Config['NSXManager']['Cluster_offline_nodes'] = offline_nodes
     # Summary Table
-    XLS_Lines = [['NSX-T Cluster ID', nsxclstr_json['cluster_id']], ['NSX-T Cluster Status', nsxclstr_json['mgmt_cluster_status']['status']], ['NSX-T Control Cluster Status', nsxclstr_json['control_cluster_status']['status']] , ['Overall NSX-T Cluster Status', nsxclstr_json['detailed_cluster_status']['overall_status']], ['Number of online nodes', online_nodes], ['Number of offline nodes', offline_nodes]]
+    XLS_Lines = [['NSX-T Cluster ID', nsxclstr_json['cluster_id']], ['NSX-T version', nsx_version], ['NSX-T Cluster Status', nsxclstr_json['mgmt_cluster_status']['status']], ['NSX-T Control Cluster Status', nsxclstr_json['control_cluster_status']['status']] , ['Overall NSX-T Cluster Status', nsxclstr_json['detailed_cluster_status']['overall_status']], ['Number of online nodes', online_nodes], ['Number of offline nodes', offline_nodes]]
     idx_second_sheet = len(XLS_Lines) + 2
     # Write in Excel
     for line in XLS_Lines:
@@ -69,9 +72,9 @@ def SheetNSXManagerInfo(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
         TN_WS.cell(row=i, column=1).fill = PatternFill('solid', start_color='004F81BD', end_color='004F81BD') #Blue
         TN_WS.cell(row=i, column=1).font = Font(b=True, color="00FFFFFF") #White
 
-    ConditionnalFormat(TN_WS, 'B2:B4', 'STABLE')
-    ConditionnalFormat(TN_WS, 'B5:B5', '3')
-    ConditionnalFormat(TN_WS, 'B6:B6', '0')
+    ConditionnalFormat(TN_WS, 'B3:B5', 'STABLE')
+    ConditionnalFormat(TN_WS, 'B6:B6', '3')
+    ConditionnalFormat(TN_WS, 'B7:B7', '0')
 
     # Create second sheet
     TN_WS[idx_second_sheet]
@@ -82,6 +85,11 @@ def SheetNSXManagerInfo(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             XLS_Lines.append([group['group_id'],group['group_type'], group['group_status'], member['member_fqdn'], member['member_ip'], member['member_uuid'], member['member_status']])
 
     startCell = "A" + str(idx_second_sheet + 1)
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA", "TableStyleLight9", False, startCell)
-    ConditionnalFormat(TN_WS, 'G10:G' + str(len(XLS_Lines) + 1), 'UP')
-    ConditionnalFormat(TN_WS, 'C10:C' + str(len(XLS_Lines) + 1), 'STABLE')
+
+    if GetCSV():
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA", "TableStyleLight9", False, startCell)
+    ConditionnalFormat(TN_WS, 'G11:G' + str(len(XLS_Lines) + 1), 'UP')
+    ConditionnalFormat(TN_WS, 'C11:C' + str(len(XLS_Lines) + 1), 'STABLE')

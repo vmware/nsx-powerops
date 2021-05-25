@@ -40,6 +40,7 @@ from vmware.vapi.security.user_password import \
         create_user_password_security_context
 
 YAML_CFG_FILE = 'config.yml'
+CSV = False
 
 class style:
     RED = '\33[31m'
@@ -242,10 +243,28 @@ def ReadYAMLCfgFile(YAML_CFG_FILE):
     try:
         with open(YAML_CFG_FILE, 'r') as ymlfile:
             YAML_DICT = yaml.load(ymlfile, Loader=yaml.FullLoader)
+            # set CSV variable
+            if "CSV" in YAML_DICT:
+                SetCSV(YAML_DICT["CSV"])
+            else:
+                SetCSV(False)
             return YAML_DICT
     except Exception as e:
         print(style.RED + YAML_CFG_FILE + " not found in directory" + style.NORMAL)
         print(style.ORANGE + e + style.NORMAL)
         sys.exit(1)
 
+def GetVersion(auth_list):
+    SessionNSX = ConnectNSX(auth_list)
+    node_url = '/api/v1/node'
+    node_result = GetAPI(SessionNSX[0],node_url, auth_list)
+    node_version = node_result["product_version"]
+    return node_version
 
+def GetCSV():
+    global CSV
+    return CSV
+
+def SetCSV(val):
+    global CSV
+    CSV = val

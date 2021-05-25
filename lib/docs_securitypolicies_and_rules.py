@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu,  pprint
-from lib.excel import FillSheet, Workbook
-from lib.system import style, GetAPI, ConnectNSX, os
+from lib.excel import FillSheet, Workbook, FillSheetCSV
+from lib.system import style, GetAPI, ConnectNSX, os, GetCSV
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx_policy.infra.domains.security_policies_client import Rules
 
@@ -106,5 +106,9 @@ def SheetSecDFW(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     else:
         XLS_Lines.append(['No results', "", "", "", "", "", "", "", "", "", "", "", "", ""])
     
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    if GetCSV():
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
 

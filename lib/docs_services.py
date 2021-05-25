@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook
-from lib.system import style, GetAPI, ConnectNSX, os
+from lib.excel import FillSheet, Workbook, FillSheetCSV
+from lib.system import style, GetAPI, ConnectNSX, os, GetCSV
 
 
 def SheetNSXServices(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
@@ -96,4 +96,8 @@ def SheetNSXServices(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     else:
         XLS_Lines.append(['No results', "", "", "", "", ""])
 
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    if GetCSV():
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")

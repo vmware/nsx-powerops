@@ -2,8 +2,8 @@
 # coding: utf-8
 #
 # Librairies Word/Excel/ CSV
-import openpyxl, os, datetime, pathlib, re
-from lib.system import style
+import openpyxl, os, datetime, pathlib, re, csv
+from lib.system import style, GetCSV
 import lib.menu
 from openpyxl import Workbook, load_workbook
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
@@ -17,24 +17,42 @@ from openpyxl.utils import get_column_letter
 
 
 def CreateXLSFile(auth_list,XLS_Files,SheetFunction = None):
-    # Creation of Excel files
-	now = datetime.datetime.now()
-	DateString = now.strftime("%Y%m%d")
-	OUTPUT_XLS = lib.menu.XLS_Dest + os.sep + XLS_Files + "_"  + DateString + ".xlsx"
-	fname = pathlib.Path(OUTPUT_XLS)
-	if fname.exists():
-		print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
-		return None
-    
-	print('\nGenerating NSX-T Manager output: ' + style.ORANGE + XLS_Files + "_"  + DateString + ".xlsx" + style.NORMAL + '\n')
-	WORKBOOK = Workbook()
-	if SheetFunction != None:
-		TN_WS = WORKBOOK.active
-		TN_WS.title = XLS_Files
-		SheetFunction(auth_list,WORKBOOK,TN_WS)
-		WORKBOOK.save(OUTPUT_XLS)
+	# Creation of CSV files
+	if GetCSV():
+		now = datetime.datetime.now()
+		DateString = now.strftime("%Y%m%d")
+		OUTPUT_CSV = lib.menu.XLS_Dest + os.sep + XLS_Files + "_"  + DateString + ".csv"
+		fname = pathlib.Path(OUTPUT_CSV)
+		if fname.exists():
+			print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
+			return None
+		print('\nGenerating NSX-T Manager output: ' + style.ORANGE + XLS_Files + "_"  + DateString + ".csv" + style.NORMAL + '\n')
+		with open(OUTPUT_CSV, 'w', newline="") as file:
+			if SheetFunction != None:
+				WORKBOOK = Workbook()
+				TN_WS = WORKBOOK.active
+				SheetFunction(auth_list,csv.writer(file),TN_WS)
+			
+			return [csv.writer(file), OUTPUT_CSV]
+	else:	
+		# Creation of Excel files
+		now = datetime.datetime.now()
+		DateString = now.strftime("%Y%m%d")
+		OUTPUT_XLS = lib.menu.XLS_Dest + os.sep + XLS_Files + "_"  + DateString + ".xlsx"
+		fname = pathlib.Path(OUTPUT_XLS)
+		if fname.exists():
+			print(str(fname) + style.RED + '\n==> File already exists. Not attempting to overwite' + style.NORMAL + "\n")
+			return None
+		
+		print('\nGenerating NSX-T Manager output: ' + style.ORANGE + XLS_Files + "_"  + DateString + ".xlsx" + style.NORMAL + '\n')
+		WORKBOOK = Workbook()
+		if SheetFunction != None:
+			TN_WS = WORKBOOK.active
+			TN_WS.title = XLS_Files
+			SheetFunction(auth_list,WORKBOOK,TN_WS)
+			WORKBOOK.save(OUTPUT_XLS)
 
-	return [WORKBOOK, OUTPUT_XLS]
+		return [WORKBOOK, OUTPUT_XLS]
 
 # Create Sheet XLS
 # ------------------------------------------------------------------------------------------
@@ -76,6 +94,18 @@ def FillSheet(TN_WB,title,Header_row,List_row,color, StyleTable = "TableStyleLig
 		ColumnLetter = chr(65 + remainder) + ColumnLetter
 	Range = start_cell + ":" + ColumnLetter + start_line
 	FormatSheet(TN_WS, Range, StyleTable, FirstColumn)
+
+# Create CSV sheet
+# ------------------------------------------------------------------------------------------
+def FillSheetCSV(CSV,Header_row,List_row):
+	CSV.writerow(Header_row)
+	for r in List_row:
+		# if list (with \n in a cell) => convert \n to space
+		new_row = []
+		for c in r:
+			c = str(c)
+			new_row.append(c.replace("\n"," "))
+		CSV.writerow(new_row)
 
 # Conditionnal Formating 
 # ------------------------------------------------------------------------------------------

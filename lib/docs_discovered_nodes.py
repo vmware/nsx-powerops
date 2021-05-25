@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook, ConditionnalFormat
-from lib.system import style, GetAPI, ConnectNSX, os, datetime
+from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV
+from lib.system import style, GetAPI, ConnectNSX, os, datetime, GetCSV
 from vmware.vapi.bindings.stub import StubConfiguration
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx.fabric_client import DiscoveredNodes
@@ -104,7 +104,11 @@ def SheetFabDiscoveredNodes(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     else:
         XLS_Lines = ('No result', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
 
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    if GetCSV():
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
     ConditionnalFormat(TN_WS, 'K2:K' + str(len(XLS_Lines) + 1), 'poweredOn')
     ConditionnalFormat(TN_WS, 'L2:L' + str(len(XLS_Lines) + 1), 'false')
     ConditionnalFormat(TN_WS, 'Q2:Q' + str(len(XLS_Lines) + 1), 'connected')
