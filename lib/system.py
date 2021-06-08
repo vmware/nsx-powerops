@@ -38,6 +38,7 @@ import requests
 from vmware.vapi.lib import connect
 from vmware.vapi.security.user_password import \
         create_user_password_security_context
+from shutil import copyfile
 
 YAML_CFG_FILE = 'config.yml'
 CSV = False
@@ -87,6 +88,24 @@ def DeleteOutputFolder(PATH):
         return True
     except OSError:
         return False
+
+def CopyFile(file1, file2):
+    try:
+        copyfile(file1, file2)
+        return True
+    except IOError:
+        print("Issue on file copy")
+        return False
+
+def DeleyeFile(file):
+    try:
+        copyfile(file1, file2)
+        return True
+    except IOError:
+        print("Issue on file copy")
+        return False
+
+
 
 def auth_nsx(nsx_mgr_fqdn,authmethod,cert):
     """
@@ -254,6 +273,7 @@ def ReadYAMLCfgFile(YAML_CFG_FILE):
         print(style.ORANGE + e + style.NORMAL)
         sys.exit(1)
 
+# API call to extract NSX-T Version
 def GetVersion(auth_list):
     SessionNSX = ConnectNSX(auth_list)
     node_url = '/api/v1/node'

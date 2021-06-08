@@ -47,8 +47,10 @@ from lib.docs_transportzones import SheetTZ
 from lib.docs_services import SheetNSXServices
 from lib.docs_tn_tunnels import SheetTunnels
 from lib.docs_set import DocsSetMultiple, DocsSetOne
-from lib.system import style
+from lib.system import style, CopyFile
 from lib.excel import CreateXLSFile
+from lib.diff import IfDiff, GetDiffFileName, SetXLSDiffFile
+import os
 
 # Definition of one menu
 class Menu:
@@ -122,6 +124,23 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
     main = Menu("Main Menu", "", [Doc, Health])
     main.parent = main
     current_menu = main
+
+    # Check if diff mode
+    if IfDiff() :
+        # copy initial file xls config to compare
+        xls_diff_filename = GetDiffFileName()
+        xls_diff_temp_file = xls_diff_filename.rsplit( ".", 1 )[ 0 ]
+        xls_diff_temp_file = xls_diff_temp_file + "_TEMP" + ".xlsx"
+        CopyFile(xls_diff_filename, xls_diff_temp_file)
+        # If diff mode : build doc XLS
+        SetXLSDiffFile(authlist, xls_diff_temp_file)
+        # delete temp diff file
+        try:
+            os.remove(xls_diff_temp_file)
+        except OSError as e:  ## if failed, report it back to the user ##
+            print ("Error: %s - %s." % (e.filename, e.strerror))
+        return
+
     while True:
         if not menu_mode:
             print("\n")
