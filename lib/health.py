@@ -28,7 +28,7 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-from lib.system import style, GetAPI, ConnectNSX, os, YAML_CFG_FILE
+from lib.system import style, GetAPI, ConnectNSX, os, GetYAMLDict
 
 ########### SECTION FOR REPORTING ON NSX-T MANAGER CLUSTER ###########
 def GetHealthNSXCluster(auth_list):
