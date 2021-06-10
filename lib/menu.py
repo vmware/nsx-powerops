@@ -93,8 +93,8 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
     MonAlarm = Menu("", "Export Alarms", None, SheetAlarms,"Alarms")
     MonPrev = Menu("", "Return to previous menu", None, 'Back')
 
-    DocSetOneFile = Menu("","One Excel file", None, DocsSetOne)
-    DocSetMultiple = Menu("","Mulitple Excel files", None, DocsSetMultiple)
+    DocSetOneFile = Menu("","One file (appended results for JSON, YAML format) and one Excel file with one tab per menu. Not supported for CSV.", None, DocsSetOne)
+    DocSetMultiple = Menu("","Multiple files", None, DocsSetMultiple)
     DocSetPrev = Menu("", "Return to previous menu", None, 'Back')
 
     DocFab = Menu("\nNSX-T Fabric Documents", "NSX-T Fabric Options", [FabManager, FabNodes, FabTZ, FabServices, FabTunnles, FabPrev])

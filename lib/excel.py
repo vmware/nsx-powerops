@@ -146,8 +146,9 @@ def FillSheetJSON(JSON, value):
 
 # Create YAML sheet
 def FillSheetYAML(YAML, value):
+	yaml.Dumper.ignore_aliases = lambda *args : True
 	with open(YAML, 'w') as yaml_file:
-  		yaml.dump(value, yaml_file)
+  		yaml.dump(value, yaml_file, default_flow_style=False)
 
 # Conditionnal Formating 
 # ------------------------------------------------------------------------------------------
