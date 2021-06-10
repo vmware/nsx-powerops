@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV
-from lib.system import style, GetAPI, ConnectNSX, os, datetime, GetCSV
+from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, datetime, GetOutputFormat
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx_client import Alarms
 
@@ -84,11 +84,17 @@ def SheetAlarms(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
         XLS_Lines.append(['No results', "", "", "", "", "", "", "", "", ""])
     
     # Create sheet
-    if GetCSV():
+    if GetOutputFormat() == 'CSV':
         CSV = WORKBOOK
         FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
     else:
         FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
-    ConditionnalFormat(TN_WS, 'F', 'CRITICAL', True, 'RED')
-    ConditionnalFormat(TN_WS, 'F', 'HIGH', True, 'ORANGE')
-    ConditionnalFormat(TN_WS, 'H', 'RESOLVED', True, 'GREEN')
+        ConditionnalFormat(TN_WS, 'F', 'CRITICAL', True, 'RED')
+        ConditionnalFormat(TN_WS, 'F', 'HIGH', True, 'ORANGE')
+        ConditionnalFormat(TN_WS, 'H', 'RESOLVED', True, 'GREEN')

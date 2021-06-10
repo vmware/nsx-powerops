@@ -30,8 +30,8 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from typing import ClassVar
-from lib.excel import FillSheet, Workbook, PatternFill, Font,  ConditionnalFormat, FillSheetCSV
-from lib.system import style, GetAPI, ConnectNSX, os, GetVersion, GetCSV
+from lib.excel import FillSheet, Workbook, PatternFill, Font,  ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, GetVersion, GetOutputFormat
 
 
 def SheetNSXManagerInfo(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
@@ -86,10 +86,16 @@ def SheetNSXManagerInfo(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
 
     startCell = "A" + str(idx_second_sheet + 1)
 
-    if GetCSV():
+    if GetOutputFormat() == 'CSV':
         CSV = WORKBOOK
         FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
     else:
         FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA", "TableStyleLight9", False, startCell)
-    ConditionnalFormat(TN_WS, 'G11:G' + str(len(XLS_Lines) + 1), 'UP')
-    ConditionnalFormat(TN_WS, 'C11:C' + str(len(XLS_Lines) + 1), 'STABLE')
+        ConditionnalFormat(TN_WS, 'G11:G' + str(len(XLS_Lines) + 1), 'UP')
+        ConditionnalFormat(TN_WS, 'C11:C' + str(len(XLS_Lines) + 1), 'STABLE')

@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook, PatternFill, Font,  ConditionnalFormat, FillSheetCSV
-from lib.system import style, GetAPI, ConnectNSX, os, GetCSV
+from lib.excel import FillSheet, Workbook, PatternFill, Font,  ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
 
 def GetEntity(json, tab):
     if 'entities' in json: 
@@ -65,11 +65,18 @@ def SheetSummary(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     a1.font = Font(name='Arial', size=16, bold=True)
     a1.value = "Summary"
     TN_WS[3]
-    if GetCSV():
+    
+    if GetOutputFormat() == 'CSV':
         CSV = WORKBOOK
         FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
     else:
         FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA", "TableStyleLight9", True, start_cell = 'A4')
-    ConditionnalFormat(TN_WS, 'D5:D' + str(len(XLS_Lines) + 4), 'UP', False, 'GREEN')
-    ConditionnalFormat(TN_WS, 'D5:D' + str(len(XLS_Lines) + 4), 'NONE', False, 'ORANGE')
-    ConditionnalFormat(TN_WS, 'D5:D' + str(len(XLS_Lines) + 4), 'UP')
+        ConditionnalFormat(TN_WS, 'D5:D' + str(len(XLS_Lines) + 4), 'UP', False, 'GREEN')
+        ConditionnalFormat(TN_WS, 'D5:D' + str(len(XLS_Lines) + 4), 'NONE', False, 'ORANGE')
+        ConditionnalFormat(TN_WS, 'D5:D' + str(len(XLS_Lines) + 4), 'UP')

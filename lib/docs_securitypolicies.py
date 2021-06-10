@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, FillSheetCSV, Workbook; FillSheetCSV
-from lib.system import style, GetAPI, ConnectNSX, os, GetCSV
+from lib.excel import FillSheet, FillSheetCSV, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
 
 
 def SheetSecPol(auth_list, WORKBOOK,TN_WS, NSX_Config = {}):
@@ -56,9 +56,15 @@ def SheetSecPol(auth_list, WORKBOOK,TN_WS, NSX_Config = {}):
     else:
         XLS_Lines.append(['No results', "", "", "", "", ""])
     
-    if GetCSV():
+    if GetOutputFormat() == 'CSV':
         CSV = WORKBOOK
         FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
     else:
         FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
 

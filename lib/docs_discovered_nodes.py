@@ -29,15 +29,14 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV
-from lib.system import style, GetAPI, ConnectNSX, os, datetime, GetCSV
+from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, datetime, GetOutputFormat
 from vmware.vapi.bindings.stub import StubConfiguration
 from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
 from com.vmware.nsx.fabric_client import DiscoveredNodes
 
 
 def SheetFabDiscoveredNodes(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
-
     SessionNSX = ConnectNSX(auth_list)
     stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
     disc_node_list = DiscoveredNodes(stub_config).list()
@@ -103,12 +102,17 @@ def SheetFabDiscoveredNodes(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             XLS_Lines.append([node.display_name,node.os_type, node.os_version, node.node_type,Dict_Properties['hostName'], Dict_Properties['fullName'], Dict_Properties['managementIp'], Dict_Properties['domainName'], Dict_Properties['dnsConfigAddress'], Dict_Properties['uuid'], Dict_Properties['powerState'], Dict_Properties['inMaintenanceMode'], Dict_Properties['build'], Dict_Properties['vendor'], Dict_Properties['model'], Dict_Properties['serialNumber'], Dict_Properties['connectionState'], Dict_Properties['licenseProductName'], Dict_Properties['licenseProductVersion'], Dict_Properties['managementServerIp'], Dict_Properties['lockdownMode'], Dict_Properties['dasHostState']])
     else:
         XLS_Lines = ('No result', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
-
-    if GetCSV():
+    if GetOutputFormat() == 'CSV':
         CSV = WORKBOOK
         FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
     else:
         FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
-    ConditionnalFormat(TN_WS, 'K2:K' + str(len(XLS_Lines) + 1), 'poweredOn')
-    ConditionnalFormat(TN_WS, 'L2:L' + str(len(XLS_Lines) + 1), 'false')
-    ConditionnalFormat(TN_WS, 'Q2:Q' + str(len(XLS_Lines) + 1), 'connected')
+        ConditionnalFormat(TN_WS, 'K2:K' + str(len(XLS_Lines) + 1), 'poweredOn')
+        ConditionnalFormat(TN_WS, 'L2:L' + str(len(XLS_Lines) + 1), 'false')
+        ConditionnalFormat(TN_WS, 'Q2:Q' + str(len(XLS_Lines) + 1), 'connected')

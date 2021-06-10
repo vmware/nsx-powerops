@@ -41,7 +41,7 @@ from vmware.vapi.security.user_password import \
 from shutil import copyfile
 
 YAML_CFG_FILE = 'config.yml'
-CSV = False
+OUTPUT_FORMAT = 'XLSX'
 
 class style:
     RED = '\33[31m'
@@ -262,11 +262,11 @@ def ReadYAMLCfgFile(YAML_CFG_FILE):
     try:
         with open(YAML_CFG_FILE, 'r') as ymlfile:
             YAML_DICT = yaml.load(ymlfile, Loader=yaml.FullLoader)
-            # set CSV variable
-            if "CSV" in YAML_DICT:
-                SetCSV(YAML_DICT["CSV"])
+            # set OUTPUT_FORMAT variable (XLSX, CSV, YAML)
+            if "OUTPUT_FORMAT" in YAML_DICT:
+                SetOutputFormat(YAML_DICT["OUTPUT_FORMAT"])
             else:
-                SetCSV(False)
+                SetOutputFormat('XLSX')
             return YAML_DICT
     except Exception as e:
         print(style.RED + YAML_CFG_FILE + " not found in directory" + style.NORMAL)
@@ -281,10 +281,10 @@ def GetVersion(auth_list):
     node_version = node_result["product_version"]
     return node_version
 
-def GetCSV():
-    global CSV
-    return CSV
+def GetOutputFormat():
+    global OUTPUT_FORMAT
+    return OUTPUT_FORMAT
 
-def SetCSV(val):
-    global CSV
-    CSV = val
+def SetOutputFormat(val):
+    global OUTPUT_FORMAT
+    OUTPUT_FORMAT = val

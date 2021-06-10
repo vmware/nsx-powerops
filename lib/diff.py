@@ -80,88 +80,105 @@ def SetXLSDiffFile(auth_list, xls_diff_bkp_filename):
     DIFF_WORKBOOK = load_workbook(xls_diff_bkp_filename)
     if WORKBOOK != None:
         # Generating Summary
-        print('\nGenerating Summary sheet')
-        TN_WS = WORKBOOK[0].active
-        TN_WS.title = "Summary"
-        SheetSummary(auth_list,WORKBOOK[0],TN_WS,NSX_Config)
+        if 'Summary' in DIFF_WORKBOOK.sheetnames:
+            print('\nGenerating Summary sheet')
+            TN_WS = WORKBOOK[0].active
+            TN_WS.title = "Summary"
+            SheetSummary(auth_list,WORKBOOK[0],TN_WS,NSX_Config)
         # Generating Information sheet
-        print('Generating NSX-T Manager Information sheet')
-        TN_WS = WORKBOOK[0].create_sheet("NSX_Manager_Info")
-        SheetNSXManagerInfo(auth_list,WORKBOOK[0],TN_WS,NSX_Config)
+        if 'NSX_Manager_Info' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Manager Information sheet')
+            TN_WS = WORKBOOK[0].create_sheet("NSX_Manager_Info")
+            SheetNSXManagerInfo(auth_list,WORKBOOK[0],TN_WS,NSX_Config)
         # Generating NSX-T Fabric Discovered Nodes sheet
-        print('Generating NSX-T Fabric Discovered Nodes sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Transport_Nodes")
-        SheetFabDiscoveredNodes(auth_list,WORKBOOK[0],TN_WS,NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Transport_Nodes'])
+        if 'Transport_Nodes' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Fabric Discovered Nodes sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Transport_Nodes")
+            SheetFabDiscoveredNodes(auth_list,WORKBOOK[0],TN_WS,NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Transport_Nodes'])
         # Generating NSX-T Transport Zones sheet
-        print('Generating NSX-T Transport Zones sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Transport_Zones")
-        SheetTZ(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Transport_Zones'])
+        if 'Transport_Zones' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Transport Zones sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Transport_Zones")
+            SheetTZ(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Transport_Zones'])
         # Generating NSX-T Services sheet
-        print('Generating NSX-T Services sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Services")
-        SheetNSXServices(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Services'])
+        if 'Services' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Services sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Services")
+            SheetNSXServices(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Services'])
         # Generating NSX-T TEP Tunnels sheet
-        print('Generating NSX-T TEP Tunnels sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Transport_Node_Tunnels")
-        SheetTunnels(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Transport_Node_Tunnels'])
+        if 'Transport_Node_Tunnels' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T TEP Tunnels sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Transport_Node_Tunnels")
+            SheetTunnels(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Transport_Node_Tunnels'])
         # Generating NSX-T Segments sheet
-        print('Generating NSX-T Segments sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Segments")
-        SheetSegments(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Segments'])
+        if 'Segments' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Segments sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Segments")
+            SheetSegments(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Segments'])
         # Generating NSX-T Router Summary sheet
-        print('Generating NSX-T Router Summary sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Logical_Router_Summary")
-        SheetRouterSum(auth_list,WORKBOOK[0],TN_WS)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Logical_Router_Summary'])
+        if 'Logical_Router_Summary' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Router Summary sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Logical_Router_Summary")
+            SheetRouterSum(auth_list,WORKBOOK[0],TN_WS)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Logical_Router_Summary'])
         # Generating NSX-T Router Ports sheet
-        print('Generating NSX-T Router Ports sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Logical_Router_Ports")
-        SheetRouterPorts(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Logical_Router_Ports'])
+        if 'Logical_Router_Ports' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Router Ports sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Logical_Router_Ports")
+            SheetRouterPorts(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Logical_Router_Ports'])
         # Generating NSX-T Router T1 Segments sheet
-        print('Generating NSX-T Router T1 Segments sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Tier1_Segments")
-        SheetT1Segments(auth_list,WORKBOOK[0],TN_WS,NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Tier1_Segments'])
+        if 'Tier1_Segments' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Router T1 Segments sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Tier1_Segments")
+            SheetT1Segments(auth_list,WORKBOOK[0],TN_WS,NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Tier1_Segments'])
         # Generate XLS Tab for Router
-        print('Generating NSX-T Router T0 Routing Tables sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Tier0_Routing_Tables")
-        SheetT0RoutingTable(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Tier0_Routing_Tables'])
+        if 'Tier0_Routing_Tables' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Router T0 Routing Tables sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Tier0_Routing_Tables")
+            SheetT0RoutingTable(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Tier0_Routing_Tables'])
         # Generating NSX-T Router T0 BGP Sessions sheet
-        print('Generating NSX-T Router T0 BGP Sessions sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Tier0_BGP_Sessions")
-        SheetBGPSession(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Tier0_BGP_Sessions'])
+        if 'Tier0_BGP_Sessions' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Router T0 BGP Sessions sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Tier0_BGP_Sessions")
+            SheetBGPSession(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Tier0_BGP_Sessions'])
         # Generating NSX-T Router T1 Forwarding Tables sheet
-        print('Generating NSX-T Router T1 Forwarding Tables sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Tier1_Forwarding_Tables")
-        SheetT1ForwardingTable(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Tier1_Forwarding_Tables'])
+        if 'Tier1_Forwarding_Tables' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Router T1 Forwarding Tables sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Tier1_Forwarding_Tables")
+            SheetT1ForwardingTable(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Tier1_Forwarding_Tables'])
         # Generating NSX-T Groups sheet
-        print('Generating NSX-T Groups sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Security_Groups")
-        SheetSecGrp(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Security_Groups'])
+        if 'Security_Groups' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Groups sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Security_Groups")
+            SheetSecGrp(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Security_Groups'])
         # Generating NSX-T Security Policies sheet
-        print('Generating NSX-T Security Policies sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Security_Policies")
-        SheetSecPol(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Security_Policies'])
+        if 'Security_Policies' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Security Policies sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Security_Policies")
+            SheetSecPol(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Security_Policies'])
         # Generating NSX-T Security DFW sheet
-        print('Generating NSX-T Security DFW sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Rules_Distributed_Firewall")
-        SheetSecDFW(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
-        CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Rules_Distributed_Firewall'])
+        if 'Rules_Distributed_Firewall' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Security DFW sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Rules_Distributed_Firewall")
+            SheetSecDFW(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            CheckXLSTabDiff(TN_WS, DIFF_WORKBOOK['Rules_Distributed_Firewall'])
         # Generating NSX-T Alarms sheet
-        print('Generating NSX-T Alarms sheet')
-        TN_WS = WORKBOOK[0].create_sheet("Alarms")
-        SheetAlarms(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+        if 'Alarms' in DIFF_WORKBOOK.sheetnames:
+            print('Generating NSX-T Alarms sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Alarms")
+            SheetAlarms(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
        
         # Save XLS file
         print("\nDocumentation \"Audit_DIFF\" set took %s seconds to complete\n" % (time.time() - start_time))
