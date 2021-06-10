@@ -41,7 +41,7 @@ from vmware.vapi.security.user_password import \
 from shutil import copyfile
 
 YAML_CFG_FILE = 'config.yml'
-OUTPUT_FORMAT = 'XLSX'
+YAML_DICT_LOADED = {}
 
 class style:
     RED = '\33[31m'
@@ -161,7 +161,7 @@ def GetAPI(session,url, auth_list, cursor=None, result_list = []):
     result_list : list
         for recursive purpose for pagination
     """
-    YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
+    YAML_DICT = GetYAMLDict()
     if cursor  is not None: cursor = '?cursor=' + cursor
     else: cursor = ""
 
@@ -203,7 +203,7 @@ def ConnectNSX(auth_list):
     auth : list
         list must contain login/cert - password/key - Tag (AUTH or CERT)
     """
-    YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
+    YAML_DICT = GetYAMLDict()
     if auth_list[2] == 'AUTH':
         session = requests.session()
         session.verify = False
@@ -244,7 +244,14 @@ def CheckCertFiles(PATH):
             TAG[1] = PATH + os.path.sep + fname
     
     return TAG
-        
+
+def GetYAMLDict():
+    global YAML_DICT_LOADED
+    return YAML_DICT_LOADED  
+
+def EditYAMLDict(key, val):
+    global YAML_DICT_LOADED
+    YAML_DICT_LOADED[key] = val
 
 def ReadYAMLCfgFile(YAML_CFG_FILE):
     """
@@ -257,17 +264,16 @@ def ReadYAMLCfgFile(YAML_CFG_FILE):
     ----------
     YAML_CFG_FILE : Str
         Name of YAML file
+    args : list of args
     """
     # Open and treatment of a YAML config file
     try:
         with open(YAML_CFG_FILE, 'r') as ymlfile:
-            YAML_DICT = yaml.load(ymlfile, Loader=yaml.FullLoader)
-            # set OUTPUT_FORMAT variable (XLSX, CSV, YAML)
-            if "OUTPUT_FORMAT" in YAML_DICT:
-                SetOutputFormat(YAML_DICT["OUTPUT_FORMAT"])
-            else:
-                SetOutputFormat('XLSX')
-            return YAML_DICT
+            global YAML_DICT_LOADED
+            YAML_DICT_LOADED = yaml.load(ymlfile, Loader=yaml.FullLoader)
+            if 'OUTPUT_FORMAT' not in YAML_DICT_LOADED:
+                YAML_DICT_LOADED['OUTPUT_FORMAT'] = 'XLSX'
+            return YAML_DICT_LOADED
     except Exception as e:
         print(style.RED + YAML_CFG_FILE + " not found in directory" + style.NORMAL)
         print(style.ORANGE + e + style.NORMAL)
@@ -282,9 +288,9 @@ def GetVersion(auth_list):
     return node_version
 
 def GetOutputFormat():
-    global OUTPUT_FORMAT
-    return OUTPUT_FORMAT
+    global YAML_DICT_LOADED
+    return YAML_DICT_LOADED['OUTPUT_FORMAT']
 
 def SetOutputFormat(val):
-    global OUTPUT_FORMAT
-    OUTPUT_FORMAT = val
+    global YAML_DICT_LOADED
+    YAML_DICT_LOADED['OUTPUT_FORMAT'] = val

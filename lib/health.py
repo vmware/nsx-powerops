@@ -28,7 +28,7 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-from lib.system import style, GetAPI, ConnectNSX, os, YAML_CFG_FILE, ReadYAMLCfgFile
+from lib.system import style, GetAPI, ConnectNSX, os, YAML_CFG_FILE
 
 ########### SECTION FOR REPORTING ON NSX-T MANAGER CLUSTER ###########
 def GetHealthNSXCluster(auth_list):
@@ -149,7 +149,8 @@ def GetNSXSummary(auth_list):
     groups_json = GetAPI(SessionNSX[0],groups_url, auth_list)
     ctx_profiles_json = GetAPI(SessionNSX[0],ctx_profiles_url, auth_list)
     services_json = GetAPI(SessionNSX[0],services_url, auth_list)
-    YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
+    #YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
+    YAML_DICT = GetYAMLDict()
 
     #Display Summary Output
     print('\nNSX Manager Summary for: https://' + style.ORANGE + YAML_DICT['NSX_MGR_IP'] + style.NORMAL)

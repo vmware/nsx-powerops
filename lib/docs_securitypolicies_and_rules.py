@@ -105,7 +105,7 @@ def SheetSecDFW(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             PrintRulesbyCategory(rules_svc, policy['display_name'],policy['id'],policy['category'], scopelist, XLS_Lines, NSX_Config)
     else:
         XLS_Lines.append(['No results', "", "", "", "", "", "", "", "", "", "", "", "", ""])
-    
+     
     if GetOutputFormat() == 'CSV':
         CSV = WORKBOOK
         FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)

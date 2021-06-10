@@ -28,6 +28,7 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
+from lib.system import GetOutputFormat, SetOutputFormat
 import sys, os, datetime, time
 from lib.excel import CreateXLSFile
 from lib.docs_summary import SheetSummary
@@ -80,11 +81,10 @@ def SetXLSDiffFile(auth_list, xls_diff_bkp_filename):
     DIFF_WORKBOOK = load_workbook(xls_diff_bkp_filename)
     if WORKBOOK != None:
         # Generating Summary
-        if 'Summary' in DIFF_WORKBOOK.sheetnames:
-            print('\nGenerating Summary sheet')
-            TN_WS = WORKBOOK[0].active
-            TN_WS.title = "Summary"
-            SheetSummary(auth_list,WORKBOOK[0],TN_WS,NSX_Config)
+        print('\nGenerating Summary sheet')
+        TN_WS = WORKBOOK[0].active
+        TN_WS.title = "Summary"
+        SheetSummary(auth_list,WORKBOOK[0],TN_WS,NSX_Config)
         # Generating Information sheet
         if 'NSX_Manager_Info' in DIFF_WORKBOOK.sheetnames:
             print('Generating NSX-T Manager Information sheet')

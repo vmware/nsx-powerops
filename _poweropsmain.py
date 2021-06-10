@@ -29,7 +29,7 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import time
-from lib.system import CheckCertFiles, CopyFile, ReadYAMLCfgFile, CreateOutputFolder, style, auth_nsx, DeleteOutputFolder, GetVersion
+from lib.system import CheckCertFiles, CopyFile, ReadYAMLCfgFile, CreateOutputFolder, SetOutputFormat, style, auth_nsx, DeleteOutputFolder, GetVersion, EditYAMLDict, GetYAMLDict
 from lib.menu import MainMenu
 from lib.diff import IfDiff, SetDiffFileName
 import sys
@@ -94,7 +94,7 @@ def main():
     group.add_argument('--menu', '-m', metavar='N', nargs='+', required=False, help='Indicates option menu you want to retrieve. (Default=exit)', default=argparse.SUPPRESS)
     parser.add_argument('--help', '-h', required=False, action='store_true')
     parser.add_argument('--interactive', '-i', required=False, action='store_true', default=False)
-    parser.add_argument('--diff', '-d', required=False, help='Path to XLS initial audit export file')
+    parser.add_argument('--diff', '-d', required=False, help='Path to XLS initial audit export file', default=argparse.SUPPRESS)
     args = parser.parse_args()
     if  args.help == True:
         print_help()
@@ -127,13 +127,13 @@ def main():
      # Mode interactive (do not use cli menu path if any)
     if args.interactive:
         sys.argv = []
-    if "diff" in args:
-        SetDiffFileName(args.diff)
-    else:
-        SetDiffFileName(None)
     # Open and Treatment of YAML configuration file
     print("==> Read YAML config file: " + style.ORANGE + YAML_CFG_FILE + style.NORMAL)
     YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
+    # diff mode
+    if "diff" in args:
+        SetDiffFileName(args.diff)
+        EditYAMLDict('OUTPUT_FORMAT', 'XLSX')
     # Check if all cert files are present and ask credential if not
     result = CheckCertFiles(YAML_DICT['CERT_PATH'])
     if result[0] != 0 and result[1] != 0:
@@ -151,7 +151,7 @@ def main():
             print('Documentation output directory is: '+ style.ORANGE +  dest + style.NORMAL)
             time.sleep(1)
             if IfDiff():
-                MainMenu(result,dest,YAML_DICT['MENU'],MENU_MODE)
+                MainMenu(result,dest,None,MENU_MODE)
             else:
                 # result is a list with cert, key and CERT
                 # If using yaml file for automatic sub-menu navigation
@@ -194,7 +194,7 @@ def main():
                 time.sleep(1)
                 break
         if IfDiff():
-            MainMenu(result,dest,YAML_DICT['MENU'],MENU_MODE)
+            MainMenu(result,dest,None,MENU_MODE)
         else:
             # If using yaml file for automatic sub-menu navigation
             if 'MENU' in YAML_DICT and not args.interactive and not ("menu" in args):
