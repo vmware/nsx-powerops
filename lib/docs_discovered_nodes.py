@@ -43,10 +43,10 @@ def SheetFabDiscoveredNodes(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     
     Dict_DiscoveredNodes = {}     # Dict Discovered nodes initialization
     NSX_Config['DiscoveredNodes'] = []
+    TN_HEADER_ROW = ('Display name', 'OS Type', 'OS Version', 'Node Type', 'Hostname', 'Full Name', 'Management IP', 'Domain name', 'DNS', 'UUID', 'Powerstate', 'In Maintenance Mode', 'Build', 'Vendor', 'Model', 'Serial Number', 'Connection State', 'Licensed Product Name', 'Licensed Product Version', 'Mgmt Server IP', 'Lockdown Mode', 'DAS Host State')
     # Construct Line
     XLS_Lines = []
     if disc_node_list.result_count > 0:
-        TN_HEADER_ROW = ('Display name', 'OS Type', 'OS Version', 'Node Type', 'Hostname', 'Full Name', 'Management IP', 'Domain name', 'DNS', 'UUID', 'Powerstate', 'In Maintenance Mode', 'Build', 'Vendor', 'Model', 'Serial Number', 'Connection State', 'Licensed Product Name', 'Licensed Product Version', 'Mgmt Server IP', 'Lockdown Mode', 'DAS Host State')
         for node in disc_node_list.results:
             Dict_Properties = {}
             # Loop in properties
@@ -101,7 +101,7 @@ def SheetFabDiscoveredNodes(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             # write one line for a node
             XLS_Lines.append([node.display_name,node.os_type, node.os_version, node.node_type,Dict_Properties['hostName'], Dict_Properties['fullName'], Dict_Properties['managementIp'], Dict_Properties['domainName'], Dict_Properties['dnsConfigAddress'], Dict_Properties['uuid'], Dict_Properties['powerState'], Dict_Properties['inMaintenanceMode'], Dict_Properties['build'], Dict_Properties['vendor'], Dict_Properties['model'], Dict_Properties['serialNumber'], Dict_Properties['connectionState'], Dict_Properties['licenseProductName'], Dict_Properties['licenseProductVersion'], Dict_Properties['managementServerIp'], Dict_Properties['lockdownMode'], Dict_Properties['dasHostState']])
     else:
-        XLS_Lines = ('No result', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
+        XLS_Lines.append(['No result', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''])
     if GetOutputFormat() == 'CSV':
         CSV = WORKBOOK
         FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
