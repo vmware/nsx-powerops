@@ -35,9 +35,9 @@ from sys import platform
 import sys, getopt, os, datetime
 import yaml
 import requests
-from vmware.vapi.lib import connect
-from vmware.vapi.security.user_password import \
-        create_user_password_security_context
+#from vmware.vapi.lib import connect
+#from vmware.vapi.security.user_password import \
+#        create_user_password_security_context
 from shutil import copyfile
 
 YAML_CFG_FILE = 'config.yml'
@@ -97,14 +97,6 @@ def CopyFile(file1, file2):
         print("Issue on file copy")
         return False
 
-def DeleyeFile(file):
-    try:
-        copyfile(file1, file2)
-        return True
-    except IOError:
-        print("Issue on file copy")
-        return False
-
 
 
 def auth_nsx(nsx_mgr_fqdn,authmethod,cert):
@@ -144,6 +136,51 @@ def auth_nsx(nsx_mgr_fqdn,authmethod,cert):
     return response
 
 
+# def GetAPI(session,url, auth_list, cursor=None, result_list = []):
+#     """
+#     GetAPI(session, url, auth_list, reponse_type)
+#     Realize a get in REST/API depending if wants a Json reponse, with authentication with certification or login
+#     Parameters
+#     ----------
+#     session : object
+#         session obejct created by ConnectNSX
+#     url : str
+#         URL of the request without protocol and IP/FQDN
+#     auth_list : list
+#         list with authentication parameters (login/cert, password/key, AUTH or CERT)
+#     cursor : str
+#         cursor REST/API in case of pagination
+#     result_list : list
+#         for recursive purpose for pagination
+#     """
+#     YAML_DICT = GetYAMLDict()
+#     if cursor  is not None: cursor = '?cursor=' + cursor
+#     else: cursor = ""
+
+#     if auth_list[2] == 'AUTH':
+#         result =  session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor, auth=(auth_list[0], auth_list[1]), verify=session.verify)
+
+#     if auth_list[2] == 'CERT':
+#         result =  requests.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor, headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify)
+
+#     if result.status_code == 200:
+#         resultJSON = result.json()
+#         # save result_count in case of recursivity
+#         count = ""
+#         if 'result_count' in resultJSON: count = resultJSON['result_count']
+#         # cursor test
+#         if 'cursor' in resultJSON:
+#             if 'result_count' not in resultJSON or str(resultJSON['cursor']) != str(resultJSON['result_count']):
+#                 print(" --> more than " + str(len(result_list + resultJSON['results'])) +  " results for " + style.RED + url + style.NORMAL + " - please wait")
+#                 resultJSON = GetAPI(session,url, auth_list, cursor=resultJSON['cursor'], result_list=result_list + resultJSON['results'])
+#                 resultJSON['results'] = result_list + resultJSON['results']
+#                 resultJSON['result_count'] = count
+        
+#         return resultJSON
+    
+#     else: 
+#         return result.status_code
+
 def GetAPI(session,url, auth_list, cursor=None, result_list = []):
     """
     GetAPI(session, url, auth_list, reponse_type)
@@ -173,21 +210,28 @@ def GetAPI(session,url, auth_list, cursor=None, result_list = []):
 
     if result.status_code == 200:
         resultJSON = result.json()
-        # save result_count in case of recursivity
-        count = ""
+        resultTEMPJSON = resultJSON
         if 'result_count' in resultJSON: count = resultJSON['result_count']
         # cursor test
         if 'cursor' in resultJSON:
-            if 'result_count' not in resultJSON or str(resultJSON['cursor']) != str(resultJSON['result_count']):
-                print(" --> more than " + str(len(result_list + resultJSON['results'])) +  " results for " + style.RED + url + style.NORMAL + " - please wait")
-                resultJSON = GetAPI(session,url, auth_list, cursor=resultJSON['cursor'], result_list=result_list + resultJSON['results'])
-                resultJSON['results'] = result_list + resultJSON['results']
-                resultJSON['result_count'] = count
-        
+            while True:
+                if 'cursor' not in resultTEMPJSON:
+                    break
+                else:
+                    cursor = '?cursor=' + resultTEMPJSON['cursor']
+                    if auth_list[2] == 'AUTH':
+                        result =  session.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor, auth=(auth_list[0], auth_list[1]), verify=session.verify)
+                    if auth_list[2] == 'CERT':
+                        result =  requests.get('https://' + YAML_DICT['NSX_MGR_IP'] + str(url) + cursor, headers={'Content-type': 'application/json'}, cert=(auth_list[0], auth_list[1]), verify=session.verify)
+                    if result.status_code == 200:
+                        resultTEMPJSON = result.json()
+                        resultJSON['results'] = resultJSON['results'] + resultTEMPJSON['results']
+
         return resultJSON
     
     else: 
         return result.status_code
+
 
 
 def ConnectNSX(auth_list):
@@ -207,16 +251,18 @@ def ConnectNSX(auth_list):
     if auth_list[2] == 'AUTH':
         session = requests.session()
         session.verify = False
-        connector = connect.get_requests_connector(session=session, msg_protocol='rest', url='https://' + YAML_DICT['NSX_MGR_IP'])
-        security_context = create_user_password_security_context(auth_list[0], auth_list[1])
-        connector.set_security_context(security_context)
-        return [session,connector]
+        #connector = connect.get_requests_connector(session=session, msg_protocol='rest', url='https://' + YAML_DICT['NSX_MGR_IP'])
+        #security_context = create_user_password_security_context(auth_list[0], auth_list[1])
+        #connector.set_security_context(security_context)
+        #return [session,connector]
+        return [session,None]
     elif auth_list[2] == 'CERT':
         session = requests.session()
         session.verify = False
         session.cert = (auth_list[0], auth_list[1])
-        connector = connect.get_requests_connector(session=session, msg_protocol='rest', url='https://' + YAML_DICT['NSX_MGR_IP'])
-        return [session,connector]
+        #connector = connect.get_requests_connector(session=session, msg_protocol='rest', url='https://' + YAML_DICT['NSX_MGR_IP'])
+        #return [session,connector]
+        return [session,None]
     else:
         print("Issue on authentication")
         exit(1)

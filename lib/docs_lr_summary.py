@@ -31,9 +31,7 @@
 import pathlib, lib.menu,  pprint
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
 from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
-from vmware.vapi.lib import connect
-from vmware.vapi.security.user_password import \
-        create_user_password_security_context
+
 
 
 def SheetRouterSum(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):

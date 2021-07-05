@@ -31,59 +31,42 @@
 import pathlib, lib.menu,  pprint
 from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
 from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
-from vmware.vapi.lib import connect
-from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
-from com.vmware.nsx_client import TransportZones
-from com.vmware.nsx.model_client import TransportZone
-from com.vmware.nsx_client import LogicalSwitches
-from com.vmware.nsx.model_client import LogicalSwitch
-from vmware.vapi.security.user_password import \
-        create_user_password_security_context
-
 
 def SheetSegments(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
     NSX_Config['Segments'] = []
     Dict_LS = {}
-    # NSX Connection
-    SessionNSX = ConnectNSX(auth_list)
-    stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
-    ls_svc = LogicalSwitches(stub_config)
-    ls_list = ls_svc.list()
-    nb = len(ls_list.results)
-    tz_svc = TransportZones(stub_config)
-    tz_list = tz_svc.list()
 
+    # Connect to NSX
+    SessionNSX = ConnectNSX(auth_list)
+    segments_url = '/api/v1/logical-switches'
+    segments_json = GetAPI(SessionNSX[0],segments_url, auth_list)
+    tz_url = '/policy/api/v1/infra/sites/default/enforcement-points/default/transport-zones'
+    tz_json = GetAPI(SessionNSX[0],tz_url, auth_list)
+    
     XLS_Lines = []
     TN_HEADER_ROW = ('Segments', 'VNI', 'VLAN', 'Transport Zone Name', 'Transport Zone Type', 'Replication Mode', 'Admin State')
 
-    if ls_list.result_count > 0:
-        while True:
-            for segment in ls_list.results:
-                TZ_NAME = ""
-                TZ_Type = ""
-                for tz in tz_list.results:
-                    if segment.transport_zone_id == tz.id:
-                        TZ_NAME = tz.display_name
-                        TZ_Type = tz.transport_type
-
-                Dict_LS['segment_name'] = segment.display_name
-                Dict_LS['vni'] = segment.vni
-                Dict_LS['vlan'] = segment.vlan
-                Dict_LS['tz_name'] = TZ_NAME
-                Dict_LS['tz_type'] = TZ_Type
-                Dict_LS['replication_mode'] = segment.replication_mode
-                Dict_LS['status'] = segment.admin_state
-                NSX_Config['Segments'].append(Dict_LS)
-                XLS_Lines.append([segment.display_name, segment.vni, segment.vlan, TZ_NAME, TZ_Type, segment.replication_mode,segment.admin_state])
-
-            if ls_list.cursor is None:
-                break
-            else:
-                print(" --> more than " + str(nb) + " results for " + style.RED + "Segments" + style.NORMAL + " - please wait")
-                ls_list = LogicalSwitches(stub_config).list(cursor =ls_list.cursor )
-                nb = len(ls_list.results) + nb
-
-
+     # Check if Segements present
+    if isinstance(segments_json, dict) and 'results' in segments_json and segments_json['result_count'] > 0: 
+        for segment in segments_json['results']:
+            TZ_NAME = ""
+            TZ_Type = ""
+            Dict_LS['vni'] = ''
+            Dict_LS['vlan'] = ''
+            for tz in tz_json['results']:
+                if segment['transport_zone_id'] == tz['id']:
+                    TZ_NAME = tz['display_name']
+                    TZ_Type = tz['tz_type']
+                    break
+            Dict_LS['segment_name'] = segment['display_name']
+            if 'vni' in segment: Dict_LS['vni'] = segment['vni']
+            if 'vlan' in segment: Dict_LS['vlan'] = segment['vlan']
+            Dict_LS['tz_name'] = TZ_NAME
+            Dict_LS['tz_type'] = TZ_Type
+            if 'replication_mode' in segment: Dict_LS['replication_mode'] = segment['replication_mode']
+            Dict_LS['status'] = segment['admin_state']
+            NSX_Config['Segments'].append(Dict_LS)
+            XLS_Lines.append([Dict_LS['segment_name'], Dict_LS['vni'], Dict_LS['vlan'], TZ_NAME, TZ_Type, Dict_LS['replication_mode'],segment['admin_state']])
     else:
         XLS_Lines.append(["no Segments", "", "", "", "", "",""])
 

@@ -31,42 +31,34 @@
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
 from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
-from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
-from com.vmware.nsx_client import TransportZones
-from com.vmware.nsx.model_client import TransportZone
+
 
 
 def SheetTZ(auth_list,WORKBOOK,TN_WS, NSX_Config ={} ):
     NSX_Config['TZ'] = []
-    Dict_TZ = {}
     # Connect NSX
     SessionNSX = ConnectNSX(auth_list)
-    stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
-    
+    transport_zone_url = '/api/v1/transport-zones'
+    transport_zone_json = GetAPI(SessionNSX[0],transport_zone_url, auth_list)
     XLS_Lines = []
-    TN_HEADER_ROW = ('Name', 'Description', 'ID', 'Ressource Type', 'Host Switch ID', 'Hos Switch Mode', 'Host Switch Name', 'Host Switch is Default', 'is Nested NSX', 'Transport Type', 'Uplink Teaming Policy Name')
-
-    tz_list = TransportZones(stub_config).list()
-    for TZ in tz_list.results:
-        tz = TZ.convert_to(TransportZone)
-        if tz.uplink_teaming_policy_names is not None:
-            TZ_Teaming = "\n".join(tz.uplink_teaming_policy_names)
-        else:
-            TZ_Teaming = ""
-        Dict_TZ['name'] = tz.display_name
-        Dict_TZ['description'] = tz.description
-        Dict_TZ['id'] = tz.id
-        Dict_TZ['resource_type'] = tz.resource_type
-        Dict_TZ['host_swithc_id'] = tz.host_switch_id
-        Dict_TZ['host_switch_mode'] = tz.host_switch_mode
-        Dict_TZ['host_switch_name'] = tz.host_switch_name
-        Dict_TZ['is_default'] = tz.is_default
-        Dict_TZ['nested'] = tz.nested_nsx
-        Dict_TZ['type'] = tz.transport_type
-        Dict_TZ['teaming'] = tz.uplink_teaming_policy_names
-        NSX_Config['TZ'].append(Dict_TZ)
-        # Create line
-        XLS_Lines.append([tz.display_name, tz.description, tz.id, tz.resource_type, tz.host_switch_id, tz.host_switch_mode, tz.host_switch_name, tz.is_default, tz.nested_nsx, tz.transport_type, TZ_Teaming])
+    TN_HEADER_ROW = ('Name', 'ID', 'Ressource Type', 'Host Switch ID', 'Host Switch Mode', 'Host Switch Name', 'Host Switch is Default', 'is Nested NSX', 'Transport Type')
+    if isinstance(transport_zone_json, dict) and 'results' in transport_zone_json and transport_zone_json['result_count'] > 0: 
+        for TZ in transport_zone_json['results']:
+            Dict_TZ = {}
+            Dict_TZ['name'] = TZ['display_name']
+            Dict_TZ['id'] = TZ['id']
+            Dict_TZ['resource_type'] = TZ['resource_type']
+            Dict_TZ['host_swithc_id'] = TZ['host_switch_id']
+            Dict_TZ['host_switch_mode'] = TZ['host_switch_mode']
+            Dict_TZ['host_switch_name'] = TZ['host_switch_name']
+            Dict_TZ['is_default'] = TZ['is_default']
+            Dict_TZ['nested'] = TZ['nested_nsx']
+            Dict_TZ['type'] = TZ['transport_type']
+            NSX_Config['TZ'].append(Dict_TZ)
+            # Create line
+            XLS_Lines.append([TZ['display_name'], TZ['id'], TZ['resource_type'], TZ['host_switch_id'], TZ['host_switch_mode'], TZ['host_switch_name'], TZ['is_default'], TZ['nested_nsx'], TZ['transport_type']])
+    else:
+        XLS_Lines.append(['no Transport Zones', '', '', '', '', '', '', '', ''])
 
     if GetOutputFormat() == 'CSV':
         CSV = WORKBOOK
