@@ -341,3 +341,55 @@ def GetBGPSessions(auth_list):
 
     print('--------------------------------------------------------------------------------------------------')
     print("\n========================================================================================================")
+
+########### SECTION FOR REPORTING ON DFW rules count per VNIC ###########
+def GetDFWRulesVNIC(auth_list):
+    SessionNSX = ConnectNSX(auth_list)
+    lp_url = '/api/v1/logical-ports'
+    lp_json = GetAPI(SessionNSX[0],lp_url, auth_list)
+
+    tab = []
+    if isinstance(lp_json, dict) and 'results' in lp_json and lp_json['result_count'] > 0: 
+        print("\n========================================================================================================")
+        print('\n----------------------------------- DFW Rules per VNIC -------------------------------------------')
+        print('| Rule-count |                 VIF ID                 |                  VM name                 |')
+        print('--------------------------------------------------------------------------------------------------')
+        # If VIF only
+        for lp in lp_json['results']:
+            vm_name = ''
+            lp_id = ''
+            if 'attachment' in lp: 
+                attach = lp['attachment']
+                if attach['attachment_type'] == 'VIF':
+                    lp_id = attach['id']
+                    vm_id = GetVMidByLPid(auth_list, lp_id)
+                    if vm_id != '':
+                        vm_name = GetVMNamebyID(auth_list, vm_id)
+
+                    dfw_vnic_url = '/api/v1/firewall/sections?applied_tos=' + lp['internal_id'] + '&deep_search=true'
+                    dfw_vnic_json = GetAPI(SessionNSX[0],dfw_vnic_url, auth_list)
+                    tab.append([dfw_vnic_json['result_count'], lp_id, vm_name])
+    
+    for i in tab:
+        if len(i) > 1:
+            print('  {:^12d} {:<40}  {:<40}'.format(i[0],i[1],i[2]))
+    print('--------------------------------------------------------------------------------------------------')
+    print("\n========================================================================================================")
+
+def GetVMNamebyID(auth_list, vm_id):
+    SessionNSX = ConnectNSX(auth_list)
+    vm_url = '/api/v1/fabric/virtual-machines?external_id=' + vm_id
+    vm_json = GetAPI(SessionNSX[0],vm_url, auth_list)
+    if isinstance(vm_json, dict) and 'results' in vm_json and vm_json['result_count'] == 1:
+        vm = vm_json['results']
+        return str(vm[0]['display_name'])
+    return ''
+
+def GetVMidByLPid(auth_list, lp_id):
+    SessionNSX = ConnectNSX(auth_list)
+    vif_url = '/api/v1/fabric/vifs?lport_attachment_id=' + lp_id
+    vif_json = GetAPI(SessionNSX[0],vif_url, auth_list)
+    if isinstance(vif_json, dict) and 'results' in vif_json and vif_json['result_count'] == 1:
+        vif = vif_json['results']
+        return str(vif[0]['owner_vm_id'])
+    return ''

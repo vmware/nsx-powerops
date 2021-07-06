@@ -28,7 +28,7 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 from lib.health import GetBGPSessions, GetHealthNSXCluster, GetNSXSummary, GetTNTunnels, GetTNStatus, GetComputeDetail,\
-    GetEdgeCLDetail, GetEdgeStatus, GetLRSum, GetNetworkUsage, GetSecurityUsage, GetInventoryUsage
+    GetEdgeCLDetail, GetEdgeStatus, GetLRSum, GetNetworkUsage, GetSecurityUsage, GetInventoryUsage, GetDFWRulesVNIC
 from lib.docs_alarms import SheetAlarms
 from lib.docs_groups import SheetSecGrp
 from lib.docs_securitypolicies import SheetSecPol
@@ -116,10 +116,11 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
     subhealth10 = Menu("", "Display Networking Usage", None, GetNetworkUsage)
     subhealth11 = Menu("", "Display Security Usage", None, GetSecurityUsage)
     subhealth12 = Menu("", "Display Inventory Usage", None, GetInventoryUsage)
-    subhealth13 = Menu("", "Return to previous menu", None, 'Back')
+    subhealth13 = Menu("", "Display DFW Rules per VNIC", None, GetDFWRulesVNIC)
+    subhealth14 = Menu("", "Return to previous menu", None, 'Back')
 
     Doc = Menu("\nNSX-T Documentation", "NSX-T Documentation", [DocFab, DocVNS, DocSecu, DocMon, DocSet, DocPrev])
-    Health = Menu("\nHealth Checks", "Health Checks", [subhealth1,subhealth2,subhealth3,subhealth4,subhealth5,subhealth6,subhealth7,subhealth8,subhealth9,subhealth10,subhealth11, subhealth12, subhealth13])
+    Health = Menu("\nHealth Checks", "Health Checks", [subhealth1,subhealth2,subhealth3,subhealth4,subhealth5,subhealth6,subhealth7,subhealth8,subhealth9,subhealth10,subhealth11, subhealth12, subhealth13, subhealth14])
 
     main = Menu("Main Menu", "", [Doc, Health])
     main.parent = main
