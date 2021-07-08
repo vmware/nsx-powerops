@@ -58,12 +58,16 @@ def SheetTunnels(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
                     Dict_Tunnels['Egress_int'] = tunnel['egress_interface']
                     Dict_Tunnels['local_ip'] = tunnel['local_ip']
                     Dict_Tunnels['remote_ip'] = tunnel['remote_ip']
-                    Dict_Tunnels['remote_node_id'] = tunnel['remote_node_id']
-                    Dict_Tunnels['remote_node_display_name'] = tunnel['remote_node_display_name']
+                    if Dict_Tunnels['status'] == 'UP':
+                        Dict_Tunnels['remote_node_id'] = tunnel['remote_node_id']
+                        Dict_Tunnels['remote_node_display_name'] = tunnel['remote_node_display_name']
+                    else:
+                        Dict_Tunnels['remote_node_id'] = 'N/A'
+                        Dict_Tunnels['remote_node_display_name'] = 'N/A'
                     Dict_Tunnels['encap'] = tunnel['encap']
                     Dict_NodesTunnels['tunnels'].append(Dict_Tunnels)
                     # Create line
-                    XLS_Lines.append([node['display_name'], tunnel['name'], tunnel['status'], tunnel['egress_interface'], tunnel['local_ip'], tunnel['remote_ip'], tunnel['remote_node_id'], tunnel['remote_node_display_name'], tunnel['encap']])
+                    XLS_Lines.append([node['display_name'], Dict_Tunnels['name'], Dict_Tunnels['status'], Dict_Tunnels['Egress_int'], Dict_Tunnels['local_ip'], Dict_Tunnels['remote_ip'], Dict_Tunnels['remote_node_id'], Dict_Tunnels['remote_node_display_name'], Dict_Tunnels['encap']])
     
                 NSX_Config['Tunnels'].append(Dict_NodesTunnels)
     else:

@@ -193,7 +193,10 @@ def GetLRSum(auth_list):
     for i in lr_list_json["results"]:
         print('\nName:\t\t' + style.ORANGE + i['display_name'] + style.NORMAL)
         print('Router Type:\t' + style.ORANGE + i['router_type'] + style.NORMAL)
-        print('HA Mode:\t' + style.ORANGE + i['high_availability_mode'] + style.NORMAL)
+        try:
+            print('HA Mode:\t' + style.ORANGE + i['high_availability_mode'] + style.NORMAL)
+        except:
+            print('HA Mode:\t' + style.RED + "N/A" + style.NORMAL)
     
     print("\n========================================================================================================")
 
@@ -337,7 +340,10 @@ def GetBGPSessions(auth_list):
 
     for i in tab:
         if len(i) > 1:
-            print('{:<20s} {:<23s} {:<11s} {:^11d} {:^17d}\x1b[0;31;40m{:<13s}\x1b[0m'.format(i[0],i[1],i[2],i[3], i[4], i[5]))
+            if i[5] == 'ESTABLISHED':
+                print('{:<20s} {:<23s} {:<11s} {:^11d} {:^17d}\x1b[1;32;40m{:<13s}\x1b[0m'.format(i[0],i[1],i[2],i[3], i[4], i[5]))
+            else:
+                print('{:<20s} {:<23s} {:<11s} {:^11d} {:^17d}\x1b[0;31;40m{:<13s}\x1b[0m'.format(i[0],i[1],i[2],i[3], i[4], i[5]))
 
     print('--------------------------------------------------------------------------------------------------')
     print("\n========================================================================================================")
