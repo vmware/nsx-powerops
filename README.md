@@ -21,8 +21,8 @@ docker run -it -d --name powerops -p 8100:80 -p8080:8080  powerops
 ## Build PowerOps from github (Angular)
 To build PowerOps
 
-1. From /home/powerops git clone the repo (following will clone the master branch of NSX-T PowerOps):
-    * `git clone https://github.com/vmware/nsx-powerops.git`
+1. From /home/powerops git clone the NSX-T-PowerOps-UI branch of the repo:
+    * `git clone https://github.com/vmware/nsx-powerops.git -branch NSX-T-PowerOps-UI --single-branch`
 
 2. Run `ng build --prod --build-optimizer=false` to build PowerOps. The build artifacts will be stored in the `dist/` directory.
 
