@@ -1,0 +1,216 @@
+<ng-container>
+  <app-description Menu='NSX-T Fabric - Tunnels'></app-description>
+</ng-container>
+<ng-container>
+  <p class="p6">
+    <div class="btn-group">
+      <div class="btn-group">
+        <clr-dropdown>
+          <button class="btn" clrDropdownTrigger *ngIf="loading else export" disabled>
+            <cds-icon shape="download-cloud" ></cds-icon>
+            Export
+          </button>
+        <ng-template #export>
+          <button class="btn" clrDropdownTrigger>
+            <cds-icon shape="download-cloud"></cds-icon>
+            Export
+          </button>
+        </ng-template>
+        <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+          <a (click)="Export('XLS', this.TabTunnels, Name)" clrDropdownItem>Export in Excel</a>
+          <a (click)="Export('CSV', this.TabTunnels, Name)" clrDropdownItem>Export in CSV</a>
+          <a (click)="Export('JSON', this.TabTunnels, Name)" clrDropdownItem>Export in JSON</a>
+          <a (click)="Export('YAML', this.TabTunnels, Name)" clrDropdownItem>Export in YAML</a>
+        </clr-dropdown-menu>
+        </clr-dropdown>
+      </div>
+      <div class="btn-group">
+          <!-- Diff part-->
+          <app-diff #appDiff Name={{Name}} [Tab]=this.TabTunnels (diffArrayOut)="getDiff($event)"></app-diff>
+          <button class="btn" *ngIf="loading else diff" disabled>
+            <cds-icon shape="file-group"></cds-icon>
+            Diff
+          </button>
+          <ng-template #diff>
+            <button class="btn" (click)="appDiff.StartWizard()">
+              <cds-icon shape="file-group"></cds-icon>
+              Diff
+            </button>
+          </ng-template>
+          <clr-dropdown>
+            <button class="btn" clrDropdownTrigger *ngIf="!isCompared else exportdiff" disabled>
+              <cds-icon shape="download-cloud" ></cds-icon>
+              Export Diff
+            </button>
+            <ng-template #exportdiff>
+              <button class="btn" clrDropdownTrigger>
+                <cds-icon shape="download-cloud"></cds-icon>
+                Export Diff
+              </button>
+            </ng-template>
+            <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+              <a (click)="Export('XLS', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in Excel</a>
+              <a (click)="Export('CSV', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in CSV</a>
+              <a (click)="Export('JSON', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in JSON</a>
+              <a (click)="Export('YAML', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in YAML</a>
+            </clr-dropdown-menu>
+          </clr-dropdown>
+    </div>
+    </div>
+  <p class="p3">
+    <clr-tabs>
+      <clr-tab>
+          <button clrTabLink>Dashboard</button>
+          <clr-tab-content *clrIfActive>
+              <clr-datagrid [clrDgLoading]="loading">
+                  <clr-dg-column [clrDgField]="'node'">Transport Node</clr-dg-column>
+                  <clr-dg-column [clrDgField]="'local_ip'">Local Tunnel IP</clr-dg-column>
+                  <clr-dg-column [clrDgField]="'remote_ip'">Remote Tunnel IP</clr-dg-column>
+                  <clr-dg-column [clrDgField]="'remote_node_display_name'">Remote Node Name</clr-dg-column>
+                  <clr-dg-column [clrDgField]="'status'">Tunnel Status</clr-dg-column>
+                  <clr-dg-placeholder>We couldn't find any Tunnels !</clr-dg-placeholder>
+                  <clr-dg-row *clrDgItems="let entry of this.TabTunnels" [clrDgItem]="entry">
+                    <clr-dg-cell>{{entry.node.name.toUpperCase()}}</clr-dg-cell>
+                    <clr-dg-cell>{{entry.local_ip}}</clr-dg-cell>
+                    <clr-dg-cell>{{entry.remote_ip}}</clr-dg-cell>
+                    <clr-dg-cell>{{entry.remote_node_display_name}}</clr-dg-cell>
+                    <clr-dg-cell>
+                      <span class="label label-success" *ngIf="entry.status === 'UP'">{{entry.status}}</span>
+                      <span class="label label-danger" *ngIf="entry.status !== 'UP'">{{entry.status}}</span>
+                    </clr-dg-cell>
+                  </clr-dg-row>
+                
+                  <clr-dg-footer>
+                      <clr-dg-pagination #pagination [clrDgPageSize]="10">
+                        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">tunnels per page</clr-dg-page-size>
+                        {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} tunnels
+                      </clr-dg-pagination>
+                    </clr-dg-footer>
+              
+                    <clr-dg-detail *clrIfDetail="let detail">
+                      <clr-dg-detail-header>Details of Tunnel:  {{detail.name}} </clr-dg-detail-header>
+                      <clr-dg-detail-body>
+                        <table class="table table-vertical table-noborder">
+                          <tbody>
+                            <tr>
+                              <th>Tunnel Name</th>
+                              <td>{{detail.name}}</td>
+                            </tr>
+                            <tr>
+                              <th>Egress Interface</th>
+                              <td>{{detail.egress_int}}</td>
+                            </tr>
+                            <tr>
+                              <th>Transport Node</th>
+                              <td>{{detail.node.name}}</td>
+                            </tr>
+                            <tr>
+                              <th>Local Tunnel IP</th>
+                              <td>{{detail.local_ip}}</td>
+                            </tr>
+                            <tr>
+                              <th>Remote IP</th>
+                              <td>{{detail.remote_ip}}</td>
+                            </tr>
+                            <tr>
+                              <th>Remote Node Name</th>
+                              <td>{{detail.remote_node_display_name}}</td>
+                            </tr>
+                            <tr>
+                              <th>Remote node ID</th>
+                              <td>{{detail.remote_node_id}}</td>
+                            </tr>
+                            <tr>
+                              <th>Encap</th>
+                              <td>{{detail.encap}}</td>
+                            </tr>
+                            <tr>
+                              <th>Status</th>
+                              <td>
+                                <span class="label label-success" *ngIf="detail.status === 'UP'">{{detail.status}}</span>
+                                <span class="label label-danger" *ngIf="detail.status !== 'UP'">{{detail.status}}</span>          
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </clr-dg-detail-body>
+                  </clr-dg-detail>
+              </clr-datagrid>
+          </clr-tab-content>
+      </clr-tab>
+    <!-- Diff Tab -->
+    <clr-tab *ngIf="isCompared">
+      <button clrTabLink>Diff</button>
+      <clr-tab-content *clrIfActive="true">
+        <clr-datagrid>
+          <clr-dg-column [clrDgField]="'diffstatus'">Diff Status</clr-dg-column>
+          <clr-dg-column *ngFor="let col of HeaderDiff" [clrDgField]=col.col>{{col.header}}</clr-dg-column>
+          <clr-dg-placeholder>We couldn't find any {{Name}} !</clr-dg-placeholder>
+          <clr-dg-row *clrDgItems="let item of this.DiffTab" [clrDgItem]="item" 
+          [ngClass]="{
+            'created': (item.diffstatus === 'Created'  ),
+            'deleted': (item.diffstatus === 'Deleted'  ),
+            'modified': (item.diffstatus === 'Modified'  ),
+            'unchanged': (item.diffstatus === 'Unchanged'  )
+              }">
+              <clr-dg-cell>
+                      <span class="label label-success" *ngIf="item.diffstatus === 'Unchanged'">{{ item.diffstatus }}</span>
+                      <span class="label label-warning" *ngIf="item.diffstatus === 'Modified'">{{ item.diffstatus }}</span>
+                      <span class="label label-danger" *ngIf="item.diffstatus === 'Deleted'">{{ item.diffstatus }}</span>
+                      <span class="label label-info" *ngIf="item.diffstatus === 'Created'">{{ item.diffstatus }}</span>
+              </clr-dg-cell>
+              <clr-dg-cell *ngFor="let col of HeaderDiff">
+                  <div *ngIf="typeOf(item[col.col]) === 'object'">
+                          <div *ngIf="item[col.col][col.subcol] && item[col.col][col.subcol].toString().includes('||') else diff">
+                              <span class="label label-danger" *ngIf="item[col.col][col.subcol].toString().split('||')[0] != '+'"> <s>{{item[col.col][col.subcol].toString().split('||')[0]}}</s></span>
+                              <span class="label label-info" *ngIf="item[col.col][col.subcol].toString().split('||')[1] != '-'">{{item[col.col][col.subcol].toString().split('||')[1]}}</span>
+                            </div>
+                            <ng-template #diff>
+                              {{item[col.col][col.subcol]}}
+                            </ng-template>
+                  </div>
+                  <div *ngIf="isArray(item[col.col])">
+                          <div *ngFor="let subitem of item[col.col]">
+                              <div *ngIf="typeOf(subitem) === 'object'">
+                                  <div *ngIf="subitem[col.subcol] && subitem[col.subcol].toString().includes('||') else diff">
+                                      <span class="label label-danger" *ngIf="subitem[col.subcol].split('||')[0] != '+'"> <s>{{subitem[col.subcol].split('||')[0]}}</s></span>
+                                      <span class="label label-info" *ngIf="subitem[col.subcol].split('||')[1] != '-'">{{subitem[col.subcol].split('||')[1]}}</span>
+                                    </div>
+                                    <ng-template #diff>
+                                      {{subitem[col.subcol]}}
+                                    </ng-template>
+                              </div>
+                              <div *ngIf="typeOf(subitem) === 'string' || typeOf(subitem) === 'number'">
+                                  <div *ngIf="subitem && subitem.toString().includes('||') else diff">
+                                      <span class="label label-danger" *ngIf="subitem.split('||')[0] != '+'"> <s>{{subitem.split('||')[0]}}</s></span>
+                                      <span class="label label-info" *ngIf="subitem.split('||')[1] != '-'">{{subitem.split('||')[1]}}</span>
+                                    </div>
+                                    <ng-template #diff>
+                                      {{subitem}}
+                                    </ng-template>
+                              </div>
+                          </div>
+                  </div>
+                  <div *ngIf="typeOf(item[col.col]) !== 'object'">
+                        <div *ngIf="item[col.col] && item[col.col].toString().includes('||') else diff">
+                            <span class="label label-danger" *ngIf="item[col.col].toString().split('||')[0] != '+'"> <s>{{item[col.col].toString().split('||')[0]}}</s></span>
+                            <span class="label label-info" *ngIf="item[col.col].toString().split('||')[1] != '-'">{{item[col.col].toString().split('||')[1]}}</span>
+                          </div>
+                          <ng-template #diff>
+                            {{item[col.col]}}
+                          </ng-template>
+                  </div>
+              </clr-dg-cell>
+          </clr-dg-row>
+          <clr-dg-footer>
+                   <clr-dg-pagination #pagination [clrDgPageSize]="20">
+                     <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{Name}} per page</clr-dg-page-size>
+                     {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{Name}}
+                   </clr-dg-pagination>
+          </clr-dg-footer>
+        </clr-datagrid>
+      </clr-tab-content>
+    </clr-tab>
+    </clr-tabs>
+  </p>
+</ng-container>

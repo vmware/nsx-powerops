@@ -1,0 +1,66 @@
+<div class="content-container">
+  <clr-vertical-nav [clrVerticalNavCollapsible]="true" [clr-nav-level]="2">
+    <a clrVerticalNavLink routerLink="nsx-summary" routerLinkActive="active">
+      <cds-icon shape="dashboard" id="health" clrVerticalNavIcon></cds-icon>
+      NSX-T Summary
+    </a>
+    <a clrVerticalNavLink routerLink="tn-status" routerLinkActive="active">
+      <cds-icon shape="details" id="health" clrVerticalNavIcon></cds-icon>
+      NSX-T Details
+    </a>
+    <a clrVerticalNavLink routerLink="nsx-usage" routerLinkActive="active">
+      <cds-icon shape="resource-pool" id="health" clrVerticalNavIcon></cds-icon>
+      NSX-T Usage
+    </a>
+    <div class="nav-divider"></div>
+    <clr-vertical-nav-group routerLinkActive="active">
+      <cds-icon shape="cluster" id="fabric" clrVerticalNavIcon></cds-icon>
+      NSX-T Fabric
+      <clr-vertical-nav-group-children *clrIfExpanded>
+        <div *ngFor="let menu of TabFabric">
+          <a clrVerticalNavLink routerLink={{menu.route}} routerLinkActive="active">{{menu.description}}</a>
+        </div>
+      </clr-vertical-nav-group-children>
+    </clr-vertical-nav-group>
+    <div class="nav-divider"></div>
+    <clr-vertical-nav-group routerLinkActive="active">
+      <cds-icon shape="network-switch" id="networking" clrVerticalNavIcon></cds-icon>
+      Virtual Networking
+      <clr-vertical-nav-group-children  *clrIfExpanded>
+        <div *ngFor="let menu of TabNetwork">
+          <a clrVerticalNavLink routerLink={{menu.route}} routerLinkActive="active">{{menu.description}}</a>
+        </div>
+      </clr-vertical-nav-group-children>
+    </clr-vertical-nav-group >
+    <div class="nav-divider"></div>
+    <clr-vertical-nav-group routerLinkActive="active">
+      <cds-icon shape="shield" id="security" clrVerticalNavIcon></cds-icon>
+      Security
+      <clr-vertical-nav-group-children *clrIfExpanded >
+        <div *ngFor="let menu of TabSecurity">
+          <a clrVerticalNavLink routerLink={{menu.route}} routerLinkActive="active">{{menu.description}}</a>
+        </div>
+      </clr-vertical-nav-group-children>
+    </clr-vertical-nav-group>
+    <div class="nav-divider"></div>
+    <clr-vertical-nav-group routerLinkActive="active">
+      <cds-icon shape="organization" clrVerticalNavIcon></cds-icon>
+      NSX-T Load Balancing
+      <clr-vertical-nav-group-children *clrIfExpanded>
+        <div *ngFor="let menu of TabLoadbalancing">
+          <a clrVerticalNavLink routerLink={{menu.route}} routerLinkActive="active">{{menu.description}}</a>
+        </div>
+      </clr-vertical-nav-group-children>
+
+    </clr-vertical-nav-group>
+    <div class="nav-divider"></div>
+
+    <a clrVerticalNavLink routerLink="audit" routerLinkActive="active">
+      <cds-icon shape="library" id="audit" clrVerticalNavIcon></cds-icon>
+      Audit
+    </a>
+  </clr-vertical-nav>
+  <div class="content-area">
+    <router-outlet></router-outlet>
+  </div>
+</div>

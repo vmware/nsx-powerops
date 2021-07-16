@@ -1,0 +1,60 @@
+<clr-wizard #wizardReference [(clrWizardOpen)]="mdOpen" style="width: 100%; height: 100%">
+	<clr-wizard-title>{{Name.split('_').join(' ')}} Diff</clr-wizard-title>
+
+	<clr-wizard-button [type]="'cancel'">Cancel</clr-wizard-button>
+	<clr-wizard-button [type]="'previous'">Previous</clr-wizard-button>
+	<clr-wizard-button [type]="'next'">Next</clr-wizard-button>
+	<clr-wizard-button [type]="'finish'">Finish</clr-wizard-button>
+
+	<clr-wizard-page  [clrWizardPageNextDisabled]="stepFirstNextButtonEnable"  (clrWizardPageOnCancel)="onCancel()" style="width: 100%; height: 100%">
+		<ng-template clrPageTitle>Original JSON/YAML File</ng-template>
+    <form clrForm clrLayout="horizontal" >
+      <clr-control-container>
+        <label for="originalfile" class="clr-control-label">Original file</label>
+        <input type="file" #originalfile id="originalfile" name="originalfile" accept=".json, .yaml, .yml" name="originalfile" cds-CONTROLNAME-group="originalfile" (change)="onFileChanged($event)" required status="success" />
+      </clr-control-container>
+        <clr-control-container id="code" class="code">
+          <label>Original Code</label>
+          <textarea id="originalcode" name="originalcode" ClrTextarea cds-CONTROLNAME-group="originalcode" [(ngModel)]="DisplayFile" ></textarea>
+        </clr-control-container>
+
+    </form>
+		<ng-template clrPageButtons>
+			<clr-wizard-button [type]="'cancel'">Cancel</clr-wizard-button>
+      <clr-wizard-button [type]="'next'">Next</clr-wizard-button>
+		</ng-template>
+	</clr-wizard-page>
+
+	<clr-wizard-page (clrWizardPageOnCancel)="onCancel()">
+		<ng-template clrPageTitle>Compare JSON/YAML file</ng-template>
+    <form clrForm clrLayout="horizontal">
+      <clr-control-container>
+        <label for="comparefile" class="clr-control-label">Original file</label>
+        <input type="file" #comparefile accept=".json, .yaml, .yml, application/json, application/x-yaml" name="comparefile" cds-CONTROLNAME-group="comparefile" (change)="onFileChanged($event)" />
+      </clr-control-container>
+      <clr-control-container id="code" class="code">
+        <label>Compare Code</label>
+        <textarea  id="comparecode" name="comparecode" ClrTextarea cds-CONTROLNAME-group="comparecode" [(ngModel)]="DisplayComparedObject"></textarea>
+      </clr-control-container>
+    </form>
+		<ng-template clrPageButtons>
+			<clr-wizard-button type="cancel">Cancel</clr-wizard-button>
+			<clr-wizard-button type="previous">Previous</clr-wizard-button>
+      <clr-wizard-button type="next">Next</clr-wizard-button>
+		</ng-template>
+	</clr-wizard-page>
+
+	<clr-wizard-page  #Summary (clrWizardPageOnCancel)="onCancel()" (clrWizardPageFinish)="onSubmit()">
+		<ng-template clrPageTitle>Summary</ng-template>
+    <div class="clr-row code">
+      <div class="clr-col-6 code">
+        <label>Original Code</label>
+        <textarea  [(ngModel)]="DisplayFile"></textarea>
+      </div>
+      <div class="clr-col-6 code">
+        <label>Compare Code</label>
+        <textarea  [(ngModel)]="DisplayComparedObject"></textarea>
+      </div>
+    </div>
+	</clr-wizard-page>
+</clr-wizard>

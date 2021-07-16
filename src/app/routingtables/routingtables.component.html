@@ -1,0 +1,266 @@
+<app-description Menu='Virtual Networking - Routing Tables'></app-description>
+<p class="p6">
+<!-- Button groups-->
+<div class="btn-group">
+  <div class="btn-group">
+    <clr-dropdown>
+      <button class="btn" clrDropdownTrigger *ngIf="loadingdiff else export" disabled>
+        <cds-icon shape="download-cloud" ></cds-icon>
+        Export
+      </button>
+    <ng-template #export>
+      <button class="btn" clrDropdownTrigger>
+        <cds-icon shape="download-cloud"></cds-icon>
+        Export
+      </button>
+    </ng-template>
+    <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+      <a (click)="Export('XLS')" clrDropdownItem>Export in Excel</a>
+      <a (click)="Export('CSV')" clrDropdownItem>Export in CSV</a>
+      <a (click)="Export('JSON')" clrDropdownItem>Export in JSON</a>
+      <a (click)="Export('YAML')" clrDropdownItem>Export in YAML</a>
+    </clr-dropdown-menu>
+    </clr-dropdown>
+  </div>
+  <div class="btn-group">
+      <!-- Diff part-->
+      <app-diff #appDiff Name={{Name}} [Tab]=this.TabforDiff (diffArrayOut)="getDiff($event)"></app-diff>
+      <button class="btn" *ngIf="loadingdiff else diff" disabled>
+        <cds-icon shape="file-group"></cds-icon>
+        Diff
+      </button>
+      <ng-template #diff>
+        <button class="btn" (click)="appDiff.StartWizard()">
+          <cds-icon shape="file-group"></cds-icon>
+          Diff
+        </button>
+      </ng-template>
+      <clr-dropdown>
+        <button class="btn" clrDropdownTrigger *ngIf="!isCompared else exportdiff" disabled>
+          <cds-icon shape="download-cloud" ></cds-icon>
+          Export Diff
+        </button>
+        <ng-template #exportdiff>
+          <button class="btn" clrDropdownTrigger>
+            <cds-icon shape="download-cloud"></cds-icon>
+            Export Diff
+          </button>
+        </ng-template>
+        <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+          <a (click)="Export('XLS', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in Excel</a>
+          <a (click)="Export('CSV', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in CSV</a>
+          <a (click)="Export('JSON', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in JSON</a>
+          <a (click)="Export('YAML', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in YAML</a>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+</div>
+</div>
+<!-- Alert in case of error-->
+<div class="alert alert-danger" role="alert" *ngIf="error">
+  <div class="alert-items">
+    <div class="alert-item static">
+      <div class="alert-icon-wrapper">
+        <cds-icon class="alert-icon" shape="exclamation-circle"></cds-icon>
+      </div>
+      <span class="alert-text">
+        {{error_message}}
+      </span>
+    </div>
+</div>
+<button type="button" class="close" aria-label="Close" (click)="error = false">
+  <cds-icon aria-hidden="true" shape="window-close" ></cds-icon>
+</button>
+</div>
+<div class="alert alert-warning" role="alert" *ngIf="loadingdiff">
+    <div class="alert-items">
+      <div class="alert-item static">
+        <div class="alert-icon-wrapper">
+          <cds-icon class="alert-icon" shape="exclamation-circle"></cds-icon>
+        </div>
+        <span class="alert-text">
+          Background treatment: getting routing table for <b>{{RouterName}}</b>
+        </span>
+      </div>
+  </div>
+  <button type="button" class="close" aria-label="Close" (click)="error = false">
+    <cds-icon aria-hidden="true" shape="window-close" ></cds-icon>
+  </button>
+  </div>
+<p class="p3">
+<clr-tabs>
+<!-- Tab for T0 routers-->
+  <clr-tab>
+    <button clrTabLink>T0 Routers</button>
+    <clr-tab-content *clrIfActive="true">
+        <clr-accordion *ngIf="this.NbT0 > 0 else noroutert0">
+        <clr-accordion-panel *ngFor="let router of this.TabRouterT0" [clrAccordionPanelOpen]="router.open" (clrAccordionPanelOpenChange)="onDetailOpen($event, router, 'T0')">
+            <clr-accordion-title>{{router.display_name}} routing table</clr-accordion-title>
+            <clr-accordion-content>
+                <button class="btn btn-link" *ngIf="loading else exportcsv" disabled>Export Table in CSV</button>
+                <ng-template #exportcsv>
+                    <button class="btn btn-link" (click)="ExportTable(router.display_name, TabRT)">Export Table in CSV</button>
+                </ng-template>
+                <clr-datagrid [clrDgLoading]="loading">
+                    <clr-dg-column [clrDgField]="'node_name'">Edge Node</clr-dg-column>
+                    <clr-dg-column [clrDgField]="'node_status'">Edge Status</clr-dg-column>
+                    <clr-dg-column [clrDgField]="'type'">Route Type</clr-dg-column>
+                    <clr-dg-column [clrDgField]="'network'">Network</clr-dg-column>
+                    <clr-dg-column [clrDgField]="'admin_distance'">Admin Distance</clr-dg-column>
+                    <clr-dg-column [clrDgField]="'gateway'">Next Hop</clr-dg-column>
+                    <clr-dg-placeholder>We couldn't find any routes on {{router.display_name}}</clr-dg-placeholder>
+                    <clr-dg-row *clrDgItems="let route of TabRT" [clrDgItem]="route">
+                        <clr-dg-cell>{{route.node_name}}</clr-dg-cell>
+                        <clr-dg-cell>{{route.node_status}}</clr-dg-cell>
+                        <clr-dg-cell>{{route.type}}</clr-dg-cell>
+                        <clr-dg-cell>{{route.network}}</clr-dg-cell>
+                        <clr-dg-cell>{{route.admin_distance}}</clr-dg-cell>
+                        <clr-dg-cell>{{route.gateway}}</clr-dg-cell>
+                    </clr-dg-row>
+                    <clr-dg-footer>
+                        <clr-dg-pagination #pagination [clrDgPageSize]="20">
+                          <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">Routes per page</clr-dg-page-size>
+                          {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} routes
+                        </clr-dg-pagination>
+                      </clr-dg-footer>
+                </clr-datagrid>
+            </clr-accordion-content>
+        </clr-accordion-panel>
+        </clr-accordion>
+        <ng-template #noroutert0>
+            No Tier0 routers
+        </ng-template>
+    </clr-tab-content>
+  </clr-tab>
+  <!-- Tab for T1 routers-->
+  <clr-tab>
+    <button clrTabLink>T1 Routers</button>
+    <clr-tab-content *clrIfActive>
+        <clr-accordion *ngIf="this.NbT0 > 0 else noroutert1">
+        <clr-accordion-panel *ngFor="let router of this.TabRouterT1" [clrAccordionPanelOpen]="router.open" (clrAccordionPanelOpenChange)="onDetailOpen($event, router, 'T1')">
+            <clr-accordion-title>{{router.display_name}} routing table</clr-accordion-title>
+            <clr-accordion-content *clrIfExpanded>
+                <button class="btn btn-link" *ngIf="loading else exportcsv" disabled>Export Table in CSV</button>
+                <ng-template #exportcsv>
+                    <button class="btn btn-link" (click)="ExportTable(router.display_name, TabRT)">Export Table in CSV</button>
+                </ng-template>
+                <clr-datagrid [clrDgLoading]="loading">
+                    <clr-dg-column [clrDgField]="'node_name'">Edge Node</clr-dg-column>
+                    <clr-dg-column [clrDgField]="'node_status'">Edge Status</clr-dg-column>
+                    <clr-dg-column [clrDgField]="'type'">Route Type</clr-dg-column>
+                    <clr-dg-column [clrDgField]="'network'">Network</clr-dg-column>
+                    <clr-dg-column [clrDgField]="'admin_distance'">Admin Distance</clr-dg-column>
+                    <clr-dg-column [clrDgField]="'gateway'">Next Hop</clr-dg-column>
+                    <clr-dg-placeholder>We couldn't find any routes on {{router.display_name}}</clr-dg-placeholder>
+                    <clr-dg-row *clrDgItems="let route of TabRT" [clrDgItem]="route">
+                        <clr-dg-cell>{{route.node_name}}</clr-dg-cell>
+                        <clr-dg-cell>{{route.node_status}}</clr-dg-cell>
+                        <clr-dg-cell>{{route.type}}</clr-dg-cell>
+                        <clr-dg-cell>{{route.network}}</clr-dg-cell>
+                        <clr-dg-cell>{{route.admin_distance}}</clr-dg-cell>
+                        <clr-dg-cell>{{route.gateway}}</clr-dg-cell>
+                    </clr-dg-row>
+                    <clr-dg-footer>
+                        <clr-dg-pagination #pagination [clrDgPageSize]="20">
+                          <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">Routes per page</clr-dg-page-size>
+                          {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} routes
+                        </clr-dg-pagination>
+                      </clr-dg-footer>
+                </clr-datagrid>
+            </clr-accordion-content>
+        </clr-accordion-panel>
+        </clr-accordion>
+        <ng-template #noroutert1>
+            No Tier1 routers
+        </ng-template>
+    </clr-tab-content>
+  </clr-tab>
+      <!-- Diff Tab -->
+      <clr-tab *ngIf="isCompared">
+        <button clrTabLink>Diff</button>
+        <clr-tab-content *clrIfActive="true">
+          <clr-datagrid>
+            <clr-dg-column [clrDgField]="'diffstatus'">Diff Status</clr-dg-column>
+            <clr-dg-column *ngFor="let col of HeaderDiff" [clrDgField]=col.col>{{col.header}}</clr-dg-column>
+            <clr-dg-placeholder>We couldn't find any {{Name}} !</clr-dg-placeholder>
+            <clr-dg-row *clrDgItems="let item of this.DiffTab" [clrDgItem]="item" 
+            [ngClass]="{
+              'created': (item.diffstatus === 'Created'  ),
+              'deleted': (item.diffstatus === 'Deleted'  ),
+              'modified': (item.diffstatus === 'Modified'  ),
+              'unchanged': (item.diffstatus === 'Unchanged'  )
+                }">
+                <clr-dg-cell>
+                        <span class="label label-success" *ngIf="item.diffstatus === 'Unchanged'">{{ item.diffstatus }}</span>
+                        <span class="label label-warning" *ngIf="item.diffstatus === 'Modified'">{{ item.diffstatus }}</span>
+                        <span class="label label-danger" *ngIf="item.diffstatus === 'Deleted'">{{ item.diffstatus }}</span>
+                        <span class="label label-info" *ngIf="item.diffstatus === 'Created'">{{ item.diffstatus }}</span>
+                </clr-dg-cell>
+                <clr-dg-cell *ngFor="let col of HeaderDiff">
+                    <div *ngIf="typeOf(item[col.col]) === 'object'">
+                            <div *ngIf="item[col.col][col.subcol] && item[col.col][col.subcol].toString().includes('||') else diff">
+                                <span class="label label-danger" *ngIf="item[col.col][col.subcol].toString().split('||')[0] != '+'"> <s>{{item[col.col][col.subcol].toString().split('||')[0]}}</s></span>
+                                <span class="label label-info" *ngIf="item[col.col][col.subcol].toString().split('||')[1] != '-'">{{item[col.col][col.subcol].toString().split('||')[1]}}</span>
+                              </div>
+                              <ng-template #diff>
+                                {{item[col.col][col.subcol]}}
+                              </ng-template>
+                    </div>
+                    <div *ngIf="isArray(item[col.col])">
+                            <div *ngFor="let subitem of item[col.col]">
+                                <div *ngIf="typeOf(subitem) === 'object'">
+                                    <div *ngIf="subitem[col.subcol] && subitem[col.subcol].toString().includes('||') else diff">
+                                        <span class="label label-danger" *ngIf="subitem[col.subcol].split('||')[0] != '+'"> <s>{{subitem[col.subcol].split('||')[0]}}</s></span>
+                                        <span class="label label-info" *ngIf="subitem[col.subcol].split('||')[1] != '-'">{{subitem[col.subcol].split('||')[1]}}</span>
+                                      </div>
+                                      <ng-template #diff>
+                                        {{subitem[col.subcol]}}
+                                      </ng-template>
+                                </div>
+                                <div *ngIf="typeOf(subitem) === 'string' || typeOf(subitem) === 'number'">
+                                    <div *ngIf="subitem && subitem.toString().includes('||') else diff">
+                                        <span class="label label-danger" *ngIf="subitem.split('||')[0] != '+'"> <s>{{subitem.split('||')[0]}}</s></span>
+                                        <span class="label label-info" *ngIf="subitem.split('||')[1] != '-'">{{subitem.split('||')[1]}}</span>
+                                      </div>
+                                      <ng-template #diff>
+                                        {{subitem}}
+                                      </ng-template>
+                                </div>
+                            </div>
+                    </div>
+                    <div *ngIf="typeOf(item[col.col]) !== 'object'">
+                          <div *ngIf="item[col.col] && item[col.col].toString().includes('||') else diff">
+                              <span class="label label-danger" *ngIf="item[col.col].toString().split('||')[0] != '+'"> <s>{{item[col.col].toString().split('||')[0]}}</s></span>
+                              <span class="label label-info" *ngIf="item[col.col].toString().split('||')[1] != '-'">{{item[col.col].toString().split('||')[1]}}</span>
+                            </div>
+                            <ng-template #diff>
+                              {{item[col.col]}}
+                            </ng-template>
+                    </div>
+                </clr-dg-cell>
+            </clr-dg-row>
+            <clr-dg-footer>
+                     <clr-dg-pagination #pagination [clrDgPageSize]="20">
+                       <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{Name}} per page</clr-dg-page-size>
+                       {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{Name}}
+                     </clr-dg-pagination>
+            </clr-dg-footer>
+          </clr-datagrid>
+        </clr-tab-content>
+  </clr-tab>
+</clr-tabs>
+</p>
+
+<!-- Modal Progresse Bar -->
+<!-- <clr-modal [(clrModalOpen)]="exportxls">
+    <div class="modal-title">
+        <h3>Loading all routes informations</h3>
+    </div>
+    <div class="modal-body">
+    <div class="progress-group">
+      <clr-progress-bar [clrValue]=Value [clrLabeled]=true></clr-progress-bar>
+      <div class="clr-row">
+            <div class="clr-col-12">Get routes of {{RouterType}} router: <b>{{RouterName}}</b></div>
+      </div>
+    </div>
+    </div> 
+</clr-modal> -->

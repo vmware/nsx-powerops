@@ -1,0 +1,23 @@
+<!--  do Not Show if no session -->
+<clr-header class="header-6">
+    <!-- Branding + Logo -->
+    <div class="branding">
+        <a href="#" [routerLink]="['/home/network']" class="nav-link">
+            <cds-icon shape="vm-bug"></cds-icon>
+            <span class="title">PowerOps - {{this.mysession.nsxmanager}}</span>
+        </a>
+    </div>
+    <!-- User Settings on the right -->
+    <div class="header-actions">
+        <clr-dropdown>
+            <button class="nav-text" clrDropdownTrigger>
+                    <cds-icon shape="user"></cds-icon>
+                    {{mysession.username}}
+                    <cds-icon shape="angle" direction="down"></cds-icon>
+            </button>
+            <clr-dropdown-menu *clrIfOpen clrPosition="bottom-right">
+                <a (click)="logOut()" clrDropdownItem> Logout</a>
+            </clr-dropdown-menu>
+        </clr-dropdown>
+    </div>
+</clr-header>

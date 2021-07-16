@@ -1,0 +1,162 @@
+<ng-container>
+  <app-description Menu='NSX-T Details'></app-description>
+</ng-container>
+<ng-container>
+<p class="p1">
+<clr-tabs>
+    <clr-tab>
+        <button clrTabLink>Transport Node</button>
+        <clr-tab-content *clrIfActive>
+            <table class="table">
+                <thead>
+                  <tr>
+                    <th class="left">Host Node</th>
+                    <th class="left">LCP Connectivity Status</th>
+                    <th class="left">MPA Connectivity Status</th>
+                    <th class="left">MPA Connectivity Status Details</th>
+                    <th class="left">Host Node Deployment Status</th>
+                    <th class="left">NSX Controller IP</th>
+                    <th class="left">NSX Controller Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let tn of TabTN">
+                    <td class="left">
+                        {{tn.name}}
+                    </td>
+                    <td class="left">
+                        <span class="label label-danger" *ngIf="tn.lcp_connectivity_status !== 'UP' ">{{tn.lcp_connectivity_status}}</span>
+                        <span class="label label-success" *ngIf="tn.lcp_connectivity_status === 'UP' ">{{tn.lcp_connectivity_status}}</span>
+                    </td>
+                    <td class="left">
+                        <span class="label label-danger" *ngIf="tn.mpa_connectivity_status !== 'UP' ">{{tn.mpa_connectivity_status}}</span>
+                        <span class="label label-success" *ngIf="tn.mpa_connectivity_status === 'UP' ">{{tn.mpa_connectivity_status}}</span>
+                    </td>
+                    <td  class="left">
+                        {{tn.mpa_connectivity_status_details}}
+                    </td>
+                    <td class="left">
+                        <span class="label label-danger" *ngIf="tn.host_node_deployment_status !== 'INSTALL_SUCCESSFUL' ">{{tn.host_node_deployment_status}}</span>
+                        <span class="label label-success" *ngIf="tn.host_node_deployment_status === 'INSTALL_SUCCESSFUL' ">{{tn.host_node_deployment_status}}</span>
+                    </td>
+                    <td class="left">
+                        {{tn.control_node_ip}}
+                    </td>
+                    <td class="left">
+                        <span class="label label-danger" *ngIf="tn.status !== 'UP' ">{{tn.status}}</span>
+                        <span class="label label-success" *ngIf="tn.status === 'UP' ">{{tn.status}}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+        </clr-tab-content>
+    </clr-tab>
+    <clr-tab>
+        <button clrTabLink>Edge Node</button>
+        <clr-tab-content *clrIfActive>
+            <table class="table">
+                <thead>
+                  <tr>
+                    <th class="left">Edge Node</th>
+                    <th class="left">LCP Connectivity Status</th>
+                    <th class="left">MPA Connectivity Status</th>
+                    <th class="left">MPA Connectivity Status Details</th>
+                    <th class="left">Host Node Deployment Status</th>
+                    <th class="left">NSX Controller IP</th>
+                    <th class="left">NSX Controller Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let ed of TabEdge">
+                    <td class="left">
+                        {{ed.name}}
+                    </td>
+                    <td class="left">
+                        <span class="label label-danger" *ngIf="ed.lcp_connectivity_status !== 'UP' ">{{ed.lcp_connectivity_status}}</span>
+                        <span class="label label-success" *ngIf="ed.lcp_connectivity_status === 'UP' ">{{ed.lcp_connectivity_status}}</span>
+                    </td>
+                    <td class="left">
+                        <span class="label label-danger" *ngIf="ed.mpa_connectivity_status !== 'UP' ">{{ed.mpa_connectivity_status}}</span>
+                        <span class="label label-success" *ngIf="ed.mpa_connectivity_status === 'UP' ">{{ed.mpa_connectivity_status}}</span>
+                    </td>
+                    <td class="left">
+                        {{ed.mpa_connectivity_status_details}}
+                    </td>
+                    <td class="left">
+                        <span class="label label-danger" *ngIf="ed.host_node_deployment_status !== 'NODE_READY' ">{{ed.host_node_deployment_status}}</span>
+                        <span class="label label-success" *ngIf="ed.host_node_deployment_status === 'NODE_READY' ">{{ed.host_node_deployment_status}}</span>
+                    </td>
+                    <td class="left">
+                        {{ed.control_node_ip}}
+                    </td>
+                    <td class="left">
+                        <span class="label label-danger" *ngIf="ed.status !== 'UP' ">{{ed.status}}</span>
+                        <span class="label label-success" *ngIf="ed.status === 'UP' ">{{ed.status}}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+        </clr-tab-content>
+    </clr-tab>
+    <clr-tab>
+        <button clrTabLink>Edge Cluster</button>
+        <clr-tab-content *clrIfActive>
+            <div class="clr-row">
+              <div class="clr-col" *ngFor="let edc of TabEdgeCluster">
+                  <div class="card">
+                      <div class="card-header">{{edc.name}}</div>
+                      <div class="card-block">
+                        <table class="table table-vertical table-noborder table-compact">
+                          <tbody>
+                            <tr>
+                              <th>Resource Type</th>
+                              <td>{{edc.resource_type}}</td>
+                            </tr>
+                            <tr>
+                                <th>Deployement Type</th>
+                                <td>{{edc.deployment_type}}</td>
+                            </tr>
+                            <tr>
+                                <th>Member Node Type</th>
+                                <td>{{edc.member_node_type}}</td>
+                            </tr>                
+                          </tbody>
+                        </table>             
+                      </div>
+                  </div>
+              </div>
+            </div>
+        </clr-tab-content>
+    </clr-tab>
+    <clr-tab>
+        <button clrTabLink>Compute Manager</button>
+        <clr-tab-content *clrIfActive>
+            <div class="clr-row">
+                <div class="clr-col" *ngFor="let cp of TabCompute">
+                    <div class="card">
+                      <div class="card-header">{{cp.server}}</div>
+                      <div class="card-block">
+                          <table class="table table-vertical table-noborder table-compact">
+                            <tbody>
+                              <tr>
+                                <td>ID</td>
+                                <td>{{cp.id}}</td>
+                              </tr>
+                              <tr>
+                                <td>Origin</td>
+                                <td>{{cp.origin}}</td>
+                              </tr>
+                              <tr>
+                                <td>Build</td>
+                                <td>{{cp.build}}</td>
+                              </tr>
+                            </tbody>
+                          </table>             
+                        </div>
+                    </div>
+                </div>
+              </div>
+        </clr-tab-content>
+    </clr-tab>
+</clr-tabs>
+</ng-container>

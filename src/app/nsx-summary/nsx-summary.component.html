@@ -1,0 +1,209 @@
+<div id='pdf'>
+<h3>NSX-T Summary: {{ mysession.nsxmanager}}</h3>
+<p class="p6">
+<clr-timeline>
+  <clr-timeline-step [clrState]="TLClusterStatus">
+    <clr-timeline-step-header>NSX-T Cluster Status</clr-timeline-step-header>
+    <cds-icon  shape="circle" aria-current="true" aria-label="Not started"></cds-icon>
+    <clr-timeline-step-title>{{cluster_status}}</clr-timeline-step-title>
+  </clr-timeline-step>
+  <clr-timeline-step [clrState]="TLClusterCtrlStatus">
+    <clr-timeline-step-header>NSX-T Control Cluster Status</clr-timeline-step-header>
+    <cds-icon  shape="circle" aria-current="true" aria-label="Not started"></cds-icon>
+    <clr-timeline-step-title>{{ctrl_status}}</clr-timeline-step-title>
+  </clr-timeline-step>
+  <clr-timeline-step [clrState]="TLOverallClusterStatus">
+    <clr-timeline-step-header>Overall NSX-T Cluster Status</clr-timeline-step-header>
+    <cds-icon  shape="circle" aria-current="true" aria-label="Not started"></cds-icon>
+    <clr-timeline-step-title>{{overall_status}}</clr-timeline-step-title>
+  </clr-timeline-step>
+  <clr-timeline-step [clrState]="TLNbManagers">
+    <clr-timeline-step-header>Nb NSX Managers</clr-timeline-step-header>
+    <cds-icon  shape="circle" aria-current="true" aria-label="Not started"></cds-icon>
+    <clr-timeline-step-title>{{nb_nodes}} deployed</clr-timeline-step-title>
+    <clr-timeline-step-description class="p5" *ngIf="nb_nodes && nb_nodes<3">For high availability, NSX-T supports a management cluster of three NSX Managers. For a production environment, deploying a management cluster is recommended. For a proof-of-concept environment, you can deploy a single NSX Manager.</clr-timeline-step-description>
+  </clr-timeline-step>
+  <clr-timeline-step [clrState]="TLNbOnlineManager">
+    <clr-timeline-step-header>Nb Online Managers</clr-timeline-step-header>
+    <cds-icon  shape="circle" aria-current="true" aria-label="Not started"></cds-icon>
+    <clr-timeline-step-title>{{nb_online_nodes}} online</clr-timeline-step-title>
+  </clr-timeline-step>
+  <clr-timeline-step [clrState]="TLNbOfflineManager">
+    <clr-timeline-step-header>Nb Offline Managers</clr-timeline-step-header>
+    <cds-icon  shape="circle" aria-current="true" aria-label="Not started"></cds-icon>
+    <clr-timeline-step-title>{{offlinensx}} offline</clr-timeline-step-title>
+  </clr-timeline-step>
+</clr-timeline>
+
+<!-- Card for details of NSX Fabric-->
+<div class="clr-row">
+  <div class="clr-col-6">
+    <div class="card">
+      <div class="card-header"  id="inside"><cds-icon shape="network-settings" size="24" id="inside"></cds-icon> Inside NSX
+      </div>
+      <div class="card-block">
+        <div class="card-text">
+          <clr-spinner [clrMedium]="true" *ngIf='loading else display'></clr-spinner>
+          <ng-template #display>
+          <div class="clr-row">
+            <div class="clr-col-md-4">
+                  <cds-icon shape="cluster" size="20" id="inside"></cds-icon>
+                  <span class="p3">&nbsp;Edge Cluster : </span>
+                  <span class="p3">&nbsp;<b>{{TabNode[0]}}</b></span>
+            </div>
+          <div class="clr-col-md-4">
+            <cds-icon shape="router" id="inside" size="20"></cds-icon>
+            <span class="p3" >&nbsp;Tier0 Router : </span>
+            <span class="p3" >&nbsp;<b>{{TabRouting[0]}}</b></span>
+
+          </div>
+          <div class="clr-col-md-4">
+            <cds-icon shape="grid-view" id="inside" size="18"></cds-icon>
+            <span class="p3" >&nbsp;Security Groups : </span>
+            <span class="p3" >&nbsp;<b>{{TabSecurity[0]}}</b></span>
+          </div>
+          </div>
+          <div class="clr-break-row"></div>
+          <div class="clr-row">
+            <div class="clr-col-md-4">
+              <cds-icon shape="cluster" id="inside" size="18"></cds-icon>
+              <span class="p3" >&nbsp;Edge Nodes : </span>
+              <span class="p3" >&nbsp;<b>{{TabNode[1]}}</b></span>
+            </div>
+            <div class="clr-col-md-4">
+              <cds-icon shape="router" id="inside" size="18"></cds-icon>
+              <span class="p3" >&nbsp;Tier1 Router : </span>
+              <span class="p3" >&nbsp;<b>{{TabRouting[1]}}</b></span>
+
+            </div>
+            <div class="clr-col-md-4">
+              <cds-icon shape="library" id="inside" size="18"></cds-icon>
+              <span class="p3" >&nbsp;Context Profiles : </span>
+              <span class="p3" >&nbsp;<b>{{TabSecurity[1]}}</b></span>
+            </div>
+          </div>
+          <div class="clr-break-row"></div>
+          <div class="clr-row">
+            <div class="clr-col-md-4" >
+              <cds-icon shape="host"  id="inside" size="18"></cds-icon>
+              <span class="p3" >&nbsp;Transport Nodes : </span>
+              <span class="p3" >&nbsp;<b>{{TabNode[2]}}</b></span>
+            </div>
+            <div class="clr-col-md-4" >
+              <cds-icon shape="switch"  id="inside"size="18"></cds-icon>
+              <span class="p3" >&nbsp;Segments : </span>
+              <span class="p3" >&nbsp;<b>{{TabRouting[2]}}</b></span>
+            </div>
+            <div class="clr-col-md-4" >
+              <cds-icon shape="certificate" id="inside" size="18"></cds-icon> 
+              <span class="p3" >&nbsp;Services : </span>
+              <span class="p3" >&nbsp;<b>{{TabSecurity[2]}}</b></span>
+            </div>
+        </div>
+        </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="clr-col-6">
+    <div class="card">
+      <div class="card-header" id="component"><cds-icon shape="node-group" size="24" id="component"></cds-icon> NSX Components Status</div>
+      <div class="card-block">
+        <div class="clr-row">
+          <!-- Treatment TN-->
+        <div class="clr-col">
+          <div class="clr-row" *ngFor="let item of TabTN">
+            <div class="clr-col">
+              <cds-icon shape="host" *ngIf="item.status !== 'UP' " badge="danger" size="25" id="component"></cds-icon>
+              <cds-icon shape="host" *ngIf="item.status === 'UP' " badge="success" size="25" id="component"></cds-icon>
+              <span class="p3" >&nbsp;{{item.name}}</span>
+              <clr-signpost>
+                <clr-signpost-content *clrIfOpen [clrPosition]="'bottom-middle'">
+                  <h3 id="component">{{item.name}}</h3>
+                  <p>IP: {{item.managementIp}}</p>
+                  <p id="textsignpost">LCP status:
+                    <span class="label label-danger" *ngIf="item.lcp_status !== 'UP' ">{{item.lcp_status}}</span>
+                    <span class="label label-success" *ngIf="item.lcp_status === 'UP' ">{{item.lcp_status}}</span>      
+                  </p>
+                  <p  id="textsignpost">MPA status: 
+                    <span class="label label-danger" *ngIf="item.mpa_status !== 'UP' ">{{item.mpa_status}}</span>
+                    <span class="label label-success" *ngIf="item.mpa_status === 'UP' ">{{item.mpa_status}}</span>      
+                  </p>
+                  <p  id="textsignpost">Deployment status: 
+                    <span class="label label-danger" *ngIf="item.host_node_deployment_status !== 'INSTALL_SUCCESSFUL' ">{{item.host_node_deployment_status}}</span>
+                    <span class="label label-success" *ngIf="item.host_node_deployment_status === 'INSTALL_SUCCESSFUL' ">{{item.host_node_deployment_status}}</span>      
+                  </p>
+                </clr-signpost-content>
+              </clr-signpost>
+            </div>
+          </div>
+        </div>
+          <!-- Treatment edge-->
+        <div class="clr-col">
+          <div class="clr-row" *ngFor="let item of TabEdge">
+            <div class="clr-col">
+              <cds-icon shape="router" *ngIf="item.status !== 'UP' " badge="danger" size="25" id="component"></cds-icon>
+              <cds-icon shape="router" *ngIf="item.status === 'UP' " badge="success" size="25" id="component"></cds-icon>
+              <span class="p3" >&nbsp;{{item.name}}</span>
+              <clr-signpost>
+                <clr-signpost-content *clrIfOpen [clrPosition]="'bottom-middle'">
+                  <h3 id="component">{{item.name}}</h3>
+                  <p>IP: {{item.managementIp}}</p>
+                  <p id="textsignpost">LCP status:
+                    <span class="label label-danger" *ngIf="item.lcp_status !== 'UP' ">{{item.lcp_status}}</span>
+                    <span class="label label-success" *ngIf="item.lcp_status === 'UP' ">{{item.lcp_status}}</span>      
+                  </p>
+                  <p id="textsignpost">MPA status: 
+                    <span class="label label-danger" *ngIf="item.mpa_status !== 'UP' ">{{item.mpa_status}}</span>
+                    <span class="label label-success" *ngIf="item.mpa_status === 'UP' ">{{item.mpa_status}}</span>      
+                  </p>
+                  <p id="textsignpost">Deployment status: 
+                    <span class="label label-danger" *ngIf="item.host_node_deployment_status !== 'NODE_READY' ">{{item.host_node_deployment_status}}</span>
+                    <span class="label label-success" *ngIf="item.host_node_deployment_status === 'NODE_READY' ">{{item.host_node_deployment_status}}</span>      
+                  </p>
+                </clr-signpost-content>
+              </clr-signpost>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- of NSX Managers-->
+<div class="clr-row">
+  <div class="clr-col-4" *ngFor="let nsx of TabNSX">
+        <div class="card">
+            <div class="card-header" id="manager">
+              <clr-spinner [clrSmall]="true" *ngIf='loading_nsxmgr'></clr-spinner>
+              <cds-icon shape="block" size="24"></cds-icon> {{nsx.fqdn}}
+              <span class="label label-danger" *ngIf="nsx.status !== 'UP' ">{{nsx.status}}</span>
+              <span class="label label-success" *ngIf="nsx.status === 'UP' ">{{nsx.status}}</span>
+              </div>
+            <div class="card-block">
+                <tbody>
+                  <div class="clr-row" *ngFor="let sv of nsx.services">
+                    <div class="clr-col-10">
+                      <span class="p3">{{sv.name}}</span>
+                    </div>
+                    <div class="clr-col-2">
+                      <span class="label label-danger" *ngIf="sv.status !== 'STABLE' ">{{sv.status}}</span>
+                      <span class="label label-success" *ngIf="sv.status === 'STABLE' ">{{sv.status}}</span>
+                    </div>
+                  </div>
+                </tbody>
+            </div>
+        </div>
+  </div>
+</div>
+
+<p class="p6">
+<!-- <div>
+  <button class="btn btn-outline"  (click)="generatePdf()" *ngIf="loading else export" disabled>Export in PDF</button>
+  <ng-template #export>
+    <button class="btn btn-outline"  (click)="generatePdf()">Export in PDF</button>
+  </ng-template>
+</div> -->

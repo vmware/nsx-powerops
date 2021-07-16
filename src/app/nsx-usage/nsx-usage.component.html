@@ -1,0 +1,51 @@
+<app-description Menu='NSX-T Usage'></app-description>
+<div class="clr-row">
+    <div class="clr-col-lg-4 clr-col-12">
+        <div class="card">
+            <div class="card-header" id="network"><cds-icon shape="switch" size="24" id="network"></cds-icon> Network Usage
+              <clr-spinner [clrSmall]="true" *ngIf='loading_tabusage'></clr-spinner>
+            </div>
+            <div class="card-block" *ngFor="let net of TabNetwork">
+              <label>{{net.name}} (max: {{net.max}})</label>
+              <div class="progress-block" >
+                <clr-progress-bar  clrValue={{net.usage}} clrSuccess *ngIf="net.usage < 70"  progress-bar-striped ></clr-progress-bar>
+                <clr-progress-bar  clrValue={{net.usage}} clrDanger *ngIf="net.usage >= 70"  progress-bar-striped ></clr-progress-bar>
+                <span>&nbsp; {{net.usage}} %</span>
+              </div>
+              <div>Current: {{net.current}}</div>
+            </div>
+          </div>
+    </div>
+    <div class="clr-col-lg-4 clr-col-12">
+        <div class="card">
+            <div class="card-header" id="security"><cds-icon shape="shield" size="24" id="security"></cds-icon> Security Usage
+              <clr-spinner [clrSmall]="true" *ngIf='loading_tabsecu'></clr-spinner>
+            </div>
+            <div class="card-block" *ngFor="let net of TabSecurity">
+              <label>{{net.name}} (max: {{net.max}})</label>
+              <div class="progress-block" >
+                <clr-progress-bar  clrValue={{net.usage}} clrSuccess *ngIf="net.usage < 70"  progress-bar-striped ></clr-progress-bar>
+                <clr-progress-bar  clrValue={{net.usage}} clrDanger *ngIf="net.usage >= 70"  progress-bar-striped ></clr-progress-bar>
+                <span>&nbsp;{{net.usage}} %</span>
+              </div>
+              <div>Current: {{net.current}}</div>
+            </div>
+          </div>      
+    </div>
+    <div class="clr-col-lg-4 clr-col-12">
+        <div class="card">
+            <div class="card-header" id="inventory"><cds-icon shape="blocks-group" size="24" id="inventory"></cds-icon> Inventory Usage
+              <clr-spinner [clrSmall]="true" *ngIf='loading_tabinv'></clr-spinner>
+            </div>
+              <div class="card-block" *ngFor="let net of TabInventory">
+                <label>{{net.name}} (max: {{net.max}})</label>
+                <div class="progress-block" >
+                  <clr-progress-bar  clrValue={{net.usage}} clrSuccess *ngIf="net.usage < 70"  progress-bar-striped ></clr-progress-bar>
+                  <clr-progress-bar  clrValue={{net.usage}} clrDanger *ngIf="net.usage >= 70"  progress-bar-striped ></clr-progress-bar>
+                  <span>&nbsp;{{net.usage}} %</span>
+                </div>
+                <div>Current: {{net.current}}</div>
+              </div>
+          </div>      
+    </div>
+</div>

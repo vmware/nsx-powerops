@@ -1,0 +1,12 @@
+<clr-main-container>
+<!-- <div class="main-container"> -->
+  <div *ngIf="this.router.url != ('/login')">
+      <!-- Header for navbar -->
+      <app-header></app-header>
+      <router-outlet></router-outlet>
+    </div>
+
+  <div *ngIf="this.router.url == ('/login')">
+      <app-login></app-login>
+  </div>
+</clr-main-container>

@@ -1,0 +1,389 @@
+<app-description Menu='Security - Security Groups Infos'></app-description>
+
+<p class="p6">
+<!-- Button groups-->
+<div class="btn-group">
+  <div class="btn-group">
+    <clr-dropdown>
+      <button class="btn" clrDropdownTrigger *ngIf="loadingdiff else export" disabled>
+        <cds-icon shape="download-cloud" ></cds-icon>
+        Export
+      </button>
+    <ng-template #export>
+      <button class="btn" clrDropdownTrigger>
+        <cds-icon shape="download-cloud"></cds-icon>
+        Export
+      </button>
+    </ng-template>
+    <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+      <a (click)="Export('XLS', this.TabGroups, Name)" clrDropdownItem>Export in Excel</a>
+      <a (click)="Export('CSV', this.TabGroups, Name)" clrDropdownItem>Export in CSV</a>
+      <a (click)="Export('JSON', this.TabGroups, Name)" clrDropdownItem>Export in JSON</a>
+      <a (click)="Export('YAML', this.TabGroups, Name)" clrDropdownItem>Export in YAML</a>
+    </clr-dropdown-menu>
+    </clr-dropdown>
+  </div>
+  <div class="btn-group">
+      <!-- Diff part-->
+      <app-diff #appDiff Name={{Name}} [Tab]=this.TabGroups (diffArrayOut)="getDiff($event)"></app-diff>
+      <button class="btn" *ngIf="loadingdiff else diff" disabled>
+        <cds-icon shape="file-group"></cds-icon>
+        Diff
+      </button>
+      <ng-template #diff>
+        <button class="btn" (click)="appDiff.StartWizard()">
+          <cds-icon shape="file-group"></cds-icon>
+          Diff
+        </button>
+      </ng-template>
+      <clr-dropdown>
+        <button class="btn" clrDropdownTrigger *ngIf="!isCompared else exportdiff" disabled>
+          <cds-icon shape="download-cloud" ></cds-icon>
+          Export Diff
+        </button>
+        <ng-template #exportdiff>
+          <button class="btn" clrDropdownTrigger>
+            <cds-icon shape="download-cloud"></cds-icon>
+            Export Diff
+          </button>
+        </ng-template>
+        <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+          <a (click)="Export('XLS', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in Excel</a>
+          <a (click)="Export('CSV', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in CSV</a>
+          <a (click)="Export('JSON', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in JSON</a>
+          <a (click)="Export('YAML', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in YAML</a>
+        </clr-dropdown-menu>
+      </clr-dropdown>
+</div>
+</div>
+<!-- Alert in case of error-->
+<div class="alert alert-danger" role="alert" *ngIf="error">
+  <div class="alert-items">
+    <div class="alert-item static">
+      <div class="alert-icon-wrapper">
+        <cds-icon class="alert-icon" shape="exclamation-circle"></cds-icon>
+      </div>
+      <span class="alert-text">
+        {{error_message}}
+      </span>
+    </div>
+  </div>
+</div>
+<div class="alert alert-warning" role="alert" *ngIf="loadingdiff">
+  <div class="alert-items">
+    <div class="alert-item static">
+      <div class="alert-icon-wrapper">
+        <cds-icon class="alert-icon" shape="exclamation-circle"></cds-icon>
+      </div>
+      <span class="alert-text">
+        Background treatment: getting informations for group <b>{{GroupName}}</b>
+      </span>
+    </div>
+</div>
+<button type="button" class="close" aria-label="Close" (click)="error = false">
+  <cds-icon aria-hidden="true" shape="window-close" ></cds-icon>
+</button>
+</div>
+<p class="p3">
+  <clr-tabs>
+    <!-- Dashboard -->
+    <clr-tab>
+      <button clrTabLink>Dashboard</button>
+      <clr-tab-content *clrIfActive>
+        <clr-datagrid [clrDgLoading]="loading">
+          <clr-dg-column [clrDgField]="'name'">Group Name</clr-dg-column>
+          <clr-dg-column [clrDgField]="'tags'">Tags</clr-dg-column>
+          <clr-dg-column [clrDgField]="'type_criteria'">Criteria Type</clr-dg-column>
+          <clr-dg-column [clrDgField]="'criteria'">Criteria</clr-dg-column>
+          
+          <clr-dg-placeholder>We couldn't find any groups!</clr-dg-placeholder>
+  
+          <clr-dg-row *clrDgItems="let entry of this.TabGroups" [clrDgItem]="entry">
+            <clr-dg-cell>{{entry.name}}</clr-dg-cell>
+            <clr-dg-cell>
+              <ng-container *ngFor="let tg of entry.tags" >
+                <div *ngIf="tg.scope else temp">
+                  <span class="label label-info"> {{tg.tag}}:{{tg.scope}}</span>              
+                </div>
+                <ng-template #temp>
+                  <span class="label label-info"> {{tg.tag}}</span>              
+                </ng-template>
+                </ng-container>
+            </clr-dg-cell>
+            <clr-dg-cell>
+              <ng-container *ngFor="let criteria of entry.type_criteria">
+                <span class="label label-purple"> {{criteria}}</span>              
+              </ng-container>
+            </clr-dg-cell>
+            <clr-dg-cell>
+              <ng-container *ngFor="let exp of entry.tmp_expression">
+                <ng-container *ngIf="exp.resource_type === 'Condition' || exp.resource_type === 'PathExpression' else criteria">
+                    {{exp.member_type}} with {{exp.key}} {{exp.operator}}
+                    <ng-container *ngIf="exp.value.scope else noscope">
+                      <span class="label label-info"> {{exp.value.tag}}:{{exp.value.scope}}</span>              
+                    </ng-container>
+                    <ng-template #noscope>
+                      <ng-container *ngIf="!exp.value.tag else tag">
+                        <ng-container *ngIf="isArray(exp.value) else NotArray">
+                          <ng-container *ngFor="let item of exp.value">
+                            <ng-container *ngIf="item.length<=15 else nottagarraycriterialonger">
+                              <span class="label label-info"> {{ item}}</span>
+                            </ng-container>
+                            <ng-template #nottagarraycriterialonger>
+                              <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-left">
+                                <span class="label label-info"> {{ (item  | slice:0:15)+'...' }}</span>
+                                <span class="tooltip-content">{{item}}</span>
+                              </a>  
+                            </ng-template>
+                          </ng-container>
+                        </ng-container>
+                        <ng-template #NotArray>
+                          <ng-container *ngIf="exp.value.length<=15 else notarraycriterialonger">
+                            <span class="label label-info"> {{ exp.value}}</span>
+                          </ng-container>
+                          <ng-template #notarraycriterialonger>
+                            <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-left">
+                              <span class="label label-info"> {{ (exp.value  | slice:0:15)+'...' }}</span>
+                              <span class="tooltip-content">{{exp.value}}</span>
+                            </a>  
+                          </ng-template>
+                        </ng-template>
+                      </ng-container>
+                      <ng-template #tag>
+                        <span class="label label-info"> {{ (exp.value.tag.length>15)? (exp.value.tag  | slice:0:15)+'...':(exp.value.tag ) }}</span>
+                      <ng-template>
+                      <span class="label label-info"> {{exp.value}}</span>
+                    </ng-template>
+                  </ng-template>
+                    </ng-template>
+                </ng-container>
+                <ng-template #criteria>
+                    <ng-container *ngIf="isArray(exp.value) else NotArrayFinal">
+                      <ng-container *ngFor="let item of exp.value">
+                        <ng-container *ngIf="item.length<=15 else arraycriterialonger">
+                          <span class="label label-info"> {{ item}}</span>
+                        </ng-container>
+                        <ng-template #arraycriterialonger>
+                          <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-left">
+                            <span class="label label-info"> {{ (item  | slice:0:15)+'...' }}</span>
+                            <span class="tooltip-content">{{item}}</span>
+                          </a>  
+                        </ng-template>
+                      </ng-container>
+                    </ng-container>
+                    <ng-template #NotArrayFinal>
+                      <ng-container *ngIf="exp.value.length<=15 else criterialonger">
+                        <span class="label label-info"> {{ exp.value}}</span>
+                      </ng-container>
+                      <ng-template #criterialonger>
+                        <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-left">
+                          <span class="label label-info"> {{ (exp.value  | slice:0:15)+'...' }}</span>
+                          <span class="tooltip-content">{{exp.value}}</span>
+                        </a>  
+                      </ng-template>
+                    </ng-template>
+                </ng-template>
+              </ng-container>
+            </clr-dg-cell>
+          </clr-dg-row>
+        
+          <clr-dg-footer>
+              <clr-dg-pagination #pagination [clrDgPageSize]="20">
+                <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">groups per page</clr-dg-page-size>
+                {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} groups
+              </clr-dg-pagination>
+          </clr-dg-footer>
+          <ng-template clrIfDetail let-detail (clrIfDetailChange)="onDetailOpen($event)">
+            <!-- <clr-dg-detail *clrIfDetail="let detail"> -->
+            <clr-dg-detail>
+            <clr-dg-detail-header>Details of Group : {{detail.name}} </clr-dg-detail-header>
+            <clr-dg-detail-body>
+              <table class="table table-vertical table-noborder">
+                <tbody>
+                  <tr>
+                    <th>Group</th>
+                    <td>{{detail.name}}</td>
+                  </tr>
+                  <tr>
+                    <th>Tags</th>
+                    <td>
+                      <ng-container *ngFor="let tg of detail.tags" >
+                        <div *ngIf="tg.scope else temp">
+                          <span class="label label-info"> {{tg.tag}}:{{tg.scope}}</span>              
+                        </div>
+                        <ng-template #temp>
+                          <span class="label label-info"> {{tg.tag}}</span>              
+                        </ng-template>
+                        </ng-container>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Type Criteria</th>
+                    <td>
+                      <ng-container *ngFor="let criteria of detail.type_criteria">
+                        <span class="label label-purple"> {{criteria}}</span>              
+                      </ng-container>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Criteria</th>
+                    <td>
+                      <ng-container *ngFor="let exp of detail.tmp_expression">
+                        <ng-container *ngIf="exp.resource_type === 'Condition' || exp.resource_type === 'PathExpression' else criteria">
+                            {{exp.member_type}} with {{exp.key}} {{exp.operator}}
+                            <ng-container *ngIf="exp.value.scope else noscope">
+                              <span class="label label-info"> {{exp.value.tag}}:{{exp.value.scope}}</span>              
+                            </ng-container>
+                            <ng-template #noscope>
+                              <ng-container *ngIf="!exp.value.tag else tag">
+                                <ng-container *ngIf="isArray(exp.value) else NotArray">
+                                  <ng-container *ngFor="let item of exp.value">
+                                    <span class="label label-info"> {{ (item.length>15)? (item  | slice:0:15)+'...':(item ) }}</span>
+                                  </ng-container>
+                                </ng-container>
+                                <ng-template #NotArray>
+                                  <span class="label label-info"> {{ (exp.value.length>15)? (exp.value  | slice:0:15)+'...':(exp.value ) }}</span>
+                                </ng-template>
+                              </ng-container>
+                              <ng-template #tag>
+                                <span class="label label-info"> {{ (exp.value.tag.length>15)? (exp.value.tag  | slice:0:15)+'...':(exp.value.tag ) }}</span>
+                              <ng-template>
+                              <span class="label label-info"> {{exp.value}}</span>
+                            </ng-template>
+                          </ng-template>
+                            </ng-template>
+                        </ng-container>
+                        <ng-template #criteria>
+                            <ng-container *ngIf="isArray(exp.value) else NotArrayFinal">
+                              <ng-container *ngFor="let item of exp.value">
+                                <span class="label label-info"> {{ (item.length>15)? (item  | slice:0:15)+'...':(item ) }}</span>
+                              </ng-container>
+                            </ng-container>
+                            <ng-template #NotArrayFinal>
+                              <span class="label label-info"> {{ (exp.value.length>15)? (exp.value  | slice:0:15)+'...':(exp.value ) }}</span>
+                            </ng-template>
+                        </ng-template>
+                      </ng-container>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>IP addresses</th>
+                    <td>
+                      <ng-container *ngFor="let item of detail.ip">
+                        <span class="label label-orange"> {{ item }}</span>
+                      </ng-container>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Virtual Machines</th>
+                    <td>
+                      <ng-container *ngFor="let item of detail.vm">
+                        <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-left">
+                          <span class="label label-light-blue"> {{ (item.length>15)? (item  | slice:0:15)+'...':(item ) }}</span>
+                          <span class="tooltip-content">{{item}}</span>
+                        </a>
+                      </ng-container>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Segments</th>
+                    <td>
+                      <ng-container *ngFor="let item of detail.segment">
+                        <span class="label"> {{ item }}</span>
+                      </ng-container>
+                    </td>
+                    </tr>
+                  <tr>
+                    <th>Segments Ports</th>
+                    <td>
+                      <ng-container *ngFor="let item of detail.segment_port">
+                        <a href="javascript:void(0)" role="tooltip" aria-haspopup="true" class="tooltip tooltip-lg tooltip-top-left">
+                          <span class="label"> {{ (item.length>15)? (item  | slice:0:15)+'...':(item ) }}</span>
+                          <span class="tooltip-content">{{item}}</span>
+                        </a>
+                      </ng-container>
+                    </td>
+                    </tr>
+                </tbody>
+              </table>
+            </clr-dg-detail-body>
+            </clr-dg-detail>
+          </ng-template>
+        </clr-datagrid>
+      </clr-tab-content>
+    </clr-tab>
+    <!-- Diff Tab -->
+    <clr-tab *ngIf="isCompared">
+          <button clrTabLink>Diff</button>
+          <clr-tab-content *clrIfActive="true">
+            <clr-datagrid>
+              <clr-dg-column [clrDgField]="'diffstatus'">Diff Status</clr-dg-column>
+              <clr-dg-column *ngFor="let col of HeaderDiff" [clrDgField]=col.col>{{col.header}}</clr-dg-column>
+              <clr-dg-placeholder>We couldn't find any {{Name}} !</clr-dg-placeholder>
+              <clr-dg-row *clrDgItems="let item of this.DiffTab" [clrDgItem]="item" 
+              [ngClass]="{
+                'created': (item.diffstatus === 'Created'  ),
+                'deleted': (item.diffstatus === 'Deleted'  ),
+                'modified': (item.diffstatus === 'Modified'  ),
+                'unchanged': (item.diffstatus === 'Unchanged'  )
+                  }">
+                  <clr-dg-cell>
+                    <span class="label label-success" *ngIf="item.diffstatus === 'Unchanged'">{{ item.diffstatus }}</span>
+                    <span class="label label-warning" *ngIf="item.diffstatus === 'Modified'">{{ item.diffstatus }}</span>
+                    <span class="label label-danger" *ngIf="item.diffstatus === 'Deleted'">{{ item.diffstatus }}</span>
+                    <span class="label label-info" *ngIf="item.diffstatus === 'Created'">{{ item.diffstatus }}</span>
+                  </clr-dg-cell>
+                  <clr-dg-cell *ngFor="let col of HeaderDiff">
+                      <div *ngIf="typeOf(item[col.col]) === 'object'">
+                              <div *ngIf="item[col.col][col.subcol] && item[col.col][col.subcol].toString().includes('||') else diff">
+                                  <span class="label label-danger" *ngIf="item[col.col][col.subcol].toString().split('||')[0] != '+'"> <s>{{item[col.col][col.subcol].toString().split('||')[0]}}</s></span>
+                                  <span class="label label-info" *ngIf="item[col.col][col.subcol].toString().split('||')[1] != '-'">{{item[col.col][col.subcol].toString().split('||')[1]}}</span>
+                                </div>
+                                <ng-template #diff>
+                                  {{item[col.col][col.subcol]}}
+                                </ng-template>
+                      </div>
+                      <div *ngIf="isArray(item[col.col])">
+                              <div *ngFor="let subitem of item[col.col]">
+                                  <div *ngIf="typeOf(subitem) === 'object'">
+                                      <div *ngIf="subitem[col.subcol] && subitem[col.subcol].toString().includes('||') else diff">
+                                          <span class="label label-danger" *ngIf="subitem[col.subcol].split('||')[0] != '+'"> <s>{{subitem[col.subcol].split('||')[0]}}</s></span>
+                                          <span class="label label-info" *ngIf="subitem[col.subcol].split('||')[1] != '-'">{{subitem[col.subcol].split('||')[1]}}</span>
+                                        </div>
+                                        <ng-template #diff>
+                                          {{subitem[col.subcol]}}
+                                        </ng-template>
+                                  </div>
+                                  <div *ngIf="typeOf(subitem) === 'string' || typeOf(subitem) === 'number'">
+                                      <div *ngIf="subitem && subitem.toString().includes('||') else diff">
+                                          <span class="label label-danger" *ngIf="subitem.split('||')[0] != '+'"> <s>{{subitem.split('||')[0]}}</s></span>
+                                          <span class="label label-info" *ngIf="subitem.split('||')[1] != '-'">{{subitem.split('||')[1]}}</span>
+                                        </div>
+                                        <ng-template #diff>
+                                          {{subitem}}
+                                        </ng-template>
+                                  </div>
+                              </div>
+                      </div>
+                      <div *ngIf="typeOf(item[col.col]) !== 'object'">
+                            <div *ngIf="item[col.col] && item[col.col].toString().includes('||') else diff">
+                                <span class="label label-danger" *ngIf="item[col.col].toString().split('||')[0] != '+'"> <s>{{item[col.col].toString().split('||')[0]}}</s></span>
+                                <span class="label label-info" *ngIf="item[col.col].toString().split('||')[1] != '-'">{{item[col.col].toString().split('||')[1]}}</span>
+                              </div>
+                              <ng-template #diff>
+                                {{item[col.col]}}
+                              </ng-template>
+                      </div>
+                  </clr-dg-cell>
+              </clr-dg-row>
+              <clr-dg-footer>
+                <clr-dg-pagination #pagination [clrDgPageSize]="20">
+                  <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{Name}} per page</clr-dg-page-size>
+                  {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{Name}}
+                </clr-dg-pagination>
+              </clr-dg-footer>
+            </clr-datagrid>
+          </clr-tab-content>
+    </clr-tab>
+  </clr-tabs>
+</p>

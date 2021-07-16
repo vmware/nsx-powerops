@@ -1,0 +1,373 @@
+<div>
+  <app-description Menu='Audit'></app-description>
+</div>
+<p class="p6">
+<!-- Button groups-->
+<div class="btn-group">
+  <div class="btn-group">
+    <clr-dropdown>
+    <button class="btn" clrDropdownTrigger *ngIf="(loading || LoadingallFabric || LoadingallNetworking || LoadingallSecurity) else export" disabled>
+      <cds-icon shape="download-cloud" ></cds-icon>
+      Export
+    </button>
+    <ng-template #export>
+    <button class="btn" clrDropdownTrigger>
+      <cds-icon shape="download-cloud"></cds-icon>
+      Export
+    </button>
+    </ng-template>
+    <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+    <a (click)="onSubmit('XLS')" clrDropdownItem>Export in Excel</a>
+    <a (click)="onSubmit('CSV')" clrDropdownItem>Export in CSV</a>
+    <div class="dropdown-divider" role="separator"></div>
+    <div class="dropdown right-bottom">
+    <clr-dropdown>
+      <button clrDropdownTrigger>Export in JSON</button>
+      <clr-dropdown-menu clrPosition="right-top">
+        <a (click)="onSubmit('ZIPJSON')" clrDropdownItem>ZIP file</a>
+        <a (click)="onSubmit('JSON')" clrDropdownItem>JSON file</a>
+      </clr-dropdown-menu>
+    </clr-dropdown>
+    </div>
+    <div class="dropdown right-bottom">
+      <clr-dropdown>
+      <button clrDropdownTrigger>Export in YAML</button>
+      <clr-dropdown-menu clrPosition="right-top">
+        <a (click)="onSubmit('ZIPYAML')" clrDropdownItem>ZIP file</a>
+        <a (click)="onSubmit('YAML')" clrDropdownItem>YAML file</a>
+      </clr-dropdown-menu>
+      </clr-dropdown>
+    </div>
+    </clr-dropdown-menu>
+    </clr-dropdown>
+  </div>
+  <!-- Get All Config -->
+  <div class="btn-group">
+    <clr-dropdown>
+      <button class="btn" clrDropdownTrigger *ngIf="loadingallconfig else getallconfig" disabled>
+        <cds-icon shape="bundle"></cds-icon>
+        Get all Config
+      </button>
+      <ng-template #getallconfig>
+        <button class="btn" clrDropdownTrigger>
+          <cds-icon shape="bundle"></cds-icon>
+          Get all Config
+        </button>
+      </ng-template>
+      <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+      <a (click)="getAllConfig('JSON')" clrDropdownItem>Get Config in JSON</a>
+      <a (click)="getAllConfig('YAML')" clrDropdownItem>Get Config in YAML</a>
+      </clr-dropdown-menu>
+    </clr-dropdown>
+  </div>
+  <!-- Diff part-->
+  <div class="btn-group">
+    <app-diff #appDiff Name={{Name}} [Tab]=this.TabAudit (diffArrayOut)="getDiff($event)"></app-diff>
+    <button class="btn" *ngIf="!getallconfig else diff" disabled>
+      <cds-icon shape="file-group"></cds-icon>
+      Diff
+    </button>
+    <ng-template #diff>
+      <button class="btn" (click)="appDiff.StartWizard()">
+        <cds-icon shape="file-group"></cds-icon>
+        Diff
+      </button>
+    </ng-template>
+    <clr-dropdown>
+      <button class="btn" clrDropdownTrigger *ngIf="!isCompared else exportdiff" disabled>
+        <cds-icon shape="download-cloud" ></cds-icon>
+        Export Diff
+      </button>
+      <ng-template #exportdiff>
+        <button class="btn" clrDropdownTrigger>
+          <cds-icon shape="download-cloud"></cds-icon>
+          Export Diff
+        </button>
+      </ng-template>
+      <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+        <a (click)="onExportDiff('JSON', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in JSON</a>
+        <a (click)="onExportDiff('YAML', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in YAML</a>
+      </clr-dropdown-menu>
+    </clr-dropdown>
+  </div>
+</div>
+<div class="alert alert-warning" role="alert" *ngIf="loadingallconfig">
+  <div class="alert-items">
+    <div class="alert-item static">
+      <div class="alert-icon-wrapper">
+        <cds-icon class="alert-icon" shape="exclamation-circle"></cds-icon>
+      </div>
+      <span class="alert-text">
+        Background all config treatment: getting informations for <b>{{NameMenu}}</b>
+      </span>
+    </div>
+</div>
+<button type="button" class="close" aria-label="Close" (click)="error = false">
+  <cds-icon aria-hidden="true" shape="window-close" ></cds-icon>
+</button>
+</div>
+<p class="p3">
+<clr-tabs>
+    <!-- Dashboard -->
+    <clr-tab>
+      <button clrTabLink>Dashboard</button>
+      <clr-tab-content *clrIfActive>
+        <div class="clr-row">
+          <!-- Fabric Card -->
+          <div class="clr-col">
+          <div class="card">
+            <div class="card-header" id="fabric">
+              <cds-icon shape="cluster" size="24" id="fabric"></cds-icon>&nbsp;NSX-T Fabric Informations
+          </div>
+          <div class="card-block">
+            <cds-toggle>
+              <label >Get all informations</label>
+              <input type="checkbox" clrToggle name="test" [(ngModel)]="ToggleAllFabricBoolean" (change)="ToggleAllFabric()"/>
+            </cds-toggle>
+          </div>
+          <div class="card-block">
+            <div class="card-text">
+              <cds-form-group layout="vertical">
+                  <cds-toggle-group>
+                      <cds-toggle *ngFor="let tg of listmenu.TabFabric">
+                          <label >{{tg.description}}</label>
+                          <input type="checkbox"clrToggle name={{tg.id}} [(ngModel)]="ToggleState[tg.id]" (change)="toggle(tg.id)" />
+                      </cds-toggle>
+                  </cds-toggle-group>
+              </cds-form-group>
+          </div>
+          </div>
+          </div>
+          </div>
+          <!-- Networking Card -->
+          <div class="clr-col">
+          <div class="card">
+            <div class="card-header" id="network">
+              <cds-icon shape="network-switch" size="24" id="network"></cds-icon> Virtual Networking Informations
+          </div>
+          <div class="card-block">
+            <cds-toggle>
+              <label>Get all informations</label>
+              <input type="checkbox" clrToggle name="test" [(ngModel)]="ToggleAllNetworkingBoolean" (change)="ToggleAllNetworking()"/>
+            </cds-toggle>
+          </div>
+          <div class="card-block">
+            <div class="card-text">
+              <cds-form-group layout="vertical">
+                  <cds-toggle-group>
+                      <cds-toggle *ngFor="let tg of listmenu.TabNetwork">
+                          <label>{{tg.description}}</label>
+                          <input type="checkbox"clrToggle name={{tg.id}} [(ngModel)]="ToggleState[tg.id]" (change)="toggle(tg.id)" />
+                      </cds-toggle>
+                  </cds-toggle-group>
+              </cds-form-group>
+          </div>
+          </div>
+          </div>
+          </div>
+          <!-- Security Card -->
+          <div class="clr-col">
+          <div class="card">
+            <div class="card-header" id="security">
+              <cds-icon shape="shield" size="24" id="security"></cds-icon> Security Informations
+          </div>
+          <div class="card-block">
+            <cds-toggle>
+              <label>Get all informations</label>
+              <input type="checkbox" clrToggle name="test" [(ngModel)]="ToggleAllSecurityBoolean" (change)="ToggleAllSecurity()"/>
+            </cds-toggle>
+          </div>
+          <div class="card-block">
+            <div class="card-text">
+              <cds-form-group layout="vertical">
+                  <cds-toggle-group>
+                      <cds-toggle *ngFor="let tg of listmenu.TabSecurity">
+                          <label>{{tg.description}}</label>
+                          <input type="checkbox"clrToggle name={{tg.id}} [(ngModel)]="ToggleState[tg.id]" (change)="toggle(tg.id)" />
+                      </cds-toggle>
+                  </cds-toggle-group>
+              </cds-form-group>
+          </div>
+          </div>
+          </div>
+          </div>
+        </div>
+      </clr-tab-content>
+    </clr-tab>
+    <clr-tab *ngIf="isCompared">        
+      <button clrTabLink>Diff</button>
+      <clr-tab-content *clrIfActive="true">
+        <clr-accordion>
+          <clr-accordion-panel *ngFor='let menu of this.DiffTab'>
+            <clr-accordion-title>
+              <div>
+                {{menu.key}} - 
+                <span class="label label-danger" *ngIf="menu.diffstatus === 'Deleted' ">{{menu.diffstatus}}</span>
+                <span class="label label-warning" *ngIf="menu.diffstatus === 'Modified' ">{{menu.diffstatus}}</span>
+                <span class="label label-information" *ngIf="menu.diffstatus === 'Created' ">{{menu.diffstatus}}</span>
+                <span class="label label-success" *ngIf="menu.diffstatus === 'Unchanged' ">{{menu.diffstatus}}</span>
+              </div>
+            </clr-accordion-title>
+            <div *ngIf="menu.key === 'ManagerInfos' else normal">
+              <clr-accordion-content>
+                <table class="table table-noborder ">
+                  <thead>
+                      <th class="left" *ngFor='let col of menu.items[0].services[0] | keyvalue'>{{col.key}}</th>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let entry of menu.items[0].services ">
+                      <td class="left" *ngFor='let cell of entry | keyvalue' [ngClass]= "{'deleted' : entry.diffstatus === 'Deleted', 'created' : entry.diffstatus === 'Created', 'unchanged' : entry.diffstatus === 'Unchanged', 'modified' : entry.diffstatus === 'Modified', 'unchanged' : entry.diffstatus === ''}">
+                            <span  *ngIf='!isObject(cell.value) else object' >{{cell.value}}</span>
+                            <ng-template #object>
+                              <span *ngIf="!isArray(cell.value) else array">{{cell.value | json}}</span>
+                              <ng-template #array>
+                                <span *ngIf='!isArrayofObject(cell.value) else arrayobject' >{{cell.value.join(', ')}}</span>
+                                <ng-template #arrayobject>
+                                  <span >{{cell.value | json}}</span>
+                                </ng-template>
+                              </ng-template>
+                            </ng-template>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </clr-accordion-content>
+            </div>
+            <ng-template #normal>
+                <clr-accordion-content >
+                <table class="table table-noborder ">
+                  <thead>
+                    <th class="left" *ngFor='let col of menu.items[0] | keyvalue'>{{col.key}}</th>
+                  </thead>
+                  <tbody>
+                  <tr *ngFor="let entry of menu.items ">
+                    <td class="left" *ngFor='let cell of entry | keyvalue' [ngClass]= "{'deleted' : entry.diffstatus === 'Deleted', 'created' : entry.diffstatus === 'Created', 'unchanged' : entry.diffstatus === 'Unchanged', 'modified' : entry.diffstatus === 'Modified', 'unchanged' : entry.diffstatus === ''}">
+                      <span  *ngIf='!isObject(cell.value) else object' >{{cell.value}}</span>
+                      <ng-template #object>
+                        <span *ngIf="!isArray(cell.value) else array">{{cell.value | json}}</span>
+                        <ng-template #array>
+                          <span *ngIf='!isArrayofObject(cell.value) else arrayobject' >{{cell.value.join(', ')}}</span>
+                          <ng-template #arrayobject>
+                            <span >{{cell.value | json}}</span>
+                          </ng-template>
+                        </ng-template>
+                      </ng-template>
+                    </td>
+                  </tr>
+                </tbody>
+                </table>
+              </clr-accordion-content >
+
+            </ng-template>
+
+              <!-- <clr-datagrid >
+                <clr-dg-column *ngFor='let col of menu.items[0] | keyvalue' [clrDgField]=col.key>{{col.key}}</clr-dg-column>
+                <clr-dg-placeholder>No data !</clr-dg-placeholder>
+                <clr-dg-row *clrDgItems="let entry of menu.items" [clrDgItem]="entry">
+                  <clr-dg-cell *ngFor='let cell of entry | keyvalue' [ngClass]= "{'deleted' : entry.diffstatus === 'Deleted', 'created' : entry.diffstatus === 'Created', 'unchanged' : entry.diffstatus === 'Unchanged', 'modified' : entry.diffstatus === 'Modified', 'unchanged' : entry.diffstatus === ''}">
+                      <span  *ngIf='!isObject(cell.value) else object' >{{cell.value}}</span>
+                    <ng-template #object>
+                      <span *ngIf="!isArray(cell.value) else array">{{cell.value | json}}</span>
+                      <ng-template #array>
+                        <span *ngIf='!isArrayofObject(cell.value) else arrayobject' >{{cell.value.join(', ')}}</span>
+                        <ng-template #arrayobject>
+                          <span >{{cell.value | json}}</span>
+                        </ng-template>
+                      </ng-template>
+                    </ng-template>
+                  </clr-dg-cell>
+                </clr-dg-row>
+                <clr-dg-footer>
+                  <clr-dg-pagination #pagination [clrDgPageSize]="20">
+                    <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{menu.key}} per page</clr-dg-page-size>
+                    {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{menu.key}}
+                  </clr-dg-pagination>
+                </clr-dg-footer>
+              </clr-datagrid> -->
+          </clr-accordion-panel>
+        </clr-accordion>
+
+          <!-- {{DiffTab.key}}
+          <pre *ngFor="let item of DiffTab.items" [ngClass]= "{'deleted' : item.diffstatus === 'Deleted', 'created' : item.diffstatus === 'Created', 'unchanged' : item.diffstatus === 'Unchanged', 'modified' : item.diffstatus === 'Modified', 'unchanged' : item.diffstatus === ''}">
+            {{item | json}}
+          </pre> -->
+      </clr-tab-content>
+    </clr-tab>
+    <clr-tab *ngIf="isCompared">
+      <button clrTabLink>Test</button>
+      <clr-tab-content *clrIfActive="true">
+        <clr-accordion>
+          <clr-accordion-panel *ngFor='let menu of this.DiffTab'>
+            <clr-accordion-title>
+              <div>
+                {{menu.key}} - 
+                <span class="label label-danger" *ngIf="menu.diffstatus === 'Deleted' ">{{menu.diffstatus}}</span>
+                <span class="label label-warning" *ngIf="menu.diffstatus === 'Modified' ">{{menu.diffstatus}}</span>
+                <span class="label label-information" *ngIf="menu.diffstatus === 'Created' ">{{menu.diffstatus}}</span>
+                <span class="label label-success" *ngIf="menu.diffstatus === 'Unchanged' ">{{menu.diffstatus}}</span>
+              </div>
+            </clr-accordion-title>
+            <div *ngIf="menu.key === 'ManagerInfos' else normal">
+              <clr-accordion-content>
+                <clr-datagrid >
+                <clr-dg-column *ngFor='let col of menu.items[0].services[0] | keyvalue' [clrDgField]=col.key>{{col.key}}</clr-dg-column>
+                <clr-dg-placeholder>No data !</clr-dg-placeholder>
+                <clr-dg-row *clrDgItems="let entry of menu.items[0].services" [clrDgItem]="entry">
+                  <clr-dg-cell *ngFor='let cell of entry | keyvalue' [ngClass]= "{'deleted' : entry.diffstatus === 'Deleted', 'created' : entry.diffstatus === 'Created', 'unchanged' : entry.diffstatus === 'Unchanged', 'modified' : entry.diffstatus === 'Modified', 'unchanged' : entry.diffstatus === ''}">
+                    <span  *ngIf='!isObject(cell.value) else object' >{{cell.value}}</span>
+                    <ng-template #object>
+                      <span *ngIf="!isArray(cell.value) else array">{{cell.value | json}}</span>
+                      <ng-template #array>
+                        <span *ngIf='!isArrayofObject(cell.value) else arrayobject' >{{cell.value.join(', ')}}</span>
+                        <ng-template #arrayobject>
+                          <span >{{cell.value | json}}</span>
+                        </ng-template>
+                      </ng-template>
+                    </ng-template>
+                  </clr-dg-cell>
+                </clr-dg-row>
+                <clr-dg-footer>
+                  <clr-dg-pagination #pagination [clrDgPageSize]="20">
+                    <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{menu.key}} per page</clr-dg-page-size>
+                    {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{menu.key}}
+                  </clr-dg-pagination>
+                </clr-dg-footer>
+                </clr-datagrid>
+              </clr-accordion-content>
+            </div>
+            <ng-template #normal>
+              <clr-accordion-content>
+                <clr-datagrid >
+                <clr-dg-column *ngFor='let col of menu.items[0] | keyvalue' [clrDgField]=col.key>{{col.key}}</clr-dg-column>
+                <clr-dg-placeholder>No data !</clr-dg-placeholder>
+                <clr-dg-row *clrDgItems="let entry of menu.items" [clrDgItem]="entry">
+                  <clr-dg-cell *ngFor='let cell of entry | keyvalue' [ngClass]= "{'deleted' : entry.diffstatus === 'Deleted', 'created' : entry.diffstatus === 'Created', 'unchanged' : entry.diffstatus === 'Unchanged', 'modified' : entry.diffstatus === 'Modified', 'unchanged' : entry.diffstatus === ''}">
+                    <span  *ngIf='!isObject(cell.value) else object' >{{cell.value}}</span>
+                    <ng-template #object>
+                      <span *ngIf="!isArray(cell.value) else array">{{cell.value | json}}</span>
+                      <ng-template #array>
+                        <span *ngIf='!isArrayofObject(cell.value) else arrayobject' >{{cell.value.join(', ')}}</span>
+                        <ng-template #arrayobject>
+                          <span >{{cell.value | json}}</span>
+                        </ng-template>
+                      </ng-template>
+                    </ng-template>
+                  </clr-dg-cell>
+                </clr-dg-row>
+                <clr-dg-footer>
+                  <clr-dg-pagination #pagination [clrDgPageSize]="20">
+                    <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{menu.key}} per page</clr-dg-page-size>
+                    {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{menu.key}}
+                  </clr-dg-pagination>
+                </clr-dg-footer>
+                </clr-datagrid>
+              </clr-accordion-content>
+            </ng-template>
+            </clr-accordion-panel>
+            </clr-accordion>
+
+      </clr-tab-content>
+    </clr-tab>
+</clr-tabs>
+ 
+

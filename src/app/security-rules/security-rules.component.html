@@ -1,0 +1,256 @@
+<ng-container>
+    <app-description Menu='Security - Distributed Firewall Rules'></app-description>
+</ng-container>
+<ng-container >
+  <p class="p6">
+    <div class="btn-group">
+      <div class="btn-group">
+        <clr-dropdown>
+          <button class="btn" clrDropdownTrigger *ngIf="loading else export" disabled>
+            <cds-icon shape="download-cloud" ></cds-icon>
+            Export
+          </button>
+        <ng-template #export>
+          <button class="btn" clrDropdownTrigger>
+            <cds-icon shape="download-cloud"></cds-icon>
+            Export
+          </button>
+        </ng-template>
+        <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+          <a (click)="Export('XLS', this.TabRules, Name)" clrDropdownItem>Export in Excel</a>
+          <a (click)="Export('CSV', this.TabRules, Name)" clrDropdownItem>Export in CSV</a>
+          <a (click)="Export('JSON', this.TabRules, Name)" clrDropdownItem>Export in JSON</a>
+          <a (click)="Export('YAML', this.TabRules, Name)" clrDropdownItem>Export in YAML</a>
+        </clr-dropdown-menu>
+        </clr-dropdown>
+      </div>
+      <div class="btn-group">
+          <!-- Diff part-->
+          <app-diff #appDiff Name={{Name}} [Tab]=this.TabRules (diffArrayOut)="getDiff($event)"></app-diff>
+          <button class="btn" *ngIf="loading else diff" disabled>
+            <cds-icon shape="file-group"></cds-icon>
+            Diff
+          </button>
+          <ng-template #diff>
+            <button class="btn" (click)="appDiff.StartWizard()">
+              <cds-icon shape="file-group"></cds-icon>
+              Diff
+            </button>
+          </ng-template>
+          <clr-dropdown>
+            <button class="btn" clrDropdownTrigger *ngIf="!isCompared else exportdiff" disabled>
+              <cds-icon shape="download-cloud" ></cds-icon>
+              Export Diff
+            </button>
+            <ng-template #exportdiff>
+              <button class="btn" clrDropdownTrigger>
+                <cds-icon shape="download-cloud"></cds-icon>
+                Export Diff
+              </button>
+            </ng-template>
+            <clr-dropdown-menu *clrIfOpen clrPosition="bottom-left">
+              <a (click)="Export('XLS', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in Excel</a>
+              <a (click)="Export('CSV', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in CSV</a>
+              <a (click)="Export('JSON', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in JSON</a>
+              <a (click)="Export('YAML', this.DiffTab, 'Diff_' + Name)" clrDropdownItem>Export in YAML</a>
+            </clr-dropdown-menu>
+          </clr-dropdown>
+    </div>
+    </div>
+    <!-- Alert in case of error-->
+    <div class="alert alert-danger" role="alert" *ngIf="error">
+      <div class="alert-items">
+        <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <cds-icon class="alert-icon" shape="exclamation-circle"></cds-icon>
+          </div>
+          <span class="alert-text">
+            {{error_message}}
+          </span>
+        </div>
+    </div>
+    <button type="button" class="close" aria-label="Close" (click)="error = false">
+      <cds-icon aria-hidden="true" shape="window-close" ></cds-icon>
+    </button>
+    </div>
+    <p class="p3">
+    <clr-tabs>
+        <clr-tab *ngFor="let cat of TabCat" >
+            <button clrTabLink>{{cat.name}}
+              <clr-spinner [clrInline]="true" *ngIf="cat.loading"></clr-spinner>
+            </button>
+            <clr-tab-content *clrIfActive="true">
+              <clr-accordion>
+                <div *ngFor="let policy of cat.policies">
+                <clr-accordion-panel *ngIf="policy.category == cat.name">
+                    <clr-accordion-title>
+                      {{policy.name}}
+                      <clr-signpost>
+                        <clr-signpost-content *clrIfOpen>
+                          <h3 id="signpostheader">{{policy.name}}</h3>
+                          <p class='p5' >Applied to: <code class="clr-code">{{policy.scope}}</code></p>
+                          <p class='p5' id="signpost">Stateful: <code class="clr-code">{{policy.stateful}}</code></p>
+                          <p class='p5' id="signpost">Sequence Number: <code class="clr-code">{{policy.sequence_nb}}</code></p>
+                          <p class='p5' id="signpost">Path: <code class="clr-code">{{policy.path}}</code></p>
+                        </clr-signpost-content>
+                      </clr-signpost>
+                    </clr-accordion-title>
+                    <clr-accordion-content *clrIfExpanded>
+                      <table class="table table-noborder table-compact">
+                        <thead>
+                          <tr>
+                            <th class="left">Rules Name</th>
+                            <th class="left">Rules ID</th>
+                            <th class="left">Sources</th>
+                            <th class="left">Destinations</th>
+                            <th class="left">Services</th>
+                            <th class="left">Action</th>
+                            <th class="left">Scope</th>
+                            <th class="left">Direction</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let rule of TabRules">
+                            <td class="left" *ngIf="rule.policy.category == policy.category && rule.policy.name == policy.name" >{{rule.name}}</td>
+                            <td class="left" *ngIf="rule.policy.category == policy.category && rule.policy.name == policy.name" >{{rule.id}}</td>
+                            <td class="left" *ngIf="rule.policy.category == policy.category && rule.policy.name == policy.name" >{{rule.sources}}</td>
+                            <td class="left" *ngIf="rule.policy.category == policy.category && rule.policy.name == policy.name" >{{rule.destinations}}</td>
+                            <td class="left" *ngIf="rule.policy.category == policy.category && rule.policy.name == policy.name" >{{rule.services}}</td>
+                            <td class="left" *ngIf="rule.policy.category == policy.category && rule.policy.name == policy.name" >
+                              <span class="label label-danger" *ngIf="rule.action !== 'ALLOW' ">{{rule.action}}</span>
+                              <span class="label label-success" *ngIf="rule.action === 'ALLOW' ">{{rule.action}}</span>
+                            </td>
+                            <td class="left" *ngIf="rule.policy.category == policy.category && rule.policy.name == policy.name" >{{rule.scope}}</td>
+                            <td class="left" *ngIf="rule.policy.category == policy.category && rule.policy.name == policy.name" >
+                              <cds-icon shape="two-way-arrows" *ngIf="rule.direction === 'IN_OUT'"></cds-icon>           
+                              <cds-icon shape="arrow" direction="right" *ngIf="rule.direction === 'IN'"></cds-icon>
+                              <cds-icon shape="arrow" direction="left" *ngIf="rule.direction === 'OUT'"></cds-icon> {{rule.direction}}                        
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </clr-accordion-content>
+                </clr-accordion-panel>
+                </div>
+              </clr-accordion>
+            </clr-tab-content>
+    
+        </clr-tab>
+        <clr-tab *ngIf="isCompared">
+          <button clrTabLink>Diff</button>
+          <clr-tab-content *clrIfActive="true">
+            <clr-datagrid>
+              <clr-dg-column [clrDgField]="'diffstatus'">Diff Status</clr-dg-column>
+              <clr-dg-column [clrDgField]="'name'">Rules Name</clr-dg-column>
+              <clr-dg-column [clrDgField]="'id'">Rules ID</clr-dg-column>
+              <clr-dg-column [clrDgField]="'sources'">Sources</clr-dg-column>
+              <clr-dg-column [clrDgField]="'destinations'">Destinations</clr-dg-column>
+              <clr-dg-column [clrDgField]="'services'">Services</clr-dg-column>
+              <clr-dg-column [clrDgField]="'action'">Action</clr-dg-column>
+              <clr-dg-column [clrDgField]="'scope'">Scope</clr-dg-column>
+              <clr-dg-column [clrDgField]="'direction'">Direction</clr-dg-column>
+              <clr-dg-placeholder>We couldn't find any Rules !</clr-dg-placeholder>
+              <clr-dg-row *clrDgItems="let rule of this.DiffTab" [clrDgItem]="rule" 
+                  [ngClass]="{
+                    'created': (rule.diffstatus === 'Created'  ),
+                    'deleted': (rule.diffstatus === 'Deleted'  ),
+                    'modified': (rule.diffstatus === 'Modified'  ),
+                    'unchanged': (rule.diffstatus === 'Unchanged'  )
+                  }">
+                <clr-dg-cell>
+                  <span class="label label-success" *ngIf="rule.diffstatus === 'Unchanged'">{{ rule.diffstatus }}</span>
+                  <span class="label label-warning" *ngIf="rule.diffstatus === 'Modified'">{{ rule.diffstatus }}</span>
+                  <span class="label label-danger" *ngIf="rule.diffstatus === 'Deleted'">{{ rule.diffstatus }}</span>
+                  <span class="label label-info" *ngIf="rule.diffstatus === 'Created'">{{ rule.diffstatus }}</span>
+                </clr-dg-cell>
+                <clr-dg-cell>
+                  <div *ngIf="rule.name.includes('||') else namenormal">
+                    <span class="label label-danger"> <s>{{rule.name.split('||')[0]}}</s></span>
+                    <span class="label label-info">{{rule.name.split('||')[1]}}</span>
+                  </div>
+                  <ng-template #namenormal>
+                    {{rule.name}}
+                  </ng-template>
+                </clr-dg-cell>
+                <clr-dg-cell>{{rule.id}}</clr-dg-cell>
+                <clr-dg-cell>
+                  <div *ngFor="let src of rule.sources">
+                  <div *ngIf="src.includes('||') else srcnormal">
+                    <span class="label label-danger"> <s>{{src.split('||')[0]}}</s></span>
+                    <span class="label label-info">{{src.split('||')[1]}}</span>
+                  </div>
+                  <ng-template #srcnormal>
+                    {{src}}
+                  </ng-template>
+                </div>
+                </clr-dg-cell>
+                <clr-dg-cell>
+                  <div *ngFor="let dst of rule.destinations">
+                  <div *ngIf="dst.includes('||') else destnormal">
+                    <span class="label label-danger"> <s>{{dst.split('||')[0]}}</s></span>
+                    <span class="label label-info">{{dst.split('||')[1]}}</span>
+                  </div>
+                  <ng-template #destnormal>
+                    {{dst}}
+                  </ng-template>
+                </div>
+                </clr-dg-cell>
+                <clr-dg-cell>
+                  <div *ngFor="let svc of rule.services">
+                    <div *ngIf="svc.includes('||') else svcnormal">
+                      <span class="label label-danger" *ngIf="svc.split('||')[0] != '+'"> <s>{{svc.split('||')[0]}}</s></span>
+                      <span class="label label-info" *ngIf="svc.split('||')[1] != '-'">{{svc.split('||')[1]}}</span>
+                    </div>
+                  <ng-template #svcnormal>
+                    {{svc}}
+                  </ng-template>
+                </div>
+
+                </clr-dg-cell>
+                <clr-dg-cell>
+                  <div *ngIf="rule.action.includes('||') else actionnormal">
+                    <span class="label label-danger"> <s>{{rule.action.split('||')[0]}}</s></span>
+                    <span class="label label-info">{{rule.action.split('||')[1]}}</span>
+                  </div>
+                  <ng-template #actionnormal>
+                    {{rule.action}}
+                  </ng-template>
+                </clr-dg-cell>
+                <clr-dg-cell>
+                  <div *ngIf="rule.scope.includes('||') else scopenormal">
+                    <span class="label label-danger"> <s>{{rule.scope.split('||')[0]}}</s></span>
+                    <span class="label label-info">{{rule.scope.split('||')[1]}}</span>
+                  </div>
+                  <ng-template #scopenormal>
+                    {{rule.action}}
+                  </ng-template>
+                </clr-dg-cell>
+                <clr-dg-cell>
+                  <div *ngIf="rule.direction.includes('||') else directionnormal">
+                    <span class="label label-danger"><s>{{rule.direction.split('||')[0]}}</s></span>
+                    <span class="label label-info">{{rule.direction.split('||')[1]}}</span>
+                  </div>
+                  <ng-template #directionnormal>
+                    <cds-icon shape="two-way-arrows" *ngIf="rule.direction === 'IN_OUT'"></cds-icon>           
+                    <cds-icon shape="arrow" direction="right" *ngIf="rule.direction === 'IN'"></cds-icon>
+                    <cds-icon shape="arrow" direction="left" *ngIf="rule.direction === 'OUT'"></cds-icon>                      
+                    {{rule.direction}}
+                  </ng-template>
+                </clr-dg-cell>
+              </clr-dg-row>
+               <clr-dg-footer>
+                  <clr-dg-pagination #pagination [clrDgPageSize]="20">
+                    <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">Segments per page</clr-dg-page-size>
+                    {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} segments
+                  </clr-dg-pagination>
+               </clr-dg-footer>
+            </clr-datagrid>
+          </clr-tab-content>
+          
+          <ng-template #difftab>
+            <app-diff Name='Rules' [HeaderDiff]=HeaderDiff [Tab]=TabRules></app-diff>
+          </ng-template>
+        </clr-tab>
+    </clr-tabs>
+</ng-container>
+

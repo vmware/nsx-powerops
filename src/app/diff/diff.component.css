@@ -1,0 +1,37 @@
+  ::ng-deep clr-control-container.code {
+    height: 100%!important
+  }
+
+  ::ng-deep .clr-row.code {
+    height: 100%!important
+  }
+  ::ng-deep .clr-col-6.code {
+    height: 100%!important
+  }
+
+  ::ng-deep .clr-control-container {
+    width:100%!important;
+    height: 100%!important
+  }
+
+  ::ng-deep .clr-input-wrapper {
+    width:100%!important;
+    max-height: 100%!important;
+    height: 100% ! important;
+  }
+
+  ::ng-deep textarea {
+    resize: none;
+    width:100%!important;
+    height: 95%;
+  }
+
+  ::ng-deep .clr-form {
+    height: 100%!important
+  }
+  ::ng-deep .clr-wizard-page {
+    height: 100%!important
+  }
+  ::ng-deep .clr-wizard-content {
+    height: 100%!important
+  }

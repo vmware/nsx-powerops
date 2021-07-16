@@ -1,0 +1,61 @@
+<div class="login-wrapper">
+    <form class="login" clrForm (ngSubmit)="onSubmit()">
+        <section class="title">
+            <h3 class="welcome">Welcome to</h3>
+            PowerOps
+            <h5 class="hint">Use your NSX-T login to sign in</h5>
+        </section>
+        <div class="login-group">
+            <div class="alert alert-danger" *ngIf="alert == true">
+                <div class="alert-items">
+                  <div class="alert-item static">
+                    <div class="alert-icon-wrapper">
+                      <cds-icon class="alert-icon" shape="exclamation-circle"></cds-icon>
+                    </div>
+                    <span class="alert-text">
+                      Wrong username/password or IP address.
+                    </span>
+                  </div>
+                </div>
+              </div>
+            <!-- NSX IP/FQDN -->
+            <clr-input-container>
+                <label class="clr-sr-only">NSX-T IP/FQDN</label>
+                <input type="text"  clrInput placeholder="NSX-T IP/FQDN" name=nsxmanager required [(ngModel)]=mysession.nsxmanager />
+            </clr-input-container>
+
+            <!-- Username -->
+            <clr-input-container>
+                <label class="clr-sr-only">Username</label>
+                <input type="text"  clrInput placeholder="Username" name=username required [(ngModel)]=mysession.username/>
+            </clr-input-container>
+
+            <!-- Password -->
+            <clr-password-container>
+                <label class="clr-sr-only">Password</label>
+                <input type="password"  clrPassword placeholder="Password" name=password required [(ngModel)]=mysession.password/>
+            </clr-password-container>
+
+            <!-- Disclaimer -->
+              <h6>Terms and Disclaimer Agreement</h6>
+              <p>
+              The software is provided "As Is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability,                                       
+              fiteness for a particular purpose and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages or other liability,                             
+              whether in an action of contract, tort or otherwise, arising from, out of or in connection with the software or the use or other dealings in the software.
+              </p>
+              <p>
+              NSX Power Operations
+              Copyright 2020 VMware, Inc. All rights reserved
+              The MIT license (the ìLicenseî) set forth below applies to all parts of the NSX Power Operations project. You may not use this file except in compliance with the License.†
+              </p>
+            <clr-checkbox-container>
+              <clr-checkbox-wrapper>
+                <label>Accept</label>
+                <input type="checkbox" name="disclaimer" clrCheckbox required [(ngModel)]=mysession.disclaimer />
+              </clr-checkbox-wrapper>
+              <clr-control-error>This field is required!</clr-control-error>
+            </clr-checkbox-container>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </div>
+    </form>
+</div>

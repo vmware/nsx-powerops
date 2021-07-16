@@ -1,0 +1,24 @@
+  .step-content {
+    height: 300px !important;
+  }
+  .rowtext {
+    height: 250px!important
+}
+
+  .deleted {
+    color: hsl(9, 100%, 43%);
+    background-color: hsl(9, 100%, 97%);
+    text-decoration: line-through
+  }
+  .created {
+    color: hsl(198, 100%, 28%);
+    background-color: hsl(198, 83%, 94%);
+  }
+  .modified {
+    color: hsl(43, 100%, 42%);
+    background-color: hsl(48, 100%, 95%);
+  }
+  .unchanged {
+    color: hsl(93, 100%, 26%);
+    background-color:  hsl(93, 52%, 88%);
+  }

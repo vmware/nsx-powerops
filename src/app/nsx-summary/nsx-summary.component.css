@@ -1,0 +1,21 @@
+.spinner {
+    display: block;
+    margin-left: auto;
+    margin-right: auto
+}
+
+#textsignpost {
+  margin: 0
+}
+
+#inside{
+    color: hsl(9,85%,67%)
+  }
+  
+  #component{
+    color: hsl(198,66%,57%)
+  }
+  
+  #manager{
+    color: hsl(93,79%,40%)
+  }

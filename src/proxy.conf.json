@@ -1,0 +1,7 @@
+{
+    "/api": {
+      "target": "https://10.100.10.12",
+      "secure": true,
+      "changeOrigin": true
+    }
+  }
