@@ -1,7 +1,5 @@
 .DS_STORE
 
-/dist/
-/documentation/
 *.log
 node_modules
 
