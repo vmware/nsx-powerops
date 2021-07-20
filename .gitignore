@@ -3,6 +3,9 @@
 *.log
 node_modules
 
+#mac file
+.DS_Store
+
 # Include when developing application packages.
 .settings/
 .vscode/launch.json

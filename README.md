@@ -5,6 +5,7 @@
 NSX Power Operations is a platform that provides NSX users a way to document and healthcheck their VMware NSX-T environment. Through a series of API calls, you have the ability to output healthchecks and export it in Microsoft Excel, CSV, JSON and YAML formats, that are easily consumable and referable. The documentation not only captures the Desired State (configuration) but also the Realized State (for example: routing & forwarding tables) across the distributed environment.
 You also have the ability to make some comparaison between an old state (by loading a precedent JSON or YAML export file) and the current on each healthchecks.
 
+![Semantic description of image](src/assets/images/screenshot.png)
 
 ## Releases & Major Branches
 Current version: Supports NSX-T 3.x API (December 2020)
