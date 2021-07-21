@@ -41,6 +41,7 @@ export class SegmentsService {
     let lr_json =  this.session.getAPI(this.mysession, '/api/v1/logical-routers');
 
     let result = await Promise.all([seg_json, ls_json, tz_json, lr_json])
+    console.log(result)
     if (result[0].result_count > 0){
       for (let seg of result[0].results) {
         let SegmentObj = new Segment(seg.display_name)
@@ -59,6 +60,19 @@ export class SegmentsService {
               SegmentObj.tz = new TZ(tzone.display_name, tzone.tz_type.split('_')[0])
               SegmentObj.tz.name = tzone.display_name
               SegmentObj.tz.type = tzone.tz_type.split('_')[0]
+            }
+          }
+        }
+        else{
+          for(let ls of result[1].results){
+            if (ls.id === seg.unique_id){
+              for (let tzone of result[2].results){
+                if (tzone.id == ls.transport_zone_id) {
+                  SegmentObj.tz = new TZ(tzone.display_name, tzone.tz_type.split('_')[0])
+                  SegmentObj.tz.name = tzone.display_name
+                  SegmentObj.tz.type = tzone.tz_type.split('_')[0]
+                }
+              }
             }
           }
         }
