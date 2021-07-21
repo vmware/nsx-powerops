@@ -4,8 +4,8 @@ import { SessionService } from '../services/session.service';
 import { ExportService} from '../services/export.service';
 import { SegmentsService} from '../services/segments.service'
 import { ClarityIcons, fileGroupIcon, uploadIcon } from '@cds/core/icon';
+
 import * as _ from "lodash";
-import { indexOf } from 'lodash';
 
 @Component({
   selector: 'app-nsx-segments',
