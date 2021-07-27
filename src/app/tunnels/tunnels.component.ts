@@ -12,22 +12,11 @@ import { TunnelsService } from '../services/tunnels.service'
 
 export class TunnelsComponent implements OnInit {
   TabTunnels: any[] = []
-  Header= ['Transport Node', 'Tunnel Name', 'Tunnel Status', 'Egress Interface', 'Local IP', 'Remote IP', 'Remote Node ID', 'Remote Node Name', 'Encap', 'Diff Status' ]
-  Name = 'Tunnels'
 
-
-  HeaderDiff = [
-    { header: 'Transport Node', col: 'node', subcol: 'name'},
-    { header: 'Tunnel Name', col: 'name'},
-    { header: 'Tunnel Status', col: 'status'},
-    { header: 'Egress Interface', col: 'egress_int'},
-    { header: 'Local IP', col: 'local_ip'},
-    { header: 'Remote IP', col: 'remote_ip'},
-    { header: 'Remote Node ID', col: 'remote_node_id'},
-    { header: 'Remote Node Name', col: 'remote_node_display_name'},
-    { header: 'Encap', col: 'encap'},
-  ]
-
+  Name = this.tunnel.Name
+  Header = this.tunnel.Header
+  HeaderDiff = this.tunnel.HeaderDiff
+  
   exportloading = true
   exportxls = false
   loading = true
@@ -53,14 +42,6 @@ export class TunnelsComponent implements OnInit {
       this.loading = false
   }
 
-  // To check type of variable in HTML
-  typeOf(value: any) {
-    return typeof value;
-  }
-
-  isArray(obj : any ) {
-    return Array.isArray(obj)
- }
 
  getDiff(diffArrayOut: any){
   this.DiffTab = _.values(diffArrayOut)

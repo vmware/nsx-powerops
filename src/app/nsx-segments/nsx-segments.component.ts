@@ -17,22 +17,9 @@ export class NsxSegmentsComponent implements OnInit, OnDestroy {
 
   public mysession: LoginSession;
   TabSegments: any[] = [];
-  Header= ['Name', 'Type', 'Vlan', 'Subnet', 'Gateway', 'Attached to', 'Router Type','VNI', 'TZ Name', 'Replication Mode', 'Admin Status' , 'Diff Status']
-
-  HeaderDiff = [
-    { header: 'Name', col: 'name'},
-    { header: 'Type', col: 'type'},
-    { header: 'Vlan', col: 'vlan'},
-    { header: 'Subnet', col: 'subnets', subcol: 'network'},
-    { header: 'Gateway', col: 'subnets', subcol: 'gateway_address'},
-    { header: 'Attached to', col: 'connectedto'},
-    { header: 'Router Type', col: 'routertype'},
-    { header: 'VNI', col: 'vni'},
-    { header: 'TZ Name', col: 'tz', subcol: 'name'},
-    { header: 'Replication Mode', col: 'replication_mode'},
-    { header: 'Admin Status', col: 'state'},
-  ]
-  Name = 'Segments'
+  Header = this.segment.Header
+  HeaderDiff = this.segment.HeaderDiff
+  Name = this.segment.Name
 
   loading = true
   error = false
@@ -55,15 +42,6 @@ export class NsxSegmentsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void{
   }
-
-  // To check type of variable in HTML
-  typeOf(value: any) {
-    return typeof value;
-  }
-
-  isArray(obj : any ) {
-    return Array.isArray(obj)
- }
 
  getDiff(diffArrayOut: any){
    // Assign diff object in Array of HTML display

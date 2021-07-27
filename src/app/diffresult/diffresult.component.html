@@ -1,0 +1,184 @@
+<!-- Information about Diff -->
+<div class="alert alert-information" role="alert">
+    <div class="alert-items">
+      <div class="alert-item static">
+          <div class="alert-icon-wrapper">
+            <cds-icon class="alert-icon" shape="exclamation-circle"></cds-icon>
+          </div>
+          <span class="alert-text">
+            <b>Information:</b> If an object has more than 2 changes, then it is marked as modified but specific changed elements are not shown
+          </span>
+      </div>
+    </div>
+</div>
+<clr-datagrid>
+    <clr-dg-column [clrDgField]="'diffstatus'">Diff Status</clr-dg-column>
+    <clr-dg-column *ngFor="let col of HeaderDiff" [clrDgField]=col.col>{{col.header}}</clr-dg-column>
+    <clr-dg-placeholder>We couldn't find any {{Name}} !</clr-dg-placeholder>
+    <clr-dg-row *clrDgItems="let item of this.DiffTab" [clrDgItem]="item" 
+            [ngClass]="{
+              'created': (item.diffstatus === 'Created'  ),
+              'deleted': (item.diffstatus === 'Deleted'  ),
+              'modified': (item.diffstatus === 'Modified'  ),
+              'unchanged': (item.diffstatus === 'Unchanged' ||  item.diffstatus === '')
+                }">
+        <!-- Diff column-->
+        <clr-dg-cell>
+          <span class="label label-success" *ngIf="item.diffstatus === 'Unchanged' || item.diffstatus === '' ">Unchanged</span>
+          <span class="label label-warning" *ngIf="item.diffstatus === 'Modified'">{{ item.diffstatus }}</span>
+          <span class="label label-danger" *ngIf="item.diffstatus === 'Deleted'">{{ item.diffstatus }}</span>
+          <span class="label label-info" *ngIf="item.diffstatus === 'Created'">{{ item.diffstatus }}</span>
+        </clr-dg-cell>
+        <!-- Loop on rest of columns-->
+        <clr-dg-cell *ngFor="let col of HeaderDiff">
+          <div *ngIf="typeOf(item[col.col]) === 'object'">
+            <div *ngIf="item[col.col][col.subcol] && item[col.col][col.subcol].toString().includes('||') else nodiff">
+                <span class="label label-danger" *ngIf="item[col.col][col.subcol].toString().split('||')[0] != '+'"> <s>{{item[col.col][col.subcol].toString().split('||')[0]}}</s></span>
+                <span class="label label-info" *ngIf="item[col.col][col.subcol].toString().split('||')[1] != '-'">{{item[col.col][col.subcol].toString().split('||')[1]}}</span>
+            </div>
+            <ng-template #nodiff>
+              {{item[col.col][col.subcol]}}
+            </ng-template>
+          </div>
+          <div *ngIf="isArray(item[col.col])">
+            <div *ngFor="let subitem of item[col.col]">
+                <div *ngIf="typeOf(subitem) === 'object'">
+                  <!-- Particular Case for Diff of Groups -->
+                  <div *ngIf="Name === 'Groups' &&  col.col === 'criteria' else NOTGROUP">
+                      <ng-container *ngIf="subitem.resource_type.indexOf('Condition') > -1 || subitem.resource_type.indexOf('PathExpression') > -1  else criteria">
+                        <div *ngIf="subitem.member_type.toString().includes('||') else nodiffmembertype">
+                            <span class="label label-danger" *ngIf="subitem.member_type.split('||')[0] != '+'"> <s>{{subitem.member_type.split('||')[0]}}</s></span>
+                            <span class="label label-info" *ngIf="subitem.member_type.split('||')[1] != '-'">{{subitem.member_type.split('||')[1]}}</span>   
+                        </div>                              
+                        <ng-template #nodiffmembertype>
+                          {{subitem.member_type}}
+                        </ng-template>
+                        with
+                        <div *ngIf="subitem.key.toString().includes('||') else nodiffkey">
+                          <span class="label label-danger" *ngIf="subitem.key.split('||')[0] != '+'"> <s>{{subitem.key.split('||')[0]}}</s></span>
+                          <span class="label label-info" *ngIf="subitem.key.split('||')[1] != '-'">{{subitem.key.split('||')[1]}}</span>   
+                        </div>                              
+                        <ng-template #nodiffkey>
+                            {{subitem.key}}
+                        </ng-template>
+                        <div *ngIf="subitem.operator.toString().includes('||') else nodiffoperator">
+                            <span class="label label-danger" *ngIf="subitem.operator.split('||')[0] != '+'"> <s>{{subitem.operator.split('||')[0]}}</s></span>
+                            <span class="label label-info" *ngIf="subitem.operator.split('||')[1] != '-'">{{subitem.operator.split('||')[1]}}</span>   
+                        </div>                              
+                        <ng-template #nodiffoperator>
+                          {{subitem.operator}}
+                        </ng-template>
+                        <ng-container *ngIf="subitem.value.scope else noscope">
+                            <div *ngIf="subitem.value.tag.toString().includes('||') || subitem.value.scope.toString().includes('||') else nodiffscope">
+                              <span class="label label-danger" *ngIf="subitem.value.tag.split('||')[0] != '+' || subitem.value.scope.split('||')[0] != '+'"> <s>{{subitem.value.tag.split('||')[0]}}:{{subitem.value.scope.split('||')[0]}}</s></span>
+                              <span class="label label-info" *ngIf="subitem.value.tag.split('||')[1] != '-' || subitem.value.scope.split('||')[1] != '-'"> {{subitem.value.tag.split('||')[1]}}:{{subitem.value.scope.split('||')[1]}}</span>
+                              </div>                              
+                            <ng-template #nodiffscope>
+                                {{subitem.value.tag}}:{{subitem.value.scope}}
+                            </ng-template>
+                        </ng-container>
+                        <ng-template #noscope>
+                          <ng-container *ngIf="!subitem.value.tag else tag">
+                            <ng-container *ngIf="isArray(subitem.value) else NotArray">
+                                                <ng-container *ngFor="let itm of subitem.value">
+                                                  <div *ngIf="itm.toString().includes('||') else nodiff">
+                                                    <span class="label label-danger" *ngIf="itm.split('||')[0] != '+'"> <s>{{itm.split('||')[0]}}</s></span>
+                                                    <span class="label label-info" *ngIf="itm.split('||')[1] != '-'">{{itm.split('||')[1]}}</span>   
+                                                  </div>                              
+                                                  <ng-template #nodiff>
+                                                      {{itm}}
+                                                  </ng-template>
+                                                </ng-container>
+                            </ng-container>
+                            <ng-template #NotArray>
+                                                <div *ngIf="subitem.value.toString().includes('||') else nodiff">
+                                                  <span class="label label-danger" *ngIf="subitem.value.split('||')[0] != '+'"> <s>{{subitem.value.split('||')[0]}}</s></span>
+                                                  <span class="label label-info" *ngIf="subitem.value.split('||')[1] != '-'">{{subitem.value.split('||')[1]}}</span>   
+                                                </div>                              
+                                                <ng-template #nodiff>
+                                                    {{subitem.value}}
+                                                </ng-template>
+                            </ng-template>
+                          </ng-container>
+                          <ng-template #tag>
+                                              <div *ngIf="subitem.value.tag.toString().includes('||') || subitem.value.scope.toString().includes('||') else nodiff">
+                                                <span class="label label-danger" *ngIf="subitem.value.tag.split('||')[0] != '+' || subitem.value.scope.split('||')[0] != '+'"> <s>{{subitem.value.tag.split('||')[0]}}:{{subitem.value.scope.split('||')[0]}}</s></span>
+                                                <span class="label label-info" *ngIf="subitem.value.tag.split('||')[1] != '-' || subitem.value.scope.split('||')[1] != '-'"> {{subitem.value.tag.split('||')[1]}}:{{subitem.value.scope.split('||')[1]}}</span>
+                                                </div>                              
+                                              <ng-template #nodiff>
+                                                  {{subitem.subitem.value.tag}}:{{subitem.subitem.value.scope}}
+                                              </ng-template>
+                                            <ng-template>
+                                              <div *ngIf="subitem.value.toString().includes('||') else nodiff">
+                                                <span class="label label-danger" *ngIf="subitem.value.split('||')[0] != '+'"> <s>{{subitem.value.split('||')[0]}}</s></span>
+                                                <span class="label label-info" *ngIf="subitem.value.split('||')[1] != '-'">{{subitem.value.split('||')[1]}}</span>   
+                                              </div>                              
+                                              <ng-template #nodiff>
+                                                  {{subitem.value}}
+                                              </ng-template>
+                                          </ng-template>
+                          </ng-template>
+                        </ng-template>
+                      </ng-container>
+                      <ng-template #criteria>
+                          <ng-container *ngIf="isArray(subitem.value) else NotArrayFinal">
+                              <ng-container *ngFor="let itm of subitem.value">
+                                <div *ngIf="itm.toString().includes('||') else nodiff">
+                                  <span class="label label-danger" *ngIf="itm.split('||')[0] != '+'"> <s>{{itm.split('||')[0]}}</s></span>
+                                  <span class="label label-info" *ngIf="itm.split('||')[1] != '-'">{{itm.split('||')[1]}}</span>   
+                                </div>                              
+                                <ng-template #nodiff>
+                                    {{itm}}
+                                </ng-template>
+                              </ng-container>
+                          </ng-container>
+                          <ng-template #NotArrayFinal>
+                              <div *ngIf="subitem.value.toString().includes('||') else nodiff">
+                                <span class="label label-danger" *ngIf="subitem.value.split('||')[0] != '+'"> <s>{{subitem.value.split('||')[0]}}</s></span>
+                                <span class="label label-info" *ngIf="subitem.value.split('||')[1] != '-'">{{subitem.value.split('||')[1]}}</span>   
+                              </div>                              
+                              <ng-template #nodiff>
+                                  {{subitem.value}}
+                              </ng-template>
+                          </ng-template>
+                      </ng-template>
+                  </div>
+                  <ng-template #NOTGROUP>
+                    <div *ngIf="subitem[col.subcol] && subitem[col.subcol].toString().includes('||') else diff">
+                      <span class="label label-danger" *ngIf="subitem[col.subcol].split('||')[0] != '+'"> <s>{{subitem[col.subcol].split('||')[0]}}</s></span>
+                      <span class="label label-info" *ngIf="subitem[col.subcol].split('||')[1] != '-'">{{subitem[col.subcol].split('||')[1]}}</span>
+                    </div>
+                    <ng-template #diff>
+                      {{subitem[col.subcol]}}
+                    </ng-template>
+                  </ng-template>
+              </div>
+              <div *ngIf="typeOf(subitem) === 'string' || typeOf(subitem) === 'number'">
+                            <div *ngIf="subitem && subitem.toString().includes('||') else diff">
+                                <span class="label label-danger" *ngIf="subitem.split('||')[0] != '+'"> <s>{{subitem.split('||')[0]}}</s></span>
+                                <span class="label label-info" *ngIf="subitem.split('||')[1] != '-'">{{subitem.split('||')[1]}}</span>
+                              </div>
+                              <ng-template #diff>
+                                {{subitem}}
+                              </ng-template>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="typeOf(item[col.col]) !== 'object'">
+                      <div *ngIf="item[col.col] && item[col.col].toString().includes('||') else diff">
+                          <span class="label label-danger" *ngIf="item[col.col].toString().split('||')[0] != '+'"> <s>{{item[col.col].toString().split('||')[0]}}</s></span>
+                          <span class="label label-info" *ngIf="item[col.col].toString().split('||')[1] != '-'">{{item[col.col].toString().split('||')[1]}}</span>
+                        </div>
+                        <ng-template #diff>
+                          {{item[col.col]}}
+                        </ng-template>
+          </div>
+        </clr-dg-cell>
+    </clr-dg-row>
+    <clr-dg-footer>
+      <clr-dg-pagination #pagination [clrDgPageSize]="20">
+        <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{Name}} per page</clr-dg-page-size>
+        {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{Name}}
+      </clr-dg-pagination>
+    </clr-dg-footer>
+</clr-datagrid>

@@ -9,8 +9,21 @@ import {Alarm} from '../class/Alarm'
 })
 export class AlarmsService {
   public mysession: LoginSession;
-  Header= ['Feature Name', 'Event Type', 'Node Name', 'Node Resource Type', 'Entity ID', 'Severity', 'Time', 'Status', 'Description', 'Recommended Action', 'Diff Status' ]
   Name= 'Alarms'
+  Header= ['Feature Name', 'Event Type', 'Node Name', 'Node Resource Type', 'Entity ID', 'Severity', 'Time', 'Status', 'Description', 'Recommended Action', 'Diff Status' ]
+  HeaderDiff = [
+    { header: 'Feature Name', col: 'feature_name'},
+    { header: 'Event Type', col: 'event_type'},
+    { header: 'Node Name', col: 'node_name'},
+    { header: 'Node Resource Type', col: 'node_resource_type'},
+    { header: 'Entity ID', col: 'entity_id'},
+    { header: 'Severity', col: 'severity'},
+    { header: 'Time', col: 'time'},
+    { header: 'Status', col: 'status'},
+    { header: 'Description', col: 'description'},
+    { header: 'Recommended Action', col: 'recommended_action'},
+  ]
+
   ConditionalFormating = {
     sheet: this.Name,
     column:   [

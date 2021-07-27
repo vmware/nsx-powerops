@@ -110,7 +110,10 @@
   <clr-tab *ngIf="isCompared">
       <button clrTabLink>Diff</button>
       <clr-tab-content *clrIfActive="true">
-        <clr-datagrid>
+        <app-diffresult [DiffTab]=this.DiffTab [HeaderDiff]=this.HeaderDiff Name={{Name}}></app-diffresult>
+
+
+        <!-- <clr-datagrid>
           <clr-dg-column [clrDgField]="'diffstatus'">Diff Status</clr-dg-column>
           <clr-dg-column *ngFor="let col of HeaderDiff" [clrDgField]=col.col>{{col.header}}</clr-dg-column>
           <clr-dg-placeholder>We couldn't find any {{Name}} !</clr-dg-placeholder>
@@ -179,7 +182,8 @@
                      {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{Name}}
                    </clr-dg-pagination>
           </clr-dg-footer>
-        </clr-datagrid>
+        </clr-datagrid> -->
+
         <!-- <clr-datagrid>
           <clr-dg-column [clrDgField]="'diffstatus'">Diff Status</clr-dg-column>
           <clr-dg-column *ngFor="let col of HeaderDiff" [clrDgField]=col.col>{{col.header}}</clr-dg-column>

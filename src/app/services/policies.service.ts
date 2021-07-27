@@ -10,8 +10,16 @@ import { Policy} from '../class/Rules'
 export class PoliciesService {
   public mysession: LoginSession;
   Header= ['Security Policies ID', 'Security Policy Name', 'NSX Policy Path', 'Sequence Number', 'Category', 'is Stateful', 'Diff Status' ]
+  HeaderDiff = [
+    { header: 'Security Policies ID', col: 'id'},
+    { header: 'Security Policy Name', col: 'name'},
+    { header: 'NSX Policy Path', col: 'path'},
+    { header: 'Sequence Number', col: 'sequence_nb'},
+    { header: 'Category', col: 'category'},
+    { header: 'is Stateful', col: 'stateful'},
+  ]
   Name = "Security_Policies"
-
+  
   constructor(
     private session: SessionService,
     public http: HttpClient

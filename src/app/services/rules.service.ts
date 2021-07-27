@@ -31,6 +31,16 @@ export class RulesService {
     'Diff Status'
   ]
 
+  HeaderDiff = [
+    { header: 'Rule Name', col: 'name'},
+    { header: 'Rule ID', col: 'id'},
+    { header: 'Source', col: 'sources'},
+    { header: 'Destination', col: 'destinations'},
+    { header: 'Services', col: 'services'},
+    { header: 'Action', col: 'action'},
+    { header: 'Direction', col: 'direction'},
+  ]
+
   ConditionalFormating = {
     sheet: this.Name,
     column: [{

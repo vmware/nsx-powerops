@@ -13,7 +13,6 @@ import { TunnelsService } from '../services/tunnels.service';
 import { GroupsService } from '../services/groups.service';
 import { PoliciesService } from '../services/policies.service';
 import { RulesService } from '../services/rules.service';
-import { TNstatusService } from '../services/tnstatus.service';
 import { AlarmsService } from '../services/alarms.service';
 import { TransportnodesService} from '../services/transportnodes.service'
 import { VmsService} from '../services/vms.service'
@@ -65,6 +64,8 @@ export class AuditComponent implements OnInit {
   LoadingallNetworking = false
   LoadingallSecurity = false
   loading = true
+  AllMenu: any[] = []
+  AllNSXServices: any[] = []
 
   NameMenu = ""
   loadingallconfig = false
@@ -76,7 +77,6 @@ export class AuditComponent implements OnInit {
     private segments: SegmentsService,
     private vms: VmsService,
     private myexport: ExportService,
-    private nsxsegments: SegmentsService,
     private lrsummary: LrsummaryService,
     private lrports: LrportsService,
     private bgp: BgpService,
@@ -89,7 +89,6 @@ export class AuditComponent implements OnInit {
     private policies: PoliciesService,
     private rules: RulesService,
     private alarms: AlarmsService,
-    private tnstatus: TNstatusService,
     private tn: TransportnodesService,
     private ippools: IppoolService,
     public listmenu: HomeComponent,
@@ -103,14 +102,17 @@ export class AuditComponent implements OnInit {
     for (let tg of this.listmenu.TabFabric){
       this.ToggleState[tg.id] = tg.isActive
       this.AuditForm?.addControl(tg.id, new FormControl(tg.isActive))
+      this.AllMenu.push(tg)
     }
     for (let tg of this.listmenu.TabNetwork){
       this.ToggleState[tg.id] = tg.isActive
       this.AuditForm?.addControl(tg.id, new FormControl(tg.isActive))
+      this.AllMenu.push(tg)
     }
     for (let tg of this.listmenu.TabSecurity){
       this.ToggleState[tg.id] = tg.isActive
       this.AuditForm?.addControl(tg.id, new FormControl(tg.isActive))
+      this.AllMenu.push(tg)
     }
   }
 
@@ -142,11 +144,25 @@ export class AuditComponent implements OnInit {
 
   async getDiff(diffArrayOut: any){
     this.difftabloading = true
+    this.DiffTab = []
+
     let tempTab = {}
     for(let key of Object.keys(diffArrayOut)){
       tempTab = Object.assign({key}, diffArrayOut[key])
       this.DiffTab.push(tempTab)
     }
+
+    // Treatment of NSX Manager Infos (get all services for each cluster)
+    for (let element of this.DiffTab){
+      if ( element.key === 'ManagerInfos'){
+        for (let cluster of element.items){
+          for (let svc of cluster.services){
+            this.AllNSXServices.push(svc)
+          }
+        }
+      }
+    }
+
     this.isCompared = true
     this.difftabloading = false
  }
@@ -188,11 +204,11 @@ export class AuditComponent implements OnInit {
       }
       // Get all config for security menu
       for (let menu of this.listmenu.TabSecurity){
-      this.NameMenu = menu.id
-      this.TabAllconfig[menu.id] = { 'items': "", 'diffstatus': ""}
-      this.TabAllconfig[menu.id]['items'] = await this.tabfunction[menu.id].getData(',')
-      this.TabConditionnalFormating.push(this.tabfunction[menu.id].ConditionalFormating)
-      this.TabAllconfig[menu.id]['diffstatus'] = ""
+        this.NameMenu = menu.id
+        this.TabAllconfig[menu.id] = { 'items': "", 'diffstatus': ""}
+        this.TabAllconfig[menu.id]['items'] = await this.tabfunction[menu.id].getData(',')
+        this.TabConditionnalFormating.push(this.tabfunction[menu.id].ConditionalFormating)
+        this.TabAllconfig[menu.id]['diffstatus'] = ""
       }
     }
     if(typeexport === 'JSON'){
@@ -377,6 +393,4 @@ export class AuditComponent implements OnInit {
        this.ToggleState[toggle] = false
      }
   }
-
-
 }

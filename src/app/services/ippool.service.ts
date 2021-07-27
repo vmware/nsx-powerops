@@ -9,14 +9,19 @@ import { SessionService } from '../services/session.service';
 export class IppoolService {
   public mysession: LoginSession;
   /**
-    Header Definition for Excel Sheet
-   */
-    Header= ['IP Pool Name', 'IP Pool ID', 'Range', 'IP Block', 'Diff status' ]
-    /**
-    Name of Tab in Excel
-   */
-    Name = 'IP_Pools'
-
+   Header Definition for Excel Sheet
+  */
+  Header= ['IP Pool Name', 'IP Pool ID', 'Range', 'IP Block', 'Diff status' ]
+   /**
+   Name of Tab in Excel
+  */
+  Name = 'IP_Pools'
+  HeaderDiff = [
+    { header: 'IP Pool Name', col: 'name'},
+    { header: 'IP Pool ID', col: 'id'},
+    { header: 'Range', col: 'Range', subcol: 'cidr'},
+    { header: 'IP Block', col: 'Range', subcol: 'allocation_ranges'},
+  ]
   constructor(
 
     private session: SessionService,

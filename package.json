@@ -32,8 +32,10 @@
     "js-yaml": "^4.1.0",
     "jspdf": "^2.3.1",
     "jszip": "^3.6.0",
+    "lodash-es": "^4.17.21",
     "odiff": "^1.4.3",
     "rxjs": "~6.6.0",
+    "save": "^2.4.0",
     "tslib": "^2.0.0",
     "zone.js": "~0.11.3"
   },
@@ -44,6 +46,7 @@
     "@types/file-saver": "^2.0.2",
     "@types/jasmine": "~3.6.0",
     "@types/lodash": "^4.14.170",
+    "@types/lodash-es": "^4.17.4",
     "@types/node": "^12.11.1",
     "@types/resize-observer-browser": "^0.1.5",
     "codelyzer": "^6.0.0",

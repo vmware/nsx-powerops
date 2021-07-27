@@ -17,16 +17,11 @@ export class SecurityPoliciesComponent implements OnInit {
   error_message = ""
 
   TabPolicies: any;
-  Header= ['Security Policies ID', 'Security Policy Name', 'NSX Policy Path', 'Sequence Number', 'Category', 'is Stateful', 'Diff Status' ]
-  HeaderDiff = [
-    { header: 'Security Policies ID', col: 'id'},
-    { header: 'Security Policy Name', col: 'name'},
-    { header: 'NSX Policy Path', col: 'path'},
-    { header: 'Sequence Number', col: 'sequence_nb'},
-    { header: 'Category', col: 'category'},
-    { header: 'is Stateful', col: 'stateful'},
-  ]
-  Name = "Security_Policies"
+
+  Name = this.policies.Name
+  Header = this.policies.Header
+  HeaderDiff = this.policies.HeaderDiff
+
 
   constructor(
     private policies: PoliciesService,

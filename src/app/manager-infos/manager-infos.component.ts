@@ -15,31 +15,16 @@ import * as _ from 'lodash';
 })
 export class ManagerInfosComponent implements OnInit {
   public mysession: LoginSession;
-  Name = "Manager_Infos"
-  Header = [
-    'Group',
-    'Group Type',
-    'Group Status',
-    'Member FQDN',
-    'Member IP',
-    'Member UUID',
-    'Member Status',
-    'Diff Status'
-  ]
-  HeaderDiff = [
-    { header: 'Group', col: 'name'},
-    { header: 'Group Type', col: 'name'},
-    { header: 'Group Status', col: 'status'},
-    { header: 'Member FQDN', col: 'members', subcol: 'fqdn'},
-    { header: 'Member IP', col: 'members', subcol: 'ip'},
-    { header: 'Member UUID', col: 'members', subcol: 'id'},
-    { header: 'Member Status', col: 'members', subcol: 'status'},
-  ]
+
+  Name = this.managerinfos.Name
+  Header = this.managerinfos.Header
+  HeaderDiff = this.managerinfos.HeaderDiff
 
   Cluster: any
   clusterID = ""
   clusterServices = []
   TabServices: any
+  TabDiffServices: any[] = []
   loading = true
   error = false
   error_message = ""
@@ -64,17 +49,25 @@ export class ManagerInfosComponent implements OnInit {
     this.loading = false
   }
 
-  // To check type of variable in HTML
-  typeOf(value: any) {
-    return typeof value;
-  }
-
-  isArray(obj : any ) {
-    return Array.isArray(obj)
- }
 
  getDiff(diffArrayOut: any){
   this.DiffTab = _.values(diffArrayOut)
+  // if unchanged, changed all service diffstatus to unchanged -- for display purpose
+  for (let cluster of this.DiffTab){
+    if(cluster.diffstatus === 'Unchanged') {
+      for(let svc of cluster.services){
+        if (svc.diffstatus === ""){
+          svc.diffstatus = 'Unchanged'
+          this.TabDiffServices.push(svc)
+        }
+      }      
+    }
+    else{
+      for(let svc of cluster.services){
+        this.TabDiffServices.push(svc)
+      }
+    }
+  }
   this.isCompared = true
  }
 

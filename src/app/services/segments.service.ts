@@ -9,6 +9,20 @@ import { Segment, TZ } from '../class/Segment';
 export class SegmentsService {
   public mysession: LoginSession;
   Header= ['Name', 'Type', 'Vlan', 'Subnet', 'Gateway', 'Attached to', 'Router Type','VNI', 'TZ Name', 'Replication Mode', 'Admin Status', 'Diff Status' ]
+  HeaderDiff = [
+    { header: 'Name', col: 'name'},
+    { header: 'Type', col: 'type'},
+    { header: 'Vlan', col: 'vlan'},
+    { header: 'Subnet', col: 'subnets', subcol: 'network'},
+    { header: 'Gateway', col: 'subnets', subcol: 'gateway_address'},
+    { header: 'Attached to', col: 'connectedto'},
+    { header: 'Router Type', col: 'routertype'},
+    { header: 'VNI', col: 'vni'},
+    { header: 'TZ Name', col: 'tz', subcol: 'name'},
+    { header: 'Replication Mode', col: 'replication_mode'},
+    { header: 'Admin Status', col: 'state'},
+  ]
+  
   Name = "Segments"
   ConditionalFormating = {
     sheet: this.Name,
@@ -41,7 +55,6 @@ export class SegmentsService {
     let lr_json =  this.session.getAPI(this.mysession, '/api/v1/logical-routers');
 
     let result = await Promise.all([seg_json, ls_json, tz_json, lr_json])
-    console.log(result)
     if (result[0].result_count > 0){
       for (let seg of result[0].results) {
         let SegmentObj = new Segment(seg.display_name)

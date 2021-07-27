@@ -23,17 +23,9 @@ export class IppoolComponent implements OnInit {
   /**
     Header Definition for Excel Sheet
    */
-  Header= ['IP Pool Name', 'IP Pool ID', 'Range', 'IP Block', 'Diff Status' ]
-  HeaderDiff = [
-    { header: 'IP Pool Name', col: 'name'},
-    { header: 'IP Pool ID', col: 'id'},
-    { header: 'Range', col: 'Range', subcol: 'cidr'},
-    { header: 'IP Block', col: 'Range', subcol: 'allocation_ranges'},
-  ]
-  //Name of Tab in Excel
-  Name = 'IP_Pools'
-  // Boolean used to enable or disable the export button
-
+  Header = this.pool.Header
+  HeaderDiff = this.pool.HeaderDiff
+  Name = this.pool.Name
 
    /**
   * @ignore
@@ -51,14 +43,6 @@ export class IppoolComponent implements OnInit {
     this.loading = false
   }
 
-  // To check type of variable in HTML
-  typeOf(value: any) {
-    return typeof value;
-  }
-
-  isArray(obj : any ) {
-    return Array.isArray(obj)
- }
 
  getDiff(diffArrayOut: any){
   this.DiffTab = _.values(diffArrayOut)

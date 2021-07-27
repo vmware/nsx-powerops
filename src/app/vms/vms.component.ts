@@ -6,7 +6,7 @@ import {VmsService } from '../services/vms.service';
 import { HttpClient } from '@angular/common/http';
 import { ClarityIcons,downloadCloudIcon,downloadIcon, fileGroupIcon } from '@cds/core/icon';
 import { VM } from '../class/VM';
-import * as _ from 'lodash';
+import * as _ from 'lodash-es';
 
 
 @Component({
@@ -19,19 +19,12 @@ export class VmsComponent implements OnInit {
   public mysession: LoginSession;
   public vm: VM
   TabVMs: any[] = [];
-  // TabRules: any[] = [];
-  Header= ['VMs Name', 'VMs ID', 'Tags', 'Host', 'Segments', 'Attachement ID','Group', 'Status', 'Diff Status']
-  HeaderDiff = [
-    { header: 'VMs Name', col: 'name'},
-    { header: 'VMs ID', col: 'id'},
-    { header: 'Tags', col: 'tags', subcol: 'tag'},
-    { header: 'Host', col: 'hosts'},
-    { header: 'Segments', col: 'segments'},
-    { header: 'Group', col: 'groups'},
-    { header: 'Status', col: 'status'},
-  ]
-  Name = 'VMs'
-  HeaderRules= ['VMs Name', 'VMs ID', 'Tags', 'Host', 'Segments', 'Attachement ID','Group', 'Status']
+
+  Name = this.vms.Name
+  Header = this.vms.Header
+  HeaderDiff = this.vms.HeaderDiff
+  HeaderRules = this.vms.Header_Rules
+
   NameRules = ''
   loading = true
   loadingAll = true
@@ -41,7 +34,6 @@ export class VmsComponent implements OnInit {
   error_message = ""
   isCompared = false;
   DiffTab: any = []
-
 
   constructor(
     private myexport: ExportService,

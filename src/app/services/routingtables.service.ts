@@ -11,6 +11,21 @@ import { Route } from '../class/Router'
 export class RoutingtablesService {
   public mysession: LoginSession;
 
+  Header= ['Router Name', 'Edge Node Name', 'Edge Node ID', 'Edge Node Status', 'Route Type', 'Network', 'Admin Distance', 'Next Hop', 'Router Component ID', 'Router Component Type', 'Router HA', 'Diff Status' ]
+  Name = "Routing_Table"
+  HeaderDiff = [
+    { header: 'Router Name', col: 'router'},
+    { header: 'Edge Node Name', col: 'node_name'},
+    { header: 'Edge Node ID', col: 'node_id'},
+    { header: 'Edge Node Status', col: 'node_status'},
+    { header: 'Route Type', col: 'type'},
+    { header: 'Network', col: 'network'},
+    { header: 'Admin Distance', col: 'admin_distance'},
+    { header: 'Next Hop', col: 'gateway'},
+    { header: 'Router Component ID', col: 'router_id'},
+    { header: 'Router Component Type', col: 'router_type'},
+  ]
+
   constructor(
     private session: SessionService,
     public http: HttpClient

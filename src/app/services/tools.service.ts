@@ -39,6 +39,7 @@ export class ToolsService {
       if(typeof(itemtomodify[key]) !== 'object' && !Array.isArray(itemtomodify[key])){
         if(!itemtomodify[key]){
           NewObj[key] = ""
+          NewObj['diffstatus'] = "Modified"
         }
         if(value.indexOf('-') > -1){
           NewObj['diffstatus'] = "Deleted"
@@ -70,7 +71,7 @@ export class ToolsService {
     }
     if (orientation === 'after'){
       NewObj = itemtomodify + value
-    } 
+    }
   }
   return NewObj
   }
@@ -98,7 +99,9 @@ export class ToolsService {
 
 async createDiffTab(resultdiff: any[], SrcTab: any[], DstTab: any[]): Promise<any>{
 
+  console.log(resultdiff)
   let DiffResult  = Object.assign({}, SrcTab)
+
   // By default put Unchanged on diffstatus
   for (let prop in DiffResult) {
      if (DiffResult.hasOwnProperty(prop)) {
@@ -131,25 +134,37 @@ async createDiffTab(resultdiff: any[], SrcTab: any[], DstTab: any[]): Promise<an
       }
     }
     else if (res.type === 'set'){
+
       // if path length is superior to 1 so it a modification else it is a creation of an object
+      DiffResult[res.path[0]].diffstatus = "Modified"
+      
       if (res.path.length > 1){
-        DiffResult[res.path[0]].diffstatus = "Modified"
-        if (typeof(res.val) !== 'object'){
+        if (typeof(res.val) === 'object'){
           let Tabpathtoarray = res.path
           Tabpathtoarray.pop()
           let path = Tabpathtoarray.join('.')
           _.set(DiffResult, path, this.diffArray(_.get(SrcTab, path), _.get(DstTab, path)))
         }
         else{
+        // Tag as modified each object in the path
+        let i = 1
+        for (let element of res.path){
+          let sliceArray = res.path.slice(0, i)
+          let objectelement = _.get(DiffResult, sliceArray.join('.'))          
+          if(typeof(objectelement) === 'object' &&  !Array.isArray(objectelement)){
+            if (objectelement.hasOwnProperty('diffstatus') && objectelement.diffstatus === "") {
+              objectelement.diffstatus = 'Modified'
+            }
+          } 
           _.set(DiffResult, res.path.join('.'), this.modifyValue(res.val, "+||", 'before'))
+          i++
         }
+      }
       }
       else{
         _.set(DiffResult, res.path.join('.'), this.modifyValue(res.val, "+||", 'before'))
-        DiffResult[res.path[0]].diffstatus = "Created"
       }
-
-      }
+    }
     
     else if (res.type === 'rm'){
       if (res.path.length >0 && DiffResult[res.path[0]].diffstatus != "Modified"){
@@ -188,9 +203,9 @@ async createDiffTab(resultdiff: any[], SrcTab: any[], DstTab: any[]): Promise<an
 
   async getDiffTab(SrcTab: any, DstTab: any){
   // Loop in Original Tab
-  let test = odiff(SrcTab, DstTab)
+  let diffresult = odiff(SrcTab, DstTab)
   // Create theDiff Array
-  return await this.createDiffTab(test, SrcTab, DstTab).then( result => {
+  return await this.createDiffTab(diffresult, SrcTab, DstTab).then( result => {
     return result
   })
   }
