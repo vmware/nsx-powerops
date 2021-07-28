@@ -53,13 +53,17 @@ export class NetworkComponent implements OnDestroy, AfterViewInit, OnInit {
     if (!node.properties.resource_type.indexOf('Tier0')){
       obj['path'] = routert0
       obj['HA'] = node.properties.ha_mode
-      obj['linkWidth'] = node.child_count.Tier1 + 2
+      if ('child_count' in node){
+        obj['linkWidth'] = node.child_count.Tier1 + 2
+      }
       obj['color'] = "#00648F"
     }
     if (!node.properties.resource_type.indexOf('Tier1')){
       obj['path'] = routert1
       obj['HA'] = node.properties.failover_mode
-      obj['linkWidth'] = node.child_count.Segment + 2
+      if ('child_count' in node){
+        obj['linkWidth'] = node.child_count.Segment + 2
+      }
       obj['color'] = "#3C8500"
     }
     if (!node.properties.resource_type.indexOf('Segment')){
@@ -68,8 +72,8 @@ export class NetworkComponent implements OnDestroy, AfterViewInit, OnInit {
       if (node.properties.sub_type == 'OVERLAY' && 'child_count' in node){
         obj['VM'] = node.child_count.VirtualMachine
         obj['linkWidth'] = node.child_count.VirtualMachine + 2
-        obj['color'] = "#D69A00"
       }
+      obj['color'] = "#D69A00"
     }
 
     if ('child_count' in node){

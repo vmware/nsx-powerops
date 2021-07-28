@@ -35,6 +35,30 @@ export class TransportnodesService {
     'PowerState',
     'Diff Status'
   ]
+
+  HeaderDiff = [
+    { header: 'Transport Node Name', col: 'name'},
+    { header: 'Type', col: 'type'},
+    { header: 'ID', col: 'id'},
+    { header: 'Management IP', col: 'managementIp'},
+    { header: 'Switch Name', col: 'hostswitch', subcol: 'name'},
+    { header: 'Switch Mode', col: 'hostswitch', subcol: 'mode'},
+    { header: 'Switch Type', col: 'hostswitch', subcol: 'type'},
+    { header: 'Transport Zones', col: 'TZ', subcol: 'name'},
+    // { header: 'Uplink Profile', col: ''},
+    // { header: 'Teaming Policy', col: ''},
+    // { header: 'Physical Interfaces', col: ''},
+    // { header: 'Uplink Interfaces', col: ''},
+    // { header: 'Active Interface', col: ''},
+    // { header: 'Transport Vlan', col: ''},
+    { header: 'MTU', col: 'MTU'},
+    { header: 'Serial Number', col: 'serialNumber'},
+    { header: 'FullVersion', col: 'full_version'},
+    { header: 'Maintenance Mode', col: 'inMaintenanceMode'},
+    { header: 'Deployement Status', col: 'host_node_deployment_status'},
+    { header: 'PowerState', col: 'powerState'}
+  ]
+
   ConditionalFormating = {
     sheet: this.Name,
     column: [

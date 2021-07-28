@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import jspdf from 'jspdf';
+// import jspdf from 'jspdf';
 import domtoimage from 'dom-to-image';
 import { NsxsummaryService} from '../services/nsxsummary.service'
 import { SessionService } from '../services/session.service';
@@ -103,6 +103,7 @@ export class NsxSummaryComponent implements OnInit {
     this.loading = false
   }
 
+  /*
   generatePdf()  
   {  
     const data: any = document.getElementById('pdf');
@@ -123,4 +124,5 @@ export class NsxSummaryComponent implements OnInit {
       doc.save('NSX_Summary')
    })
   }
+  */
 }

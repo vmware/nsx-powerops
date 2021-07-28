@@ -12,6 +12,18 @@ export class TunnelsService {
   public mysession: LoginSession;
   Header= ['Transport Node', 'Tunnel Name', 'Tunnel Status', 'Egress Interface', 'Local IP', 'Remote IP', 'Remote Node ID', 'Remote Node Name', 'Encap', 'Diff Status' ]
   Name = 'Tunnels'
+  HeaderDiff = [
+    { header: 'Transport Node', col: 'node', subcol: 'name'},
+    { header: 'Tunnel Name', col: 'name'},
+    { header: 'Tunnel Status', col: 'status'},
+    { header: 'Egress Interface', col: 'egress_int'},
+    { header: 'Local IP', col: 'local_ip'},
+    { header: 'Remote IP', col: 'remote_ip'},
+    { header: 'Remote Node ID', col: 'remote_node_id'},
+    { header: 'Remote Node Name', col: 'remote_node_display_name'},
+    { header: 'Encap', col: 'encap'},
+  ]
+
   ConditionalFormating = {
     sheet: this.Name,
     column:   [{

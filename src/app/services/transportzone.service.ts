@@ -10,7 +10,21 @@ import { HostSwitch } from '../class/TransportNode';
 })
 export class TransportzoneService {
   public mysession: LoginSession;
-  Header= ['Name', 'Description', 'ID', 'Ressource Type','Host Switch ID', 'Host Switch Mode', 'Host Switch Default','is Default','is Nested NSX', 'Transport Type', 'Uplink Teaming Policy', 'Diff Status' ]
+  Header= ['Name', 'Description', 'ID', 'Ressource Type','Host Switch Name', 'Host Switch ID', 'Host Switch Mode', 'Host Switch Default','is Default','is Nested NSX', 'Transport Type', 'Uplink Teaming Policy' ]
+  HeaderDiff = [
+    { header: 'Name', col: 'name'},
+    { header: 'Description', col: 'description'},
+    { header: 'ID', col: 'id'},
+    { header: 'Ressource Type', col: 'resource_type'},
+    { header: 'Host Switch Name', col: 'hostswitch', subcol: 'name'},
+    { header: 'Host Switch ID', col: 'hostswitch', subcol: 'id'},
+    { header: 'Host Switch Mode', col: 'host_switch_mode'},
+    { header: 'Host Switch Default', col: 'hostswitch', subcol: 'type'},
+    { header: 'is Default', col: 'default'},
+    { header: 'is Nested NSX', col: 'nested'},
+    { header: 'Transport Type', col: 'type'},
+    { header: 'Uplink Teaming Policy', col: 'uplink_teaming_policy_names'}
+  ]
   Name = 'Transport_Zones'
 
   constructor(

@@ -15,8 +15,18 @@ export class VmsService {
   public vm: VM
 
   Header= ['VMs Name', 'VMs ID', 'Tags', 'Host', 'Segments', 'Attachement ID','Group', 'Status', 'Diff Status']
-  Header_Rules = ['VM Name', 'VM ID', 'Host', 'Tags', 'Segments', 'Groups', 'Status', 'Ports', 'Section', 'Categories', 'Rules Name', 'Rules ID', 'Source', 'Destination', 'Services', 'Action']
+  HeaderDiff = [
+    { header: 'VMs Name', col: 'name'},
+    { header: 'VMs ID', col: 'id'},
+    { header: 'Tags', col: 'tags', subcol: 'tag'},
+    { header: 'Host', col: 'hosts'},
+    { header: 'Segments', col: 'segments'},
+    { header: 'Group', col: 'groups'},
+    { header: 'Status', col: 'status'},
+  ]
   Name = 'VMs'
+  Header_Rules = ['VM Name', 'VM ID', 'Host', 'Tags', 'Segments', 'Groups', 'Status', 'Ports', 'Section', 'Categories', 'Rules Name', 'Rules ID', 'Source', 'Destination', 'Services', 'Action']
+
   ConditionalFormating = {
     sheet: this.Name,
     column:   [

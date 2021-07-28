@@ -20,20 +20,11 @@ export class SecurityGroupsComponent implements OnInit, OnDestroy {
 
   TabGroups: any[] = [];
   TabforDiff: any[] = []
-  Name = "Groups"
-  Header = ['Group Name', 'Tags', 'Scope', 'Criteria Type', 'Criteria', 'IP addresses', 'Virtual Machines', 'Segments', 'Segments Ports', 'Diff Status']
-  HeaderDiff = [
-    { header: 'Group Name', col: 'name'},
-    { header: 'Tags', col: 'tags', subcol: 'tag'},
-    { header: 'Scope', col: 'tags', subcol: 'scope'},
-    { header: 'Criteria Type', col: 'type_crtieria'},
-    { header: 'Criteria', col: 'criteria'},
-    { header: 'IP addresses', col: 'ip'},
-    { header: 'Virtual Machines', col: 'vm'},
-    { header: 'Segments', col: 'segment'},
-    { header: 'Segments Ports', col: 'segment_port'},
-  ]
 
+  Name = this.group.Name
+  Header = this.group.Header
+  HeaderDiff = this.group.HeaderDiff
+  
   NbGroups = 0
   Value = 0
   GroupName = ""
@@ -94,14 +85,9 @@ export class SecurityGroupsComponent implements OnInit, OnDestroy {
   async Export(type: string, Tab:any, PrefixName: any){
     let Export: any
 
-    let separator = ""
-    if (type == 'XLS'){ separator = ', ' }
-    else{ separator = '/' }
-
-
     switch(type){
       case 'XLS': {
-        Export = this.group.formatDataExport(this.TabforDiff, ', ')
+        Export = this.group.formatDataExport(Tab, ', ')
         let Formatdata = {
           'header': this.Header,
           'data': Export,
@@ -111,7 +97,7 @@ export class SecurityGroupsComponent implements OnInit, OnDestroy {
         break;
       }
       case 'CSV': {
-        Export = this.group.formatDataExport(this.TabforDiff, '/')
+        Export = this.group.formatDataExport(Tab, '/')
         this.myexport.generateCSV(PrefixName, this.Header, Export, true)
         break;
       }

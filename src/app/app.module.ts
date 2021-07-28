@@ -37,6 +37,7 @@ import { IppoolComponent } from './ippool/ippool.component';
 import { DiffComponent } from './diff/diff.component';
 import { DescriptionComponent } from './description/description.component';
 import '@cds/core/alert/register.js';
+import { DiffresultComponent } from './diffresult/diffresult.component';
 
 
 @NgModule({
@@ -69,7 +70,8 @@ import '@cds/core/alert/register.js';
     LoadbalcingComponent,
     IppoolComponent,
     DiffComponent,
-    DescriptionComponent
+    DescriptionComponent,
+    DiffresultComponent
   ],
   imports: [
     BrowserModule,

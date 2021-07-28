@@ -194,7 +194,7 @@
         </div>
       </clr-tab-content>
     </clr-tab>
-    <clr-tab *ngIf="isCompared">        
+    <clr-tab *ngIf="isCompared">
       <button clrTabLink>Diff</button>
       <clr-tab-content *clrIfActive="true">
         <clr-accordion>
@@ -209,165 +209,27 @@
               </div>
             </clr-accordion-title>
             <div *ngIf="menu.key === 'ManagerInfos' else normal">
-              <clr-accordion-content>
-                <table class="table table-noborder ">
-                  <thead>
-                      <th class="left" *ngFor='let col of menu.items[0].services[0] | keyvalue'>{{col.key}}</th>
-                  </thead>
-                  <tbody>
-                    <tr *ngFor="let entry of menu.items[0].services ">
-                      <td class="left" *ngFor='let cell of entry | keyvalue' [ngClass]= "{'deleted' : entry.diffstatus === 'Deleted', 'created' : entry.diffstatus === 'Created', 'unchanged' : entry.diffstatus === 'Unchanged', 'modified' : entry.diffstatus === 'Modified', 'unchanged' : entry.diffstatus === ''}">
-                            <span  *ngIf='!isObject(cell.value) else object' >{{cell.value}}</span>
-                            <ng-template #object>
-                              <span *ngIf="!isArray(cell.value) else array">{{cell.value | json}}</span>
-                              <ng-template #array>
-                                <span *ngIf='!isArrayofObject(cell.value) else arrayobject' >{{cell.value.join(', ')}}</span>
-                                <ng-template #arrayobject>
-                                  <span >{{cell.value | json}}</span>
-                                </ng-template>
-                              </ng-template>
-                            </ng-template>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              <clr-accordion-content *clrIfExpanded>
+                <div *ngFor='let mn of this.AllMenu'>
+                  <div *ngIf='mn.id === menu.key'>
+                    <app-diffresult [DiffTab]=this.AllNSXServices [HeaderDiff]=mn.headerdiff Name={{mn.id}}></app-diffresult>
+                  </div>
+                </div>
               </clr-accordion-content>
             </div>
             <ng-template #normal>
-                <clr-accordion-content >
-                <table class="table table-noborder ">
-                  <thead>
-                    <th class="left" *ngFor='let col of menu.items[0] | keyvalue'>{{col.key}}</th>
-                  </thead>
-                  <tbody>
-                  <tr *ngFor="let entry of menu.items ">
-                    <td class="left" *ngFor='let cell of entry | keyvalue' [ngClass]= "{'deleted' : entry.diffstatus === 'Deleted', 'created' : entry.diffstatus === 'Created', 'unchanged' : entry.diffstatus === 'Unchanged', 'modified' : entry.diffstatus === 'Modified', 'unchanged' : entry.diffstatus === ''}">
-                      <span  *ngIf='!isObject(cell.value) else object' >{{cell.value}}</span>
-                      <ng-template #object>
-                        <span *ngIf="!isArray(cell.value) else array">{{cell.value | json}}</span>
-                        <ng-template #array>
-                          <span *ngIf='!isArrayofObject(cell.value) else arrayobject' >{{cell.value.join(', ')}}</span>
-                          <ng-template #arrayobject>
-                            <span >{{cell.value | json}}</span>
-                          </ng-template>
-                        </ng-template>
-                      </ng-template>
-                    </td>
-                  </tr>
-                </tbody>
-                </table>
-              </clr-accordion-content >
-
-            </ng-template>
-
-              <!-- <clr-datagrid >
-                <clr-dg-column *ngFor='let col of menu.items[0] | keyvalue' [clrDgField]=col.key>{{col.key}}</clr-dg-column>
-                <clr-dg-placeholder>No data !</clr-dg-placeholder>
-                <clr-dg-row *clrDgItems="let entry of menu.items" [clrDgItem]="entry">
-                  <clr-dg-cell *ngFor='let cell of entry | keyvalue' [ngClass]= "{'deleted' : entry.diffstatus === 'Deleted', 'created' : entry.diffstatus === 'Created', 'unchanged' : entry.diffstatus === 'Unchanged', 'modified' : entry.diffstatus === 'Modified', 'unchanged' : entry.diffstatus === ''}">
-                      <span  *ngIf='!isObject(cell.value) else object' >{{cell.value}}</span>
-                    <ng-template #object>
-                      <span *ngIf="!isArray(cell.value) else array">{{cell.value | json}}</span>
-                      <ng-template #array>
-                        <span *ngIf='!isArrayofObject(cell.value) else arrayobject' >{{cell.value.join(', ')}}</span>
-                        <ng-template #arrayobject>
-                          <span >{{cell.value | json}}</span>
-                        </ng-template>
-                      </ng-template>
-                    </ng-template>
-                  </clr-dg-cell>
-                </clr-dg-row>
-                <clr-dg-footer>
-                  <clr-dg-pagination #pagination [clrDgPageSize]="20">
-                    <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{menu.key}} per page</clr-dg-page-size>
-                    {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{menu.key}}
-                  </clr-dg-pagination>
-                </clr-dg-footer>
-              </clr-datagrid> -->
-          </clr-accordion-panel>
-        </clr-accordion>
-
-          <!-- {{DiffTab.key}}
-          <pre *ngFor="let item of DiffTab.items" [ngClass]= "{'deleted' : item.diffstatus === 'Deleted', 'created' : item.diffstatus === 'Created', 'unchanged' : item.diffstatus === 'Unchanged', 'modified' : item.diffstatus === 'Modified', 'unchanged' : item.diffstatus === ''}">
-            {{item | json}}
-          </pre> -->
-      </clr-tab-content>
-    </clr-tab>
-    <clr-tab *ngIf="isCompared">
-      <button clrTabLink>Test</button>
-      <clr-tab-content *clrIfActive="true">
-        <clr-accordion>
-          <clr-accordion-panel *ngFor='let menu of this.DiffTab'>
-            <clr-accordion-title>
-              <div>
-                {{menu.key}} - 
-                <span class="label label-danger" *ngIf="menu.diffstatus === 'Deleted' ">{{menu.diffstatus}}</span>
-                <span class="label label-warning" *ngIf="menu.diffstatus === 'Modified' ">{{menu.diffstatus}}</span>
-                <span class="label label-information" *ngIf="menu.diffstatus === 'Created' ">{{menu.diffstatus}}</span>
-                <span class="label label-success" *ngIf="menu.diffstatus === 'Unchanged' ">{{menu.diffstatus}}</span>
-              </div>
-            </clr-accordion-title>
-            <div *ngIf="menu.key === 'ManagerInfos' else normal">
-              <clr-accordion-content>
-                <clr-datagrid >
-                <clr-dg-column *ngFor='let col of menu.items[0].services[0] | keyvalue' [clrDgField]=col.key>{{col.key}}</clr-dg-column>
-                <clr-dg-placeholder>No data !</clr-dg-placeholder>
-                <clr-dg-row *clrDgItems="let entry of menu.items[0].services" [clrDgItem]="entry">
-                  <clr-dg-cell *ngFor='let cell of entry | keyvalue' [ngClass]= "{'deleted' : entry.diffstatus === 'Deleted', 'created' : entry.diffstatus === 'Created', 'unchanged' : entry.diffstatus === 'Unchanged', 'modified' : entry.diffstatus === 'Modified', 'unchanged' : entry.diffstatus === ''}">
-                    <span  *ngIf='!isObject(cell.value) else object' >{{cell.value}}</span>
-                    <ng-template #object>
-                      <span *ngIf="!isArray(cell.value) else array">{{cell.value | json}}</span>
-                      <ng-template #array>
-                        <span *ngIf='!isArrayofObject(cell.value) else arrayobject' >{{cell.value.join(', ')}}</span>
-                        <ng-template #arrayobject>
-                          <span >{{cell.value | json}}</span>
-                        </ng-template>
-                      </ng-template>
-                    </ng-template>
-                  </clr-dg-cell>
-                </clr-dg-row>
-                <clr-dg-footer>
-                  <clr-dg-pagination #pagination [clrDgPageSize]="20">
-                    <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{menu.key}} per page</clr-dg-page-size>
-                    {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{menu.key}}
-                  </clr-dg-pagination>
-                </clr-dg-footer>
-                </clr-datagrid>
-              </clr-accordion-content>
-            </div>
-            <ng-template #normal>
-              <clr-accordion-content>
-                <clr-datagrid >
-                <clr-dg-column *ngFor='let col of menu.items[0] | keyvalue' [clrDgField]=col.key>{{col.key}}</clr-dg-column>
-                <clr-dg-placeholder>No data !</clr-dg-placeholder>
-                <clr-dg-row *clrDgItems="let entry of menu.items" [clrDgItem]="entry">
-                  <clr-dg-cell *ngFor='let cell of entry | keyvalue' [ngClass]= "{'deleted' : entry.diffstatus === 'Deleted', 'created' : entry.diffstatus === 'Created', 'unchanged' : entry.diffstatus === 'Unchanged', 'modified' : entry.diffstatus === 'Modified', 'unchanged' : entry.diffstatus === ''}">
-                    <span  *ngIf='!isObject(cell.value) else object' >{{cell.value}}</span>
-                    <ng-template #object>
-                      <span *ngIf="!isArray(cell.value) else array">{{cell.value | json}}</span>
-                      <ng-template #array>
-                        <span *ngIf='!isArrayofObject(cell.value) else arrayobject' >{{cell.value.join(', ')}}</span>
-                        <ng-template #arrayobject>
-                          <span >{{cell.value | json}}</span>
-                        </ng-template>
-                      </ng-template>
-                    </ng-template>
-                  </clr-dg-cell>
-                </clr-dg-row>
-                <clr-dg-footer>
-                  <clr-dg-pagination #pagination [clrDgPageSize]="20">
-                    <clr-dg-page-size [clrPageSizeOptions]="[10,20,50,100]">{{menu.key}} per page</clr-dg-page-size>
-                    {{pagination.firstItem + 1}} - {{pagination.lastItem + 1}} of {{pagination.totalItems}} {{menu.key}}
-                  </clr-dg-pagination>
-                </clr-dg-footer>
-                </clr-datagrid>
+              <clr-accordion-content *clrIfExpanded>
+                <div *ngFor='let mn of this.AllMenu'>
+                  <div *ngIf='mn.id === menu.key'>
+                    <app-diffresult [DiffTab]=menu.items [HeaderDiff]=mn.headerdiff Name={{mn.id}}></app-diffresult>
+                  </div>
+                </div>
               </clr-accordion-content>
             </ng-template>
             </clr-accordion-panel>
-            </clr-accordion>
+        </clr-accordion>
 
       </clr-tab-content>
     </clr-tab>
 </clr-tabs>
  
-

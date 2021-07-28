@@ -4,7 +4,7 @@ import { SessionService } from '../services/session.service';
 import { ExportService } from '../services/export.service';
 import { LrsummaryService } from '../services/lrsummary.service'
 import { ClarityIcons, downloadCloudIcon, fileGroupIcon } from '@cds/core/icon';
-import * as _ from 'lodash';
+import * as _ from 'lodash-es';
 
 @Component({
   selector: 'app-lr-summary',
@@ -13,48 +13,30 @@ import * as _ from 'lodash';
 })
 export class LrSummaryComponent implements OnInit {
   @Input() DiffTab: any = []
+
+  public mysession: LoginSession;
   loading = true
   isCompared = false;
   error = false
   error_message = ""
-  
   TabLR: any[] = [];
-  Header= ['Name', 'ID', 'Edge Cluster Name', 'Edge Cluster ID','LR Type', 'HA Mode', 'Admin Failover Mode','Relocation' ]
 
-  HeaderDiff = [
-    { header: 'Name', col: 'name'},
-    { header: 'ID', col: 'id'},
-    { header: 'Edge Cluster Name', col: 'cluster_name'},
-    { header: 'Edge Cluster ID', col: 'cluster_id'},
-    { header: 'LR Type', col: 'type'},
-    { header: 'HA Mode', col: 'hamode'},
-    { header: 'Admin Failover Mode', col: 'failover'},
-    { header: 'Relocation', col: 'relocation'},
-  ]
-  Name = 'LR_Summary'
+  Header = this.lrsummary.Header
+  HeaderDiff = this.lrsummary.HeaderDiff
+  Name = this.lrsummary.Name
 
   constructor(
     private myexport: ExportService,
     private lrsummary: LrsummaryService
-
     ) { 
-    // this.mysession = SessionService.getSession()
-  }
+      this.mysession = SessionService.getSession()
+    }
 
   async ngOnInit(): Promise<void>{
     ClarityIcons.addIcons(downloadCloudIcon, fileGroupIcon );
     this.TabLR =  await this.lrsummary.getLR()
     this.loading = false
   }
-
-    // To check type of variable in HTML
-    typeOf(value: any) {
-      return typeof value;
-    }
-  
-    isArray(obj : any ) {
-      return Array.isArray(obj)
-   }
   
    getDiff(diffArrayOut: any){
     this.DiffTab = _.values(diffArrayOut)

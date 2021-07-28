@@ -20,21 +20,10 @@ export class BgpSessionsComponent implements OnInit {
 
   public mysession: LoginSession;
   TabBGP: any[] = [];
-  Header= ['T0 Router', 'BGP Status', 'ECMP', 'Inter-SR','Source IP Address', 'Local AS', 'Neighbor IP Address', 'Remote AS', 'Total IN Prefixes', 'Total OUT Prefixes', 'Session Status', 'Type', 'Diff Status' ]
-  HeaderDiff = [
-    { header: 'T0 Router', col: 't0_name'},
-    { header: 'BGP Status', col: 'bgp_status'},
-    { header: 'ECMP', col: 'ecmp'},
-    { header: 'Inter-SR', col: 'ibgp'},
-    { header: 'Source IP Address', col: 'source_ip'},
-    { header: 'Local AS', col: 'local_as'},
-    { header: 'Neighbor IP Address', col: 'remote_ip'},
-    { header: 'Remote AS', col: 'remote_as'},
-    { header: 'Total IN Prefixes', col: 'prefix_in'},
-    { header: 'Total OUT Prefixes', col: 'prefix_out'},
-    { header: 'Session Status', col: 'status'},
-  ]
-  Name = 'BGP'
+
+  Header = this.bgp.Header
+  HeaderDiff = this.bgp.HeaderDiff
+  Name = this.bgp.Name
 
   constructor(
     private myexport: ExportService,
@@ -52,14 +41,6 @@ export class BgpSessionsComponent implements OnInit {
     this.loading = false
   }
 
-  // To check type of variable in HTML
-  typeOf(value: any) {
-        return typeof value;
-  }
-
-  isArray(obj : any ) {
-        return Array.isArray(obj)
-   }
   
    getDiff(diffArrayOut: any){
     this.DiffTab = _.values(diffArrayOut)

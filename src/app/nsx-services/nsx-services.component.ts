@@ -20,18 +20,10 @@ export class NsxServicesComponent implements OnInit {
 
   public mysession: LoginSession;
   TabServices: any[] = [];
-  Header= ['Name', 'ID', 'Created By', 'Protocol', 'Sources', 'Destinations','Description','Tags', 'Diff Status' ]
-  HeaderDiff = [
-    { header: 'Name', col: 'name'},
-    { header: 'ID', col: 'id'},
-    { header: 'Created By', col: 'createdby'},
-    { header: 'Protocol', col: 'entries', subcol: 'protocol'},
-    { header: 'Sources', col: 'entries', subcol: 'sources'},
-    { header: 'Destinations', col: 'entries', subcol: 'destinations'},
-    { header: 'Description', col: 'description'},
-    { header: 'Tags', col: 'tags'},
-  ]
-  Name = "Services"
+
+  Name = this.services.Name
+  Header = this.services.Header
+  HeaderDiff = this.services.HeaderDiff
 
   constructor(
     private myexport: ExportService,

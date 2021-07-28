@@ -21,21 +21,10 @@ export class LrPortsComponent implements OnInit {
   
   public mysession: LoginSession;
   TabPorts: any[] = [];
-  Header= ['LR Port Name', 'ID', 'Attachment Type', 'Attachment ID', 'Logical Router Name', 'Logical Router ID','Segment Name', 'Segment ID', 'Create User', 'Admin State', 'Status', 'Diff Status' ]
-  HeaderDiff = [
-    { header: 'LR Port Name', col: 'name'},
-    { header: 'ID', col: 'id'},
-    { header: 'Attachment Type', col: 'attachment_type'},
-    { header: 'Attachment ID', col: 'attachment_id'},
-    { header: 'Logical Router Name', col: 'router_name'},
-    { header: 'Logical Router ID', col: 'router_id'},
-    { header: 'Segment Name', col: 'segment_name'},
-    { header: 'Segment ID', col: 'segment_id'},
-    { header: 'Create User', col: 'createdby'},
-    { header: 'Admin State', col: 'state'},
-    { header: 'Status', col: 'status'},
-  ]
-  Name = 'LR_Ports'
+  
+  Header = this.lrports.Header
+  HeaderDiff = this.lrports.HeaderDiff
+  Name = this.lrports.Name
 
   constructor(
     private myexport: ExportService,
@@ -50,14 +39,6 @@ export class LrPortsComponent implements OnInit {
     this.loading = false
   }
 
-    // To check type of variable in HTML
-    typeOf(value: any) {
-      return typeof value;
-    }
-  
-    isArray(obj : any ) {
-      return Array.isArray(obj)
-   }
   
    getDiff(diffArrayOut: any){
     this.DiffTab = _.values(diffArrayOut)

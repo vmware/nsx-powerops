@@ -10,6 +10,20 @@ export class BgpService {
   public mysession: LoginSession;
   Header= ['T0 Router', 'BGP Status', 'ECMP', 'Inter-SR','Source IP Address', 'Local AS', 'Neighbor IP Address', 'Remote AS', 'Total IN Prefixes', 'Total OUT Prefixes', 'Session Status', 'Type', 'Diff Status' ]
   Name = 'BGP'
+  HeaderDiff = [
+    { header: 'T0 Router', col: 't0_name'},
+    { header: 'BGP Status', col: 'bgp_status'},
+    { header: 'ECMP', col: 'ecmp'},
+    { header: 'Inter-SR', col: 'ibgp'},
+    { header: 'Source IP Address', col: 'source_ip'},
+    { header: 'Local AS', col: 'local_as'},
+    { header: 'Neighbor IP Address', col: 'remote_ip'},
+    { header: 'Remote AS', col: 'remote_as'},
+    { header: 'Total IN Prefixes', col: 'prefix_in'},
+    { header: 'Total OUT Prefixes', col: 'prefix_out'},
+    { header: 'Session Status', col: 'status'},
+  ]
+
   ConditionalFormating = {
     sheet: this.Name,
     column: [{

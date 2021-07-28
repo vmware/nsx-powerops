@@ -10,7 +10,17 @@ export class LrsummaryService {
   public mysession: LoginSession;
   Header= ['Name', 'ID', 'Edge Cluster Name', 'Edge Cluster ID','LR Type', 'HA Mode', 'Admin Failover Mode','Relocation', 'Diff Status' ]
   Name = 'LR_Summary'
-
+  HeaderDiff = [
+    { header: 'Name', col: 'name'},
+    { header: 'ID', col: 'id'},
+    { header: 'Edge Cluster Name', col: 'cluster_name'},
+    { header: 'Edge Cluster ID', col: 'cluster_id'},
+    { header: 'LR Type', col: 'type'},
+    { header: 'HA Mode', col: 'hamode'},
+    { header: 'Admin Failover Mode', col: 'failover'},
+    { header: 'Relocation', col: 'relocation'},
+  ]
+  
   constructor(
     private session: SessionService,
   ) {

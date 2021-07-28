@@ -22,54 +22,9 @@ export class TransportnodesComponent implements OnInit {
   isCompared = false;
   DiffTab: any = []
 
-  Name = "Tranport_Nodes"
-  Header = [
-    'Transport Node Name',
-    'Type',
-    'ID', 
-    'Management IP', 
-    'Switch Name',
-    'Switch Mode', 
-    'Switch Type',
-    'Transport Zones',
-    'Uplink Profile',
-    'Teaming Policy',
-    'Physical Interfaces',
-    'Uplink Interfaces',
-    'Active Interface',
-    'Transport Vlan',
-    'MTU',
-    'Serial Number', 
-    'FullVersion', 
-    'Maintenance Mode', 
-    'Deployement Status',
-    'PowerState',
-    'Diff Status'
-  ]
-
-  HeaderDiff = [
-    { header: 'Transport Node Name', col: 'name'},
-    { header: 'Type', col: 'type'},
-    { header: 'ID', col: 'id'},
-    { header: 'Management IP', col: 'managementIp'},
-    { header: 'Switch Name', col: 'hostswitch', subcol: 'name'},
-    { header: 'Switch Mode', col: 'hostswitch', subcol: 'mode'},
-    { header: 'Switch Type', col: 'hostswitch', subcol: 'type'},
-    { header: 'Transport Zones', col: 'TZ', subcol: 'name'},
-    // { header: 'Uplink Profile', col: ''},
-    // { header: 'Teaming Policy', col: ''},
-    // { header: 'Physical Interfaces', col: ''},
-    // { header: 'Uplink Interfaces', col: ''},
-    // { header: 'Active Interface', col: ''},
-    // { header: 'Transport Vlan', col: ''},
-    { header: 'MTU', col: 'MTU'},
-    { header: 'Serial Number', col: 'serialNumber'},
-    { header: 'FullVersion', col: 'full_version'},
-    { header: 'Maintenance Mode', col: 'inMaintenanceMode'},
-    { header: 'Deployement Status', col: 'host_node_deployment_status'},
-    { header: 'PowerState', col: 'powerState'}
-  ]
-
+  Name = this.tn.Name
+  Header = this.tn.Header
+  HeaderDiff = this.tn.HeaderDiff
 
   constructor(
     private myexport: ExportService,
@@ -93,14 +48,6 @@ export class TransportnodesComponent implements OnInit {
       this.loading = false
   }
 
-  // To check type of variable in HTML
-  typeOf(value: any) {
-    return typeof value;
-  }
-
-  isArray(obj : any ) {
-    return Array.isArray(obj)
- }
 
  getDiff(diffArrayOut: any){
   this.DiffTab = _.values(diffArrayOut)

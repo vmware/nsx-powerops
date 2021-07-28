@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { LoginSession } from '../class/loginSession';
 import { SessionService } from '../services/session.service';
 import {ClusterNSX, NSXManager, Service} from '../class/ClusterNSX'
-import { ActivatedRoute } from '@angular/router';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +11,16 @@ export class ManagerinfosService {
 
   Name = "Manager_Infos"
   Header = ['Group','Group Type','Group Status','Member FQDN','Member IP','Member UUID','Member Status', 'Diff Status']
+  HeaderDiff = [
+    { header: 'Group', col: 'name'},
+    { header: 'Group Type', col: 'name'},
+    { header: 'Group Status', col: 'status'},
+    { header: 'Member FQDN', col: 'members', subcol: 'fqdn'},
+    { header: 'Member IP', col: 'members', subcol: 'ip'},
+    { header: 'Member UUID', col: 'members', subcol: 'id'},
+    { header: 'Member Status', col: 'members', subcol: 'status'},
+  ]
+  
   ConditionalFormating = {
     sheet: this.Name,
     column:   [

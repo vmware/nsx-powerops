@@ -1,10 +1,11 @@
-.DS_STORE
 
 *.log
+*.zip
 node_modules
 
 #mac file
-.DS_Store
+*.DS_Store
+*.DS_STORE
 
 # Include when developing application packages.
 .settings/

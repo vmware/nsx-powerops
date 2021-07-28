@@ -19,21 +19,11 @@ export class AlarmsComponent implements OnInit {
   error_message = ""
 
   TabAlarms: any[] = [];
-  Header= ['Feature Name', 'Event Type', 'Node Name', 'Node Resource Type', 'Entity ID', 'Severity', 'Time', 'Status', 'Description', 'Recommended Action', 'Diff Status' ]
-  HeaderDiff = [
-    { header: 'Feature Name', col: 'feature_name'},
-    { header: 'Event Type', col: 'event_type'},
-    { header: 'Node Name', col: 'node_name'},
-    { header: 'Node Resource Type', col: 'node_resource_type'},
-    { header: 'Entity ID', col: 'entity_id'},
-    { header: 'Severity', col: 'severity'},
-    { header: 'Time', col: 'time'},
-    { header: 'Status', col: 'status'},
-    { header: 'Description', col: 'description'},
-    { header: 'Recommended Action', col: 'recommended_action'},
-  ]
 
-  Name= 'Alarms'
+  Header = this.alarms.Header
+  HeaderDiff = this.alarms.HeaderDiff
+  Name = this.alarms.Name
+
   TimeSort: any
 
   constructor(
@@ -52,14 +42,6 @@ export class AlarmsComponent implements OnInit {
     })
   }
 
-    // To check type of variable in HTML
-    typeOf(value: any) {
-      return typeof value;
-    }
-  
-    isArray(obj : any ) {
-      return Array.isArray(obj)
-   }
   
    getDiff(diffArrayOut: any){
     this.DiffTab = _.values(diffArrayOut)

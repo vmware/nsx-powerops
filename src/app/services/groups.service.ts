@@ -12,6 +12,18 @@ export class GroupsService {
   public mysession: LoginSession;
   Name = "Groups"
   Header = ['Group Name', 'Tags', 'Scope', 'Criteria Type', 'Criteria', 'IP addresses', 'Virtual Machines', 'Segments', 'Segments Ports', 'Diff Status']
+  HeaderDiff = [
+    { header: 'Group Name', col: 'name'},
+    { header: 'Tags', col: 'tags', subcol: 'tag'},
+    { header: 'Scope', col: 'tags', subcol: 'scope'},
+    { header: 'Criteria Type', col: 'type_criteria'},
+    { header: 'Criteria', col: 'criteria'},
+    { header: 'IP addresses', col: 'ip'},
+    { header: 'Virtual Machines', col: 'vm'},
+    { header: 'Segments', col: 'segment'},
+    { header: 'Segments Ports', col: 'segment_port'},
+  ]
+
   Groups_json: any
 
   constructor(
@@ -39,8 +51,8 @@ export class GroupsService {
       }
     }
     let Tabcriteria = []
-    if (Grp.hasOwnProperty('tmp_expression')){
-      for (let crt of Grp.tmp_expression){
+    if (Grp.hasOwnProperty('expression')){
+      for (let crt of Grp.expression){
         if (crt.resource_type === 'Condition'){
           if (crt.key === 'tag'){
             Tabcriteria.push(crt.member_type + " with " + crt.key + " " + crt.operator + " " + crt.value.tag +":" +crt.value.scope)
@@ -85,7 +97,7 @@ export class GroupsService {
       for(let gp of this.Groups_json.results){
         let GrpObj = new Group(gp.display_name)
         GrpObj.path = gp.path
-        GrpObj.expression = gp.expression 
+        // GrpObj.expression = gp.expression 
 
         if ('tags' in gp){
           for (let tag of gp.tags){  
@@ -95,11 +107,9 @@ export class GroupsService {
           }
         }
         //Criteria Treatment
-         let criteria: any = []
          for(let dictcriteria of gp.expression){
-           criteria = await this.getCriteria(dictcriteria, GrpObj)
+           await this.getCriteria(dictcriteria, GrpObj)
          }
-
         TabGroup.push(GrpObj) 
       }
     }
@@ -112,7 +122,7 @@ export class GroupsService {
       case 'ConjunctionOperator': {
         let exp = new Expression('ConjunctionOperator')
         exp.value = DictExpression.conjunction_operator
-        GrpObj.tmp_expression.push(exp)
+        GrpObj.expression.push(exp)
         break
       }
       case 'ExternalIDExpression':{
@@ -129,7 +139,7 @@ export class GroupsService {
             }
           }
         }
-        GrpObj.tmp_expression.push(exp)
+        GrpObj.expression.push(exp)
         break
       }
       case 'PathExpression':{
@@ -151,17 +161,17 @@ export class GroupsService {
             }
           }
         }
-        GrpObj.tmp_expression.push(exp)
+        GrpObj.expression.push(exp)
         break
       }
       case 'NestedExpression':{
-        GrpObj.type_criteria.push('Nested')
+        // GrpObj.type_criteria.push('Nested')
         let exp = new Expression('NestedExpression')
 
         for (let expression of DictExpression['expressions']){
           let ct = this.getCriteria(expression, GrpObj)
         }
-        GrpObj.tmp_expression.push(exp)
+        // GrpObj.tmp_expression.push(exp)
         break
        }
       case 'MACAddressExpression':{
@@ -169,7 +179,7 @@ export class GroupsService {
         let exp = new Expression('MACAddressExpression')
         exp.value = DictExpression['mac_addresses']
         GrpObj.criteria = DictExpression['mac_addresses']
-        GrpObj.tmp_expression.push(exp)
+        GrpObj.expression.push(exp)
         break
       }
       case 'IPAddressExpression':{
@@ -177,7 +187,7 @@ export class GroupsService {
         let exp = new Expression('IPAddressExpression')
         exp.value = DictExpression['ip_addresses']
         GrpObj.criteria = DictExpression['ip_addresses']
-        GrpObj.tmp_expression.push(exp)
+        GrpObj.expression.push(exp)
         break
       }
       case 'Condition':{
@@ -193,7 +203,7 @@ export class GroupsService {
         else{
           exp.value = DictExpression.value
         }
-        GrpObj.tmp_expression.push(exp)
+        GrpObj.expression.push(exp)
         break
       }
     }

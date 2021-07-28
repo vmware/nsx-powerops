@@ -33,20 +33,10 @@ export class RoutingtablesComponent implements OnInit {
   NbT0 = 0
   NbT1 = 0
 
-  Header= ['Router Name', 'Edge Node Name', 'Edge Node ID', 'Edge Node Status', 'Route Type', 'Network', 'Admin Distance', 'Next Hop', 'Router Component ID', 'Router Component Type', 'Router HA', 'Diff Status' ]
-  Name = "Routing_Table"
-  HeaderDiff = [
-    { header: 'Router Name', col: 'router'},
-    { header: 'Edge Node Name', col: 'node_name'},
-    { header: 'Edge Node ID', col: 'node_id'},
-    { header: 'Edge Node Status', col: 'node_status'},
-    { header: 'Route Type', col: 'type'},
-    { header: 'Network', col: 'network'},
-    { header: 'Admin Distance', col: 'admin_distance'},
-    { header: 'Next Hop', col: 'gateway'},
-    { header: 'Router Component ID', col: 'router_id'},
-    { header: 'Router Component Type', col: 'router_type'},
-  ]
+  Name = this.RT.Name
+  Header = this.RT.Header
+  HeaderDiff = this.RT.HeaderDiff
+
   loadingAll = true
   exportloading = true
   exportxls = false
@@ -62,7 +52,7 @@ export class RoutingtablesComponent implements OnInit {
   async onDetailOpen(event: any, router: any, type: string): Promise<void>{
     this.TabRT = []
     this.loading = true
-    router.open = event
+    // router.open = event
     if (event ){
       this.TabRT = await this.RT.getRoutingTable(router.display_name, type)
     }

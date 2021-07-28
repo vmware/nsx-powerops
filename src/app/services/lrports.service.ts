@@ -10,6 +10,20 @@ export class LrportsService {
   public mysession: LoginSession;
   Header= ['LR Port Name', 'ID', 'Attachment Type', 'Attachment ID', 'Logical Router Name', 'Logical Router ID','Segment Name', 'Segment ID', 'Create User', 'Admin State', 'Status', 'Diff Status' ]
   Name = 'LR_Ports'
+  HeaderDiff = [
+    { header: 'LR Port Name', col: 'name'},
+    { header: 'ID', col: 'id'},
+    { header: 'Attachment Type', col: 'attachment_type'},
+    { header: 'Attachment ID', col: 'attachment_id'},
+    { header: 'Logical Router Name', col: 'router_name'},
+    { header: 'Logical Router ID', col: 'router_id'},
+    { header: 'Segment Name', col: 'segment_name'},
+    { header: 'Segment ID', col: 'segment_id'},
+    { header: 'Create User', col: 'createdby'},
+    { header: 'Admin State', col: 'state'},
+    { header: 'Status', col: 'status'},
+  ]
+  
   ConditionalFormating = {
     sheet: this.Name,
     column:   [

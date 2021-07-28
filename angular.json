@@ -20,7 +20,10 @@
               "core-js",
               "raf",
               "xlsx",
-              "@babel/runtime"
+              "@babel/runtime",
+              "file-saver",
+              "yaml",
+              "lodash"
             ],
             "outputPath": "dist/Powerops",
             "index": "src/index.html",

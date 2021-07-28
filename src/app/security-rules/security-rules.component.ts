@@ -27,35 +27,9 @@ export class SecurityRulesComponent implements OnInit {
 
   public loading: ClrLoadingState = ClrLoadingState.DEFAULT;
 
-  Name = "DFW_Rules"
-  Header = [
-    'Security Policy', 
-    'Security Policy Applied to', 
-    'Category',
-    'Rule Name', 
-    'Rule ID',
-    'Source', 
-    'Destination',
-    'Services',
-    'Profiles',
-    'Rule Applied to',
-    'Action',
-    'Direction',
-    'Disabled', 
-    'IP Protocol',
-    'Logged',
-    'Diff Status'
-  ]
-
-  HeaderDiff = [
-    { header: 'Rule Name', col: 'name'},
-    { header: 'Rule ID', col: 'id'},
-    { header: 'Source', col: 'sources'},
-    { header: 'Destination', col: 'destinations'},
-    { header: 'Services', col: 'services'},
-    { header: 'Action', col: 'action'},
-    { header: 'Direction', col: 'direction'},
-  ]
+  Name = this.rules.Name
+  Header = this.rules.Header
+  HeaderDiff = this.rules.HeaderDiff
 
   constructor(
     private rules: RulesService,
