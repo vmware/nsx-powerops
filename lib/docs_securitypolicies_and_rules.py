@@ -62,7 +62,7 @@ def PrintRulesbyCategory(RULES,PolicyName, PolicyID,category, scopelist, XLSline
             Dict_DFW['scope'] = scopelist
             Dict_DFW['category'] = category
             Dict_DFW['display_name'] = rule['display_name']
-            Dict_DFW['unique_id'] = rule['unique_id']
+            Dict_DFW['rule_id'] = rule['rule_id']
             Dict_DFW['source'] = srcgrouplist
             Dict_DFW['destination'] = dstgrouplist
             Dict_DFW['services'] = servicelist
@@ -77,7 +77,7 @@ def PrintRulesbyCategory(RULES,PolicyName, PolicyID,category, scopelist, XLSline
             Dict_DFW['logged'] = rule['logged']
             Dict_DFW['action'] = rule['action']
             NSX_Config['DFW'].append(Dict_DFW)
-            XLSlines.append([PolicyName,", ".join(scopelist),category,Dict_DFW['display_name'], Dict_DFW['unique_id'], "\n".join(srcgrouplist), "\n".join(dstgrouplist), "\n".join(servicelist), "\n".join(profilelist), "\n".join(rulescopelist), str(Dict_DFW['action']), str(Dict_DFW['direction']), str(Dict_DFW['state']), str(Dict_DFW['ip_protocol']), str(Dict_DFW['logged'])])
+            XLSlines.append([PolicyName,", ".join(scopelist),category,Dict_DFW['display_name'], Dict_DFW['rule_id'], "\n".join(srcgrouplist), "\n".join(dstgrouplist), "\n".join(servicelist), "\n".join(profilelist), "\n".join(rulescopelist), str(Dict_DFW['action']), str(Dict_DFW['direction']), str(Dict_DFW['state']), str(Dict_DFW['ip_protocol']), str(Dict_DFW['logged'])])
 
 def SheetSecDFW(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     NSX_Config['DFW'] = []
