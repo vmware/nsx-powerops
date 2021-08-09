@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook
-from lib.system import style, GetAPI, ConnectNSX, os
+from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
 
 
 def SheetT0RoutingTable(auth_list,WORKBOOK,TN_WS, NSX_Config ={} ):
@@ -74,4 +74,14 @@ def SheetT0RoutingTable(auth_list,WORKBOOK,TN_WS, NSX_Config ={} ):
         
         print(" --> Get forwarding tables of " + style.ORANGE + T0 + style.NORMAL + " Router: " + style.ORANGE + str(nb_routes) + style.NORMAL + " route(s)")
 
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    if GetOutputFormat() == 'CSV':
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")

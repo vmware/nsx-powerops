@@ -29,16 +29,9 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook
-from lib.system import style, GetAPI, ConnectNSX, os
-from vmware.vapi.lib import connect
-from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
-from com.vmware.nsx_policy.infra.domains_client import Groups
-from com.vmware.nsx_policy.infra.domains.groups.members_client import IpAddresses  
-from com.vmware.nsx_policy.infra.domains.groups.members_client import SegmentPorts 
-from com.vmware.nsx_policy.infra.domains.groups.members_client import Segments  
-from com.vmware.nsx_policy.infra.domains.groups.members_client import VirtualMachines  
-from com.vmware.nsx_policy.model_client import PolicyGroupIPMembersListResult
+from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+
 
 
 def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
@@ -48,14 +41,9 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     domain_id = 'default'
     # Connection for get Groups criteria - REST/API
     Groups_list_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups'
-
+    
     SessionNSX = ConnectNSX(auth_list)
     Groups_list_json = GetAPI(SessionNSX[0],Groups_list_url, auth_list)
-    stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
-    ipsvc = IpAddresses(stub_config)
-    vmsvc = VirtualMachines(stub_config)
-    sgmntsvc = Segments(stub_config)
-    sgmntprtsvc = SegmentPorts(stub_config)
 
     XLS_Lines = []
     TN_HEADER_ROW = ('Group Name', 'Tags', 'Scope', 'Criteria Type', 'Criteria', 'IP addresses', 'Virtual Machines', 'Segments', 'Segments Ports')
@@ -84,39 +72,40 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
                 criteria = GetCriteria(SessionNSX[0], auth_list, nbcriteria)
 
             # Create IP Address List for each group
-            IPList_Obj = ipsvc.list(domain_id, group['id'])
+            IPs_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups/' + group['id'] + '/members/ip-addresses'
+            IPs_json = GetAPI(SessionNSX[0],IPs_url, auth_list)
             IP = ""
-            if IPList_Obj.result_count > 0: 
-                IP = ', '.join(IPList_Obj.results)
+            if IPs_json['result_count'] > 0: 
+                IP = ', '.join(IPs_json['results'])
 
             # Create Virtual Machine List for each group
-            VMList_Obj = vmsvc.list(domain_id, group['id'])
+            VMs_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups/' + group['id'] + '/members/virtual-machines'
+            VMs_json = GetAPI(SessionNSX[0],VMs_url, auth_list)
             VM = ""
             VMList =[]
-            if VMList_Obj.result_count > 0:
-                for vm in VMList_Obj.results:
-                    VMList.append(vm.display_name)
-                    
+            if VMs_json['result_count'] > 0:
+                for vm in VMs_json['results']:
+                    VMList.append(vm['display_name'])
                 VM = ', '.join(VMList)
 
             # Create Segment List for each group
-            SegList_Obj = sgmntsvc.list(domain_id, group['id'])
+            Segs_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups/' + group['id'] + '/members/segments'
+            Segs_json = GetAPI(SessionNSX[0],Segs_url, auth_list)
             Segment = ""
             SegList = []
-            if SegList_Obj.result_count > 0:
-                for seg in SegList_Obj.results:
-                    SegList.append(seg.display_name)
-                
+            if Segs_json['result_count'] > 0:
+                for seg in Segs_json['results']:
+                    SegList.append(seg['display_name'])
                 Segment = ', '.join(SegList)
 
             # Create Segment Port/vNIC List for each group
-            SegPortList_Obj = sgmntprtsvc.list(domain_id, group['id'])
+            Seg_Ports_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups/' + group['id'] + '/members/segment-ports'
+            Seg_Ports_json = GetAPI(SessionNSX[0],Seg_Ports_url, auth_list)
             SegPort = ""
             SegPortList = []
-            if SegPortList_Obj.result_count > 0: 
-                for segport in SegPortList_Obj.results:
-                    SegPortList.append(segport.display_name)
-
+            if Seg_Ports_json['result_count'] > 0: 
+                for segport in Seg_Ports_json['results']:
+                    SegPortList.append(segport['display_name'])
                 SegPort = ', '.join(SegPortList)
 
             Dict_Groups['name'] = group['display_name']
@@ -124,7 +113,7 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             Dict_Groups['scope'] = List_Scope
             Dict_Groups['type_crtieria'] = criteria[1]
             Dict_Groups['criteria'] = criteria[0]
-            Dict_Groups['ip'] = IPList_Obj.results
+            Dict_Groups['ip'] = IPs_json['results']
             Dict_Groups['vm'] = VMList
             Dict_Groups['segment'] = SegList
             Dict_Groups['segment_port'] = SegPortList
@@ -132,8 +121,18 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             XLS_Lines.append([group['display_name'],Tags,Scope,'\n'.join(criteria[1]),criteria[0],IP,VM,Segment,SegPort])
     else:
         XLS_Lines.append(['No results', "", "", "", "", "", "", "", ""])
-        
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+
+    if GetOutputFormat() == 'CSV':
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
 
 
 def GetCriteria(SESSION, auth_list, DictExpression):

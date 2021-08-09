@@ -29,11 +29,9 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu,  pprint
-from lib.excel import FillSheet, Workbook
-from lib.system import style, GetAPI, ConnectNSX, os
-from vmware.vapi.lib import connect
-from vmware.vapi.security.user_password import \
-        create_user_password_security_context
+from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+
 
 
 def SheetRouterSum(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
@@ -93,4 +91,14 @@ def SheetRouterSum(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     else:
         XLS_Lines.append(['No results', "", "", "", "", "", "", ""])
 
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    if GetOutputFormat() == 'CSV':
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")

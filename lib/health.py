@@ -28,7 +28,7 @@
 # *--------------------------------------------------------------------------------------* #                                                                                                #
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
-from lib.system import style, GetAPI, ConnectNSX, os, YAML_CFG_FILE, ReadYAMLCfgFile
+from lib.system import style, GetAPI, ConnectNSX, os, GetYAMLDict
 
 ########### SECTION FOR REPORTING ON NSX-T MANAGER CLUSTER ###########
 def GetHealthNSXCluster(auth_list):
@@ -149,7 +149,8 @@ def GetNSXSummary(auth_list):
     groups_json = GetAPI(SessionNSX[0],groups_url, auth_list)
     ctx_profiles_json = GetAPI(SessionNSX[0],ctx_profiles_url, auth_list)
     services_json = GetAPI(SessionNSX[0],services_url, auth_list)
-    YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
+    #YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
+    YAML_DICT = GetYAMLDict()
 
     #Display Summary Output
     print('\nNSX Manager Summary for: https://' + style.ORANGE + YAML_DICT['NSX_MGR_IP'] + style.NORMAL)
@@ -192,7 +193,10 @@ def GetLRSum(auth_list):
     for i in lr_list_json["results"]:
         print('\nName:\t\t' + style.ORANGE + i['display_name'] + style.NORMAL)
         print('Router Type:\t' + style.ORANGE + i['router_type'] + style.NORMAL)
-        print('HA Mode:\t' + style.ORANGE + i['high_availability_mode'] + style.NORMAL)
+        try:
+            print('HA Mode:\t' + style.ORANGE + i['high_availability_mode'] + style.NORMAL)
+        except:
+            print('HA Mode:\t' + style.RED + "N/A" + style.NORMAL)
     
     print("\n========================================================================================================")
 
@@ -336,7 +340,62 @@ def GetBGPSessions(auth_list):
 
     for i in tab:
         if len(i) > 1:
-            print('{:<20s} {:<23s} {:<11s} {:^11d} {:^17d}\x1b[0;31;40m{:<13s}\x1b[0m'.format(i[0],i[1],i[2],i[3], i[4], i[5]))
+            if i[5] == 'ESTABLISHED':
+                print('{:<20s} {:<23s} {:<11s} {:^11d} {:^17d}\x1b[1;32;40m{:<13s}\x1b[0m'.format(i[0],i[1],i[2],i[3], i[4], i[5]))
+            else:
+                print('{:<20s} {:<23s} {:<11s} {:^11d} {:^17d}\x1b[0;31;40m{:<13s}\x1b[0m'.format(i[0],i[1],i[2],i[3], i[4], i[5]))
 
     print('--------------------------------------------------------------------------------------------------')
     print("\n========================================================================================================")
+
+########### SECTION FOR REPORTING ON DFW rules count per VNIC ###########
+def GetDFWRulesVNIC(auth_list):
+    SessionNSX = ConnectNSX(auth_list)
+    lp_url = '/api/v1/logical-ports'
+    lp_json = GetAPI(SessionNSX[0],lp_url, auth_list)
+
+    tab = []
+    if isinstance(lp_json, dict) and 'results' in lp_json and lp_json['result_count'] > 0: 
+        print("\n========================================================================================================")
+        print('\n----------------------------------- DFW Rules per VNIC -------------------------------------------')
+        print('| Rule-count |                 VIF ID                 |                  VM name                 |')
+        print('--------------------------------------------------------------------------------------------------')
+        # If VIF only
+        for lp in lp_json['results']:
+            vm_name = ''
+            lp_id = ''
+            if 'attachment' in lp: 
+                attach = lp['attachment']
+                if attach['attachment_type'] == 'VIF':
+                    lp_id = attach['id']
+                    vm_id = GetVMidByLPid(auth_list, lp_id)
+                    if vm_id != '':
+                        vm_name = GetVMNamebyID(auth_list, vm_id)
+
+                    dfw_vnic_url = '/api/v1/firewall/sections?applied_tos=' + lp['internal_id'] + '&deep_search=true'
+                    dfw_vnic_json = GetAPI(SessionNSX[0],dfw_vnic_url, auth_list)
+                    tab.append([dfw_vnic_json['result_count'], lp_id, vm_name])
+    
+    for i in tab:
+        if len(i) > 1:
+            print('  {:^12d} {:<40}  {:<40}'.format(i[0],i[1],i[2]))
+    print('--------------------------------------------------------------------------------------------------')
+    print("\n========================================================================================================")
+
+def GetVMNamebyID(auth_list, vm_id):
+    SessionNSX = ConnectNSX(auth_list)
+    vm_url = '/api/v1/fabric/virtual-machines?external_id=' + vm_id
+    vm_json = GetAPI(SessionNSX[0],vm_url, auth_list)
+    if isinstance(vm_json, dict) and 'results' in vm_json and vm_json['result_count'] == 1:
+        vm = vm_json['results']
+        return str(vm[0]['display_name'])
+    return ''
+
+def GetVMidByLPid(auth_list, lp_id):
+    SessionNSX = ConnectNSX(auth_list)
+    vif_url = '/api/v1/fabric/vifs?lport_attachment_id=' + lp_id
+    vif_json = GetAPI(SessionNSX[0],vif_url, auth_list)
+    if isinstance(vif_json, dict) and 'results' in vif_json and vif_json['result_count'] == 1:
+        vif = vif_json['results']
+        return str(vif[0]['owner_vm_id'])
+    return ''

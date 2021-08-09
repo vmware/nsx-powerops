@@ -28,7 +28,7 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 from lib.health import GetBGPSessions, GetHealthNSXCluster, GetNSXSummary, GetTNTunnels, GetTNStatus, GetComputeDetail,\
-    GetEdgeCLDetail, GetEdgeStatus, GetLRSum, GetNetworkUsage, GetSecurityUsage, GetInventoryUsage
+    GetEdgeCLDetail, GetEdgeStatus, GetLRSum, GetNetworkUsage, GetSecurityUsage, GetInventoryUsage, GetDFWRulesVNIC
 from lib.docs_alarms import SheetAlarms
 from lib.docs_groups import SheetSecGrp
 from lib.docs_securitypolicies import SheetSecPol
@@ -47,8 +47,10 @@ from lib.docs_transportzones import SheetTZ
 from lib.docs_services import SheetNSXServices
 from lib.docs_tn_tunnels import SheetTunnels
 from lib.docs_set import DocsSetMultiple, DocsSetOne
-from lib.system import style
+from lib.system import style, CopyFile
 from lib.excel import CreateXLSFile
+from lib.diff import IfDiff, GetDiffFileName, SetXLSDiffFile
+import os
 
 # Definition of one menu
 class Menu:
@@ -91,8 +93,8 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
     MonAlarm = Menu("", "Export Alarms", None, SheetAlarms,"Alarms")
     MonPrev = Menu("", "Return to previous menu", None, 'Back')
 
-    DocSetOneFile = Menu("","One Excel file", None, DocsSetOne)
-    DocSetMultiple = Menu("","Mulitple Excel files", None, DocsSetMultiple)
+    DocSetOneFile = Menu("","One file (appended results for JSON, YAML format) and one Excel file with one tab per menu. Not supported for CSV.", None, DocsSetOne)
+    DocSetMultiple = Menu("","Multiple files", None, DocsSetMultiple)
     DocSetPrev = Menu("", "Return to previous menu", None, 'Back')
 
     DocFab = Menu("\nNSX-T Fabric Documents", "NSX-T Fabric Options", [FabManager, FabNodes, FabTZ, FabServices, FabTunnles, FabPrev])
@@ -114,14 +116,32 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
     subhealth10 = Menu("", "Display Networking Usage", None, GetNetworkUsage)
     subhealth11 = Menu("", "Display Security Usage", None, GetSecurityUsage)
     subhealth12 = Menu("", "Display Inventory Usage", None, GetInventoryUsage)
-    subhealth13 = Menu("", "Return to previous menu", None, 'Back')
+    subhealth13 = Menu("", "Display DFW Rules per VNIC", None, GetDFWRulesVNIC)
+    subhealth14 = Menu("", "Return to previous menu", None, 'Back')
 
     Doc = Menu("\nNSX-T Documentation", "NSX-T Documentation", [DocFab, DocVNS, DocSecu, DocMon, DocSet, DocPrev])
-    Health = Menu("\nHealth Checks", "Health Checks", [subhealth1,subhealth2,subhealth3,subhealth4,subhealth5,subhealth6,subhealth7,subhealth8,subhealth9,subhealth10,subhealth11, subhealth12, subhealth13])
+    Health = Menu("\nHealth Checks", "Health Checks", [subhealth1,subhealth2,subhealth3,subhealth4,subhealth5,subhealth6,subhealth7,subhealth8,subhealth9,subhealth10,subhealth11, subhealth12, subhealth13, subhealth14])
 
     main = Menu("Main Menu", "", [Doc, Health])
     main.parent = main
     current_menu = main
+
+    # Check if diff mode
+    if IfDiff() :
+        # copy initial file xls config to compare
+        xls_diff_filename = GetDiffFileName()
+        xls_diff_temp_file = xls_diff_filename.rsplit( ".", 1 )[ 0 ]
+        xls_diff_temp_file = xls_diff_temp_file + "_TEMP" + ".xlsx"
+        CopyFile(xls_diff_filename, xls_diff_temp_file)
+        # If diff mode : build doc XLS
+        SetXLSDiffFile(authlist, xls_diff_temp_file)
+        # delete temp diff file
+        try:
+            os.remove(xls_diff_temp_file)
+        except OSError as e:  ## if failed, report it back to the user ##
+            print ("Error: %s - %s." % (e.filename, e.strerror))
+        return
+
     while True:
         if not menu_mode:
             print("\n")

@@ -29,8 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook
-from lib.system import style, GetAPI, ConnectNSX, os
+from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
 
 
 def SheetT1Segments(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
@@ -62,4 +62,14 @@ def SheetT1Segments(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
     else:
         XLS_Lines.append(["no result", "", "", "", "", ""])
     
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+    if GetOutputFormat() == 'CSV':
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")

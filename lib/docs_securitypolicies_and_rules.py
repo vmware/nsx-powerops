@@ -29,11 +29,8 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu,  pprint
-from lib.excel import FillSheet, Workbook
-from lib.system import style, GetAPI, ConnectNSX, os
-from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
-from com.vmware.nsx_policy.infra.domains.security_policies_client import Rules
-
+from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
 
 def GetListNameFromPath(LIST):
     # Get a list with path as element, and return a list with only the last element of the path
@@ -50,50 +47,44 @@ def GetListNameFromPath(LIST):
 def PrintRulesbyCategory(RULES,PolicyName, PolicyID,category, scopelist, XLSlines, NSX_Config):
     Dict_DFW = {}
     domain_id = 'default'
-    ruleslist = RULES.list(domain_id, PolicyID)
-    nb = len(ruleslist.results)
+ #ruleslist = RULES.list(domain_id, PolicyID)
+    nb = len(RULES['results'])
     print(" --> Getting rules of " + style.ORANGE + PolicyName + style.NORMAL + " from category: " + style.ORANGE + category + style.NORMAL)
-    if ruleslist.result_count > 0:
-        while True:
-            for rule in ruleslist.results:
-                srcgrouplist =GetListNameFromPath(rule.source_groups)
-                dstgrouplist = GetListNameFromPath(rule.destination_groups)
-                servicelist = GetListNameFromPath(rule.services)
-                profilelist = GetListNameFromPath(rule.profiles)
-                rulescopelist = GetListNameFromPath(rule.scope)
+    if isinstance(RULES, dict) and 'results' in RULES and RULES['result_count'] > 0: 
+        for rule in RULES['results']:
+            srcgrouplist = GetListNameFromPath(rule['source_groups'])
+            dstgrouplist = GetListNameFromPath(rule['destination_groups'])
+            servicelist = GetListNameFromPath(rule['services'])
+            profilelist = GetListNameFromPath(rule['profiles'])
+            rulescopelist = GetListNameFromPath(rule['scope'])
 
-                Dict_DFW['policy_name'] = PolicyName
-                Dict_DFW['scope'] = scopelist
-                Dict_DFW['category'] = category
-                Dict_DFW['rule_name'] = rule.display_name
-                Dict_DFW['rule_id'] = rule.id
-                Dict_DFW['source'] = srcgrouplist
-                Dict_DFW['destination'] = dstgrouplist
-                Dict_DFW['services'] = servicelist
-                Dict_DFW['profile'] = profilelist
-                Dict_DFW['rule_scope'] = rulescopelist
-                Dict_DFW['direction'] = rule.direction
-                Dict_DFW['state'] = rule.disabled
-                Dict_DFW['ip_protocol'] = rule.ip_protocol
-                Dict_DFW['logged'] = rule.logged
-                NSX_Config['DFW'].append(Dict_DFW)
-                XLSlines.append([PolicyName,", ".join(scopelist),category,rule.display_name, rule.unique_id, "\n".join(srcgrouplist), "\n".join(dstgrouplist), "\n".join(servicelist), "\n".join(profilelist), "\n".join(rulescopelist), str(rule.direction), str(rule.disabled), str(rule.ip_protocol), str(rule.logged)])
-
-            if ruleslist.cursor is None:
-                break
+            Dict_DFW['policy_name'] = PolicyName
+            Dict_DFW['scope'] = scopelist
+            Dict_DFW['category'] = category
+            Dict_DFW['display_name'] = rule['display_name']
+            Dict_DFW['rule_id'] = rule['rule_id']
+            Dict_DFW['source'] = srcgrouplist
+            Dict_DFW['destination'] = dstgrouplist
+            Dict_DFW['services'] = servicelist
+            Dict_DFW['profile'] = profilelist
+            Dict_DFW['rule_scope'] = rulescopelist
+            Dict_DFW['direction'] = rule['direction']
+            Dict_DFW['state'] = rule['disabled']
+            if 'ip_protocol' in rule: 
+                Dict_DFW['ip_protocol'] = rule['ip_protocol']
             else:
-                print(" --> more than " + str(nb) + " results for " + style.RED + "Rules" + style.NORMAL + " - please wait")
-                ruleslist = RULES.list(domain_id, PolicyID, cursor =ruleslist.cursor)
-                nb = len(ruleslist.results) + nb
-
+                 Dict_DFW['ip_protocol'] = ''
+            Dict_DFW['logged'] = rule['logged']
+            Dict_DFW['action'] = rule['action']
+            NSX_Config['DFW'].append(Dict_DFW)
+            XLSlines.append([PolicyName,", ".join(scopelist),category,Dict_DFW['display_name'], Dict_DFW['rule_id'], "\n".join(srcgrouplist), "\n".join(dstgrouplist), "\n".join(servicelist), "\n".join(profilelist), "\n".join(rulescopelist), str(Dict_DFW['action']), str(Dict_DFW['direction']), str(Dict_DFW['state']), str(Dict_DFW['ip_protocol']), str(Dict_DFW['logged'])])
 
 def SheetSecDFW(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     NSX_Config['DFW'] = []
     # connection to NSX
     SessionNSX = ConnectNSX(auth_list)
     policies_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/domains/default/security-policies', auth_list)
-    stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
-    rules_svc = Rules(stub_config)
+    
     # Header of Excel and initialization of lines
     XLS_Lines = []
     TN_HEADER_ROW = ('Security Policy', 'Security Policy Applied to', 'Category','Rule Name', 'Rule ID','Source', 'Destination', 'Services', 'Profiles', 'Rule Applied to', 'Action', 'Direction', 'Disabled', 'IP Protocol', 'Logged')
@@ -102,9 +93,22 @@ def SheetSecDFW(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             # Check Applied to for policies
             scopelist= GetListNameFromPath(policy['scope'])
             ####  Get RULES       ####
-            PrintRulesbyCategory(rules_svc, policy['display_name'],policy['id'],policy['category'], scopelist, XLS_Lines, NSX_Config)
+            domain_id = 'default'
+            rules_url = '/policy/api/v1/infra/domains/' + domain_id + '/security-policies/' + policy['id'] + '/rules/'
+            rules_json = GetAPI(SessionNSX[0],rules_url, auth_list)
+            PrintRulesbyCategory(rules_json, policy['display_name'],policy['id'],policy['category'], scopelist, XLS_Lines, NSX_Config)
     else:
         XLS_Lines.append(['No results', "", "", "", "", "", "", "", "", "", "", "", "", ""])
-    
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+     
+    if GetOutputFormat() == 'CSV':
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
 

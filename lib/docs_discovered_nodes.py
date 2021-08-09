@@ -29,53 +29,51 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import pathlib, lib.menu
-from lib.excel import FillSheet, Workbook, ConditionnalFormat
-from lib.system import style, GetAPI, ConnectNSX, os, datetime
-from vmware.vapi.bindings.stub import StubConfiguration
-from vmware.vapi.stdlib.client.factories import StubConfigurationFactory
-from com.vmware.nsx.fabric_client import DiscoveredNodes
+from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
+from lib.system import style, GetAPI, ConnectNSX, os, datetime, GetOutputFormat
 
 
 def SheetFabDiscoveredNodes(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
 
-    SessionNSX = ConnectNSX(auth_list)
-    stub_config = StubConfigurationFactory.new_std_configuration(SessionNSX[1])
-    disc_node_list = DiscoveredNodes(stub_config).list()
-    
     Dict_DiscoveredNodes = {}     # Dict Discovered nodes initialization
     NSX_Config['DiscoveredNodes'] = []
+    # Connect to NSX
+    SessionNSX = ConnectNSX(auth_list)
+    discovered_nodes_url = '/api/v1/fabric/discovered-nodes'
+    discovered_nodes_json = GetAPI(SessionNSX[0],discovered_nodes_url, auth_list)
     # Construct Line
+    TN_HEADER_ROW = ('Display name', 'OS Type', 'OS Version', 'Node Type', 'Hostname', 'Full Name', 'Management IP', 'Domain name', 'DNS', 'UUID', 'Powerstate', 'In Maintenance Mode', 'Build', 'Vendor', 'Model', 'Serial Number', 'Connection State', 'Licensed Product Name', 'Licensed Product Version', 'Mgmt Server IP', 'Lockdown Mode', 'DAS Host State')
     XLS_Lines = []
-    if disc_node_list.result_count > 0:
-        TN_HEADER_ROW = ('Display name', 'OS Type', 'OS Version', 'Node Type', 'Hostname', 'Full Name', 'Management IP', 'Domain name', 'DNS', 'UUID', 'Powerstate', 'In Maintenance Mode', 'Build', 'Vendor', 'Model', 'Serial Number', 'Connection State', 'Licensed Product Name', 'Licensed Product Version', 'Mgmt Server IP', 'Lockdown Mode', 'DAS Host State')
-        for node in disc_node_list.results:
+    # Check if Discovered Nodes present
+    if isinstance(discovered_nodes_json, dict) and 'results' in discovered_nodes_json and discovered_nodes_json['result_count'] > 0: 
+        for node in discovered_nodes_json['results']:
             Dict_Properties = {}
             # Loop in properties
-            for propertie in node.origin_properties:
-                if propertie.key == 'hostName': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'fullName': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'managementIp': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'domainName': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'dnsConfigAddress': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'uuid': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'powerState': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'inMaintenanceMode': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'build': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'vendor': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'model': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'serialNumber': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'connectionState': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'licenseProductName': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'licenseProductVersion': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'managementServerIp': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'lockdownMode': Dict_Properties[propertie.key] = propertie.value
-                if propertie.key == 'dasHostState': Dict_Properties[propertie.key] = propertie.value
+            for propertie in node['origin_properties']:
+                if propertie['key'] == 'hostName': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'fullName': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'managementIp': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'domainName': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'dnsConfigAddress': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'uuid': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'powerState': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'inMaintenanceMode': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'build': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'vendor': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'model': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'serialNumber': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'connectionState': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'licenseProductName': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'licenseProductVersion': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'managementServerIp': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'lockdownMode': Dict_Properties[propertie['key']] = propertie['value']
+                if propertie['key'] == 'dasHostState': Dict_Properties[propertie['key']] = propertie['value']
                             
             # Fill Discovered Nodes Dict
-            Dict_DiscoveredNodes['node_name'] = node.display_name
-            Dict_DiscoveredNodes['event_type'] = node.os_type
-            Dict_DiscoveredNodes['node_name'] = node.os_version
-            Dict_DiscoveredNodes['node_resource_type'] = node.node_type
+            Dict_DiscoveredNodes['node_name'] = node['display_name']
+            Dict_DiscoveredNodes['event_type'] = node['os_type']
+            Dict_DiscoveredNodes['node_name'] = node['os_version']
+            Dict_DiscoveredNodes['node_resource_type'] = node['node_type']
             Dict_DiscoveredNodes['hostName'] = Dict_Properties['hostName']
             Dict_DiscoveredNodes['fullName'] = Dict_Properties['fullName']
             Dict_DiscoveredNodes['managementIp'] = Dict_Properties['managementIp']
@@ -100,11 +98,20 @@ def SheetFabDiscoveredNodes(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             NSX_Config['DiscoveredNodes'].append(Dict_DiscoveredNodes)
 
             # write one line for a node
-            XLS_Lines.append([node.display_name,node.os_type, node.os_version, node.node_type,Dict_Properties['hostName'], Dict_Properties['fullName'], Dict_Properties['managementIp'], Dict_Properties['domainName'], Dict_Properties['dnsConfigAddress'], Dict_Properties['uuid'], Dict_Properties['powerState'], Dict_Properties['inMaintenanceMode'], Dict_Properties['build'], Dict_Properties['vendor'], Dict_Properties['model'], Dict_Properties['serialNumber'], Dict_Properties['connectionState'], Dict_Properties['licenseProductName'], Dict_Properties['licenseProductVersion'], Dict_Properties['managementServerIp'], Dict_Properties['lockdownMode'], Dict_Properties['dasHostState']])
+            XLS_Lines.append([node['display_name'],node['os_type'], node['os_version'], node['node_type'], Dict_Properties['hostName'], Dict_Properties['fullName'], Dict_Properties['managementIp'], Dict_Properties['domainName'], Dict_Properties['dnsConfigAddress'], Dict_Properties['uuid'], Dict_Properties['powerState'], Dict_Properties['inMaintenanceMode'], Dict_Properties['build'], Dict_Properties['vendor'], Dict_Properties['model'], Dict_Properties['serialNumber'], Dict_Properties['connectionState'], Dict_Properties['licenseProductName'], Dict_Properties['licenseProductVersion'], Dict_Properties['managementServerIp'], Dict_Properties['lockdownMode'], Dict_Properties['dasHostState']])
     else:
-        XLS_Lines = ('No result', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
-
-    FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
-    ConditionnalFormat(TN_WS, 'K2:K' + str(len(XLS_Lines) + 1), 'poweredOn')
-    ConditionnalFormat(TN_WS, 'L2:L' + str(len(XLS_Lines) + 1), 'false')
-    ConditionnalFormat(TN_WS, 'Q2:Q' + str(len(XLS_Lines) + 1), 'connected')
+        XLS_Lines.append(['No result', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''])
+    if GetOutputFormat() == 'CSV':
+        CSV = WORKBOOK
+        FillSheetCSV(CSV,TN_HEADER_ROW,XLS_Lines)
+    elif GetOutputFormat() == 'JSON':
+        JSON = WORKBOOK
+        FillSheetJSON(JSON, NSX_Config)
+    elif GetOutputFormat() == 'YAML':
+        YAML = WORKBOOK
+        FillSheetYAML(YAML, NSX_Config)
+    else:
+        FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
+        ConditionnalFormat(TN_WS, 'K2:K' + str(len(XLS_Lines) + 1), 'poweredOn')
+        ConditionnalFormat(TN_WS, 'L2:L' + str(len(XLS_Lines) + 1), 'false')
+        ConditionnalFormat(TN_WS, 'Q2:Q' + str(len(XLS_Lines) + 1), 'connected')

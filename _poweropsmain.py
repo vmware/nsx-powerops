@@ -29,8 +29,9 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 import time
-from lib.system import CheckCertFiles, ReadYAMLCfgFile, CreateOutputFolder, style, auth_nsx, DeleteOutputFolder
+from lib.system import CheckCertFiles, CopyFile, ReadYAMLCfgFile, CreateOutputFolder, SetOutputFormat, style, auth_nsx, DeleteOutputFolder, GetVersion, EditYAMLDict, GetYAMLDict
 from lib.menu import MainMenu
+from lib.diff import IfDiff, SetDiffFileName
 import sys
 import argparse
 
@@ -45,6 +46,7 @@ def print_help():
     print ("  --interactive, -i      Request to run powerops interactively and override optional yaml MENU field. (Default=False)")
     print ("  --run config.yml, -r config.yml     Path to YAML config file : NSX Manager params. & NSX data to collect (Default=config.yml)")
     print ("  --menu N [N ...], -m N [N ...]      Indicates option menu you want to retrieve. (Default=exit)")
+    print ("  --diff </path/to/file.xlsx>, -d </path/to/file.xlsx>      Request to run powerops \"diff\" analysis between the current state and a previous NSX-T Audit exported file")
     print("")
     print("menu navigation --> N [N ...] =")
     print("   exit  => Exit NSX-T powerops")
@@ -78,6 +80,7 @@ def print_help():
     print("   2 10  => Health Checks - Display Networking Usage")
     print("   2 11  => Health Checks - Display Security Usage")
     print("   2 12  => Health Checks - Display Inventory Usage")
+    print("   2 13  => Health Checks - Display DFW Rules per VNIC")
 
 def main():
     YAML_CFG_FILE = 'config.yml'
@@ -92,6 +95,7 @@ def main():
     group.add_argument('--menu', '-m', metavar='N', nargs='+', required=False, help='Indicates option menu you want to retrieve. (Default=exit)', default=argparse.SUPPRESS)
     parser.add_argument('--help', '-h', required=False, action='store_true')
     parser.add_argument('--interactive', '-i', required=False, action='store_true', default=False)
+    parser.add_argument('--diff', '-d', required=False, help='Path to XLS initial audit export file', default=argparse.SUPPRESS)
     args = parser.parse_args()
     if  args.help == True:
         print_help()
@@ -109,7 +113,7 @@ def main():
     
     # Read the first arg of cli then pop this arg.
     sys.argv.pop(0)
-    print ("\n==> CLI args :", str(sys.argv))
+    print ("\n==> CLI args :" + style.ORANGE, str(sys.argv) + style.NORMAL)
     
     # Mode menu (use menu path of CLI)
     if "menu" in args:
@@ -127,31 +131,42 @@ def main():
     # Open and Treatment of YAML configuration file
     print("==> Read YAML config file: " + style.ORANGE + YAML_CFG_FILE + style.NORMAL)
     YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
+    # diff mode
+    if "diff" in args:
+        SetDiffFileName(args.diff)
+        EditYAMLDict('OUTPUT_FORMAT', 'XLSX')
     # Check if all cert files are present and ask credential if not
     result = CheckCertFiles(YAML_DICT['CERT_PATH'])
     if result[0] != 0 and result[1] != 0:
         print(style.GREEN + "==> Found all certifications files needed (.crt and .key)"+style.NORMAL+"\n==> Trying to use certification authentication")
         ListAuth = auth_nsx(YAML_DICT['NSX_MGR_IP'],'CERT',result)
         if ListAuth[0] != 'Failed':
+            result.append("CERT")
             print(style.GREEN + 'Successful authentication.')
+            # Get and print NSX-T Version
+            nsx_version = GetVersion(result)
+            print(style.NORMAL + "NSX-T Version : " + style.ORANGE + nsx_version + style.NORMAL)
+            # Create documentation folder
             dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
             OUTPUT_DOC_FOLDER = dest
             print('Documentation output directory is: '+ style.ORANGE +  dest + style.NORMAL)
             time.sleep(1)
-            result.append("CERT")
-            # result is a list with cert, key and CERT
-            # If using yaml file for automatic sub-menu navigation
-            if 'MENU' in YAML_DICT and not args.interactive and not ("menu" in args):
-                # If multiple sub-menu navigation commands (list inside another list)
-                if isinstance(YAML_DICT['MENU'][0], list):
-                    for cur_nav_option in YAML_DICT['MENU']:
-                        cur_nav_option.append('exit')
-                        MainMenu(result,dest,cur_nav_option,MENU_MODE)
-                else:
-                    YAML_DICT['MENU'].append('exit')
-                    MainMenu(result,dest,YAML_DICT['MENU'],MENU_MODE)
+            if IfDiff():
+                MainMenu(result,dest,None,MENU_MODE)
             else:
-                MainMenu(result,dest,sys.argv,MENU_MODE)
+                # result is a list with cert, key and CERT
+                # If using yaml file for automatic sub-menu navigation
+                if 'MENU' in YAML_DICT and not args.interactive and not ("menu" in args):
+                    # If multiple sub-menu navigation commands (list inside another list)
+                    if isinstance(YAML_DICT['MENU'][0], list):
+                        for cur_nav_option in YAML_DICT['MENU']:
+                            cur_nav_option.append('exit')
+                            MainMenu(result,dest,cur_nav_option,MENU_MODE)
+                    else:
+                        YAML_DICT['MENU'].append('exit')
+                        MainMenu(result,dest,YAML_DICT['MENU'],MENU_MODE)
+                else:
+                    MainMenu(result,dest,sys.argv,MENU_MODE)
         else:
             print(style.RED + 'Authentication with certificates failed.\n' + style.NORMAL)
             result = [0,0]
@@ -167,27 +182,33 @@ def main():
             if type(ListAuth[0]) == int or ListAuth[0] == 'Failed':
                 print(style.RED + "\nIncorrect FQDN, Username or Password entered.  Please re-enter credentials:\n" + style.NORMAL)
             else:
-                print(style.GREEN + "\nSuccessful authentication." + style.NORMAL + "\nGenerating output directory....\n")
+                result = [ListAuth[1][0],ListAuth[1][1], 'AUTH']
+                print(style.GREEN + "\nSuccessful authentication." )
+                # Get and print NSX-T Version
+                nsx_version = GetVersion(result)
+                print(style.NORMAL + "NSX-T Version : " + style.ORANGE + nsx_version + style.NORMAL)
+                # Create documentation folder
                 dest = CreateOutputFolder(YAML_DICT['OUTPUT_PATH'] + YAML_DICT['PREFIX_FOLDER'])
                 OUTPUT_DOC_FOLDER = dest
+                print ("\nGenerating output directory....")
                 print('Documentation output directory is: ' + style.ORANGE + dest + style.NORMAL)
-                print('')
                 time.sleep(1)
-                result = [ListAuth[1][0],ListAuth[1][1], 'AUTH']
                 break
-        
-        # If using yaml file for automatic sub-menu navigation
-        if 'MENU' in YAML_DICT and not args.interactive and not ("menu" in args):
-            # If multiple sub-menu navigation commands (list inside another list)
-            if isinstance(YAML_DICT['MENU'][0], list):
-                for cur_nav_option in YAML_DICT['MENU']:
-                    cur_nav_option.append('exit')
-                    MainMenu(result,dest,cur_nav_option,MENU_MODE)
-            else:
-                YAML_DICT['MENU'].append('exit')
-                MainMenu(result,dest,YAML_DICT['MENU'],MENU_MODE)
+        if IfDiff():
+            MainMenu(result,dest,None,MENU_MODE)
         else:
-            MainMenu(result,dest,sys.argv,MENU_MODE)
+            # If using yaml file for automatic sub-menu navigation
+            if 'MENU' in YAML_DICT and not args.interactive and not ("menu" in args):
+                # If multiple sub-menu navigation commands (list inside another list)
+                if isinstance(YAML_DICT['MENU'][0], list):
+                    for cur_nav_option in YAML_DICT['MENU']:
+                        cur_nav_option.append('exit')
+                        MainMenu(result,dest,cur_nav_option,MENU_MODE)
+                else:
+                    YAML_DICT['MENU'].append('exit')
+                    MainMenu(result,dest,YAML_DICT['MENU'],MENU_MODE)
+            else:
+                MainMenu(result,dest,sys.argv,MENU_MODE)
 
     # Remove output directory if empty
     isDeleted = DeleteOutputFolder(OUTPUT_DOC_FOLDER)
