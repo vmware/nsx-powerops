@@ -107,6 +107,7 @@
                             <th class="left">Action</th>
                             <th class="left">Scope</th>
                             <th class="left">Direction</th>
+                            <th class="left">Hit Count</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -125,6 +126,10 @@
                               <cds-icon shape="two-way-arrows" *ngIf="rule.direction === 'IN_OUT'"></cds-icon>           
                               <cds-icon shape="arrow" direction="right" *ngIf="rule.direction === 'IN'"></cds-icon>
                               <cds-icon shape="arrow" direction="left" *ngIf="rule.direction === 'OUT'"></cds-icon> {{rule.direction}}                        
+                            </td>
+                            <td class="left" *ngIf="rule.policy.category == policy.category && rule.policy.name == policy.name" >
+                              <span class="label label-warning" *ngIf="rule.hitcount === '0' ">{{rule.hitcount}}</span>
+                              <span class="label label-info" *ngIf="rule.hitcount !== '0' ">{{rule.hitcount}}</span>
                             </td>
                           </tr>
                         </tbody>
