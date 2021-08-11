@@ -12,6 +12,7 @@ export class Rule {
     public ip: string = ""
     public logged: boolean = false
     public diffstatus: string = ""
+    public hitcount: string = "0"
 
     constructor(
         public name: string,

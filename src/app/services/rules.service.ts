@@ -4,6 +4,7 @@ import { SessionService } from '../services/session.service';
 import { HttpClient} from '@angular/common/http';
 import { Rule, Policy, Category } from '../class/Rules';
 import { ToolsService } from '../services/tools.service';
+import { type } from 'os';
 
 @Injectable({
   providedIn: 'root'
@@ -28,6 +29,7 @@ export class RulesService {
     'Disabled', 
     'IP Protocol',
     'Logged',
+    'Hit Count',
     'Diff Status'
   ]
 
@@ -130,10 +132,11 @@ export class RulesService {
 
   async getRulesbyPolicy(policy: Policy): Promise<any>{
     let TabRules = []
-    const rules_json =  await this.session.getAPI(this.mysession, '/policy/api/v1/infra/domains/default/security-policies/' + policy.id + '/rules');
-
-    if (rules_json.result_count > 0){
-      for (let rule of rules_json.results){
+    const rules_json =   this.session.getAPI(this.mysession, '/policy/api/v1/infra/domains/default/security-policies/' + policy.id + '/rules');
+    const rules_stats_json =   this.session.getAPI(this.mysession, '/policy/api/v1/infra/domains/default/security-policies/' + policy.id + '/statistics');
+    let result = await Promise.all([rules_json, rules_stats_json])
+    if (result[0].result_count > 0){
+      for (let rule of result[0].results){
         let RuleObj = new Rule(rule.display_name)
         RuleObj.scope = this.getListNameFromPath(rule.scope)
         RuleObj.policy = policy
@@ -146,12 +149,19 @@ export class RulesService {
         RuleObj.direction = rule.direction
         RuleObj.state = rule.disabled
         RuleObj.logged = rule.logged
-        RuleObj.id = rule.rule_id
+        RuleObj.id = rule.rule_id.toString()
 
         if ('ip_protocol' in rule){
           RuleObj.ip = rule.ip_protocol
         }
-
+        // Get statistics
+        for (let stats of result[1].results){
+          for (let stat of stats.statistics.results){
+            if (stat.internal_rule_id === RuleObj.id){
+              RuleObj.hitcount = stat.hit_count.toString()
+            }
+          }
+        }
         TabRules.push(RuleObj)
       }
     }
@@ -178,6 +188,7 @@ export class RulesService {
         'state': rule.state,
         'ip': rule.ip,
         'logged': rule.logged,
+        'hitcount': rule.hitcount,
         'diffstatus': rule.diffstatus
       })
     }
