@@ -81,6 +81,7 @@ def print_help():
     print("   2 11  => Health Checks - Display Security Usage")
     print("   2 12  => Health Checks - Display Inventory Usage")
     print("   2 13  => Health Checks - Display DFW Rules per VNIC")
+    print("   2 14  => Health Checks - Display DFW Rules statistics")
 
 def main():
     YAML_CFG_FILE = 'config.yml'

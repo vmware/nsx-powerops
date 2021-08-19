@@ -348,6 +348,56 @@ def GetBGPSessions(auth_list):
     print('--------------------------------------------------------------------------------------------------')
     print("\n========================================================================================================")
 
+########### SECTION FOR REPORTING ON DFW rules statistics ###########
+def GetDFWRulesStats(auth_list):
+    # Get domain id
+    SessionNSX = ConnectNSX(auth_list)
+    domains_url = '/policy/api/v1/infra/domains'
+    domains_json = GetAPI(SessionNSX[0],domains_url, auth_list)
+    domain_name = 'default'
+    if isinstance(domains_json, dict) and 'results' in domains_json and domains_json['result_count'] > 0:
+        domain_name = domains_json['results'][0]['id']
+
+    # Get all DFW policies
+    dfw_url = '/policy/api/v1/infra/domains/default/security-policies'
+    dfw_json = GetAPI(SessionNSX[0],dfw_url, auth_list)
+    if isinstance(dfw_json, dict) and 'results' in dfw_json and dfw_json['result_count'] > 0: 
+        print("\n====================================================================================")
+        print('\n------------------------------- DFW Rules Stats ------------------------------------')
+        print('|     Rule Name     |  Rule Unique ID  |  Hit Count  |  Packet Count  |  Byte Count  |')
+        print('--------------------------------------------------------------------------------------')
+        for policy in dfw_json['results']:
+            policy_name = policy['display_name']
+            policy_id = policy['id']
+            if (policy['category'] == "Ethernet"):
+                continue
+            print('--- Policy: '+ policy_name +' (id: '+ policy_id +')')
+            
+            # Create Dict Rules Name & ID
+            rules_url = '/policy/api/v1/infra/domains/default/security-policies' + '/' + policy_id + '/rules'
+            rules_json = GetAPI(SessionNSX[0],rules_url, auth_list)
+            rule_dict = {}
+            if isinstance(rules_json, dict) and 'results' in rules_json and rules_json['result_count'] > 0:
+                for rule in rules_json['results']:
+                    rule_dict[str(rule['rule_id'])] = rule['display_name']
+            
+            # For the current policies, Get Statistics for all rules
+            rules_stats_url ='/policy/api/v1/infra/domains/default/security-policies' + "/" + policy_id + "/statistics"
+            rules_stats_url_json = GetAPI(SessionNSX[0],rules_stats_url, auth_list)
+            if isinstance(rules_stats_url_json, dict) and 'results' in rules_stats_url_json and rules_stats_url_json['result_count'] > 0:
+                for stat_res in rules_stats_url_json['results']:
+                    item = stat_res['statistics']['results']
+                    for rule_stat in item:
+                        rule_unique_id = rule_stat['internal_rule_id']
+                        hit_count = rule_stat['hit_count']
+                        packet_count = rule_stat['packet_count']
+                        byte_count = rule_stat['byte_count']
+                        print(' {:<18}  {:<16}  {:^12}  {:^15}  {:^12}'.format('{:19.19}'.format(rule_dict[str(rule_unique_id)]),rule_unique_id,hit_count,packet_count,str(byte_count)+'B'))
+        
+        print('--------------------------------------------------------------------------------------')
+        print("======================================================================================")
+
+
 ########### SECTION FOR REPORTING ON DFW rules count per VNIC ###########
 def GetDFWRulesVNIC(auth_list):
     SessionNSX = ConnectNSX(auth_list)
@@ -374,7 +424,7 @@ def GetDFWRulesVNIC(auth_list):
 
                     dfw_vnic_url = '/api/v1/firewall/sections?applied_tos=' + lp['internal_id'] + '&deep_search=true'
                     dfw_vnic_json = GetAPI(SessionNSX[0],dfw_vnic_url, auth_list)
-                    tab.append([dfw_vnic_json['result_count'], lp_id, vm_name])
+                    tab.append([dfw_vnic_json['result_count'], lp_id,  '{:40.40}'.format(vm_name)])
     
     for i in tab:
         if len(i) > 1:
