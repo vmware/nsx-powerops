@@ -16,7 +16,7 @@ Powerops UI is a Web app application. It need a small web server for hosting, an
 Build Powerops from the given dockerfile (don't forget the dot at the end of the command)
 docker build -t powerops .
 
-Run the docker
+Run the docker command: 
 docker run -it -d --name powerops -p 8100:80 -p8080:8080  powerops
 
 ## Build PowerOps from github (Angular)
