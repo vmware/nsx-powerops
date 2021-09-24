@@ -10,6 +10,11 @@ You also have the ability to make some comparaison between an old state (by load
 ## Releases & Major Branches
 Current version: Supports NSX-T 3.x API (December 2020)
 
+## PowerOps-UI Pre-Requisistes
+PowerOps-UI is a containerised application and requires a platform to run on.  You may typically see this is an installation of docker
+In order to run PowerOps-UI, download and install docker desktop on the machine you wish to run PowerOps from.
+Alternatively you can run PowerOps from an enterprise container platform like Kubernetes.
+
 ## PowerOps Docker install
 Powerops UI is a Web app application. It need a small web server for hosting, and use also a small API proxy python script on this server, to relay API calls from the web browser to NSX-T Manager. 
 
@@ -29,6 +34,12 @@ To build PowerOps
 
 2. Run `ng build --prod --build-optimizer=false` to build PowerOps. The build artifacts will be stored in the `dist/` directory.
 
+## Troubleshooting PowerOps
+Once you have built the poerops container and it is running.  When accessing 'localhost:8100' you may encounter 403 NGINX errors.
+Typically this will be a permissions issue, and can be fixed by applying the correct permissions via the following two commands on the parent directory of /dist:
+
+find dist -type d -exec chmod 755 {} \;
+find dist -type f -exec chmod 644 {} \;
 
 ### Contributing
 The NSX-PowerOps project team welcomes contributions from the community. Before you start working with NSX-PowerOps, please read our [Developer Certificate of Origin](https://cla.vmware.com/dco). All contributions to this repository must be signed as described on that page. Your signature certifies that you wrote the patch or have the right to pass it on as an open-source patch. For more detailed information, refer to the [Contribution Guidelines](CONTRIBUTING.md).
