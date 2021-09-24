@@ -36,9 +36,11 @@ To build PowerOps
 
 ## Troubleshooting PowerOps
 Once you have built the poerops container and it is running.  When accessing 'localhost:8100' you may encounter 403 NGINX errors.
+
 Typically this will be a permissions issue, and can be fixed by applying the correct permissions via the following two commands on the parent directory of /dist:
 
 find dist -type d -exec chmod 755 {} \;
+
 find dist -type f -exec chmod 644 {} \;
 
 ### Contributing
