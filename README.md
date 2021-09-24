@@ -13,7 +13,8 @@ Current version: Supports NSX-T 3.x API (December 2020)
 ## PowerOps Docker install
 Powerops UI is a Web app application. It need a small web server for hosting, and use also a small API proxy python script on this server, to relay API calls from the web browser to NSX-T Manager. 
 
-Build Powerops from the given dockerfile (don't forget the dot at the end of the command)
+Build Powerops from the given dockerfile (don't forget the dot at the end of the command): 
+
 docker build -t powerops .
 
 Run the docker command: 
