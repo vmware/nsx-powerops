@@ -15,16 +15,30 @@ PowerOps-UI is a containerised application and requires a platform to run on.  Y
 In order to run PowerOps-UI, download and install docker desktop on the machine you wish to run PowerOps from.
 Alternatively you can run PowerOps from an enterprise container platform like Kubernetes.
 
-## PowerOps Docker install
+## PowerOps Install
+
+1) From this repository, download 'dist.zip' (you only need to clone the repo if you want to help contirbute to the development of PowerOps)
+2) Unpack dist.zip to a folder on your machine
+3) Browse to the folder from a terminal
+4) Move onto the next section....
+
+## PowerOps Docker Build
 Powerops UI is a Web app application. It need a small web server for hosting, and use also a small API proxy python script on this server, to relay API calls from the web browser to NSX-T Manager. 
 
-Build Powerops from the given dockerfile (don't forget the dot at the end of the command): 
+Once you have downloaded and unpacked 'dist.zip', you need to build Powerops from the given dockerfile (don't forget the dot at the end of the command): 
+
+On the command line in the dist folder:
 
 docker build -t powerops .
 
 Run the docker command: 
 
 docker run -it -d --name powerops -p 8100:80 -p8080:8080  powerops
+
+## Running PowerOps-UI
+Once the container and image has been deployed, ensure it is up and running.
+
+When this has been done, simply open a browser and got to http://localhost:8100 and login using your NSX Manager credentials
 
 ## Build PowerOps from github (Angular)
 To build PowerOps
