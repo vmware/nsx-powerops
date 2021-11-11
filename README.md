@@ -10,6 +10,13 @@ NSX Power Operations is a platform that provides NSX users a way to document and
 ### Releases & Major Branches
 Current version: Supports NSX-T 3.x API (December 2020)
 
+NSX-T PowerOps does not perform any ESXi Commands to retrieve data.
+NSX-T PowerOps authenticates to NSX-T Manager only
+NSX-T POwerOps Master branch is for PoerOps-CLI (see below for PowerOps-UI)
+
+### NSX-T PowerOps-UI
+For the UI Version of NSX-T PowerOps, please go to: https://github.com/vmware/nsx-powerops/tree/NSX-T-PowerOps-UI
+
 ### PowerOps OVA Install
 1. The easiest method to build and run NSX-T PowerOps is to download the nsxt-powerops ova:
 
