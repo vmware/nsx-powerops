@@ -14,7 +14,7 @@ NSX-T PowerOps does not perform any ESXi Commands to retrieve data.
 
 NSX-T PowerOps authenticates to NSX-T Manager only
 
-NSX-T POwerOps Master branch is for PoerOps-CLI (see below for PowerOps-UI)
+NSX-T PowerOps Master branch is for PowerOps-CLI (see below for PowerOps-UI)
 
 ### NSX-T PowerOps-UI
 For the UI Version of NSX-T PowerOps, please go to: https://github.com/vmware/nsx-powerops/tree/NSX-T-PowerOps-UI
