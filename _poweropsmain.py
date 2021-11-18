@@ -67,7 +67,7 @@ def print_help():
     print("   1 3 3 => Security Options - Export Distributed Firewall")
     print("   1 4 1 => Monitoring & Alarm Options - Export Alarms")
     print("   1 5 1 => Create documentation set - One Excel file")
-    print("   1 5 1 => Create documentation set - Mulitple Excel files")
+    print("   1 5 2 => Create documentation set - Mulitple Excel files")
     print("   2 1   => Health Checks - Display NSX-T Summary")
     print("   2 2   => Health Checks - Display NSX-T Manager Cluster & Appliance Status")
     print("   2 3   => Health Checks - Display Transport node tunnels")
