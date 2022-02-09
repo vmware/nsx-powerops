@@ -68,6 +68,9 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
                 Scope = ""
 
              #Criteria Treatment
+            if group['expression'] == []:
+                print('skipping group without expression')
+                continue
             for nbcriteria in group['expression']:
                 criteria = GetCriteria(SessionNSX[0], auth_list, nbcriteria)
 
@@ -75,7 +78,7 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             IPs_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups/' + group['id'] + '/members/ip-addresses'
             IPs_json = GetAPI(SessionNSX[0],IPs_url, auth_list)
             IP = ""
-            if IPs_json['result_count'] > 0: 
+            if isinstance(IPs_json, dict) and 'results' in IPs_json and 'result_count' in IPs_json and IPs_json['result_count'] > 0:
                 IP = ', '.join(IPs_json['results'])
 
             # Create Virtual Machine List for each group
@@ -83,7 +86,7 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             VMs_json = GetAPI(SessionNSX[0],VMs_url, auth_list)
             VM = ""
             VMList =[]
-            if VMs_json['result_count'] > 0:
+            if isinstance(VMs_json, dict) and 'results' in VMs_json and 'result_count' in VMs_json  and VMs_json['result_count'] > 0:
                 for vm in VMs_json['results']:
                     VMList.append(vm['display_name'])
                 VM = ', '.join(VMList)
@@ -93,7 +96,7 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             Segs_json = GetAPI(SessionNSX[0],Segs_url, auth_list)
             Segment = ""
             SegList = []
-            if Segs_json['result_count'] > 0:
+            if isinstance(Segs_json, dict) and 'results' in Segs_json and 'result_count' in Segs_json and Segs_json['result_count'] > 0:
                 for seg in Segs_json['results']:
                     SegList.append(seg['display_name'])
                 Segment = ', '.join(SegList)
@@ -103,7 +106,7 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             Seg_Ports_json = GetAPI(SessionNSX[0],Seg_Ports_url, auth_list)
             SegPort = ""
             SegPortList = []
-            if Seg_Ports_json['result_count'] > 0: 
+            if isinstance(Seg_Ports_json, dict) and 'results' in Seg_Ports_json and 'result_count' in Seg_Ports_json and Seg_Ports_json['result_count'] > 0:
                 for segport in Seg_Ports_json['results']:
                     SegPortList.append(segport['display_name'])
                 SegPort = ', '.join(SegPortList)
@@ -113,7 +116,7 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             Dict_Groups['scope'] = List_Scope
             Dict_Groups['type_crtieria'] = criteria[1]
             Dict_Groups['criteria'] = criteria[0]
-            Dict_Groups['ip'] = IPs_json['results']
+            Dict_Groups['ip'] = IP
             Dict_Groups['vm'] = VMList
             Dict_Groups['segment'] = SegList
             Dict_Groups['segment_port'] = SegPortList

@@ -48,7 +48,7 @@ def PrintRulesbyCategory(RULES,PolicyName, PolicyID,category, scopelist, XLSline
     Dict_DFW = {}
     domain_id = 'default'
  #ruleslist = RULES.list(domain_id, PolicyID)
-    nb = len(RULES['results'])
+    #nb = len(RULES['results'])
     print(" --> Getting rules of " + style.ORANGE + PolicyName + style.NORMAL + " from category: " + style.ORANGE + category + style.NORMAL)
     if isinstance(RULES, dict) and 'results' in RULES and RULES['result_count'] > 0: 
         for rule in RULES['results']:
