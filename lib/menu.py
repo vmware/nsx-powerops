@@ -51,6 +51,7 @@ from lib.system import style, CopyFile
 from lib.excel import CreateXLSFile
 from lib.diff import IfDiff, GetDiffFileName, SetXLSDiffFile
 import os
+import traceback
 
 # Definition of one menu
 class Menu:
@@ -210,3 +211,4 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
                 current_menu = current_menu.choices[inpt]
             except Exception as error:
                 print(style.RED + "==> Invalid input: " + str(error) + style.NORMAL)
+                traceback.print_exc()
