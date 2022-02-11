@@ -32,31 +32,36 @@ import pathlib, lib.menu,  pprint
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
 from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
 
-def GetListNameFromPath(LIST):
+def GetListNameFromPath(LIST, JSONPath= {}, excluded=False):
     # Get a list with path as element, and return a list with only the last element of the path
     returnlist = []
     for element in LIST:
-        if 'ANY' in LIST:
-            returnlist = ['ANY']
-        else:
-            lenList = len(element.split('/'))
-            returnlist.append(element.split('/')[lenList - 1])
+        if isinstance(JSONPath, dict) and 'results' in JSONPath and JSONPath['result_count'] > 0:
+            for jsonelement in JSONPath['results']:
+                if element == jsonelement['path']:
+                    # Handle Negate groups
+                    if excluded is True:
+                        returnlist.append('NOT in ' + jsonelement['display_name'])
+                    else:
+                        returnlist.append(jsonelement['display_name'])
+
+        if '/infra' not in element:
+            returnlist.append(element)
 
     return returnlist
 
-def PrintRulesbyCategory(RULES,PolicyName, PolicyID,category, scopelist, XLSlines, NSX_Config):
+def PrintRulesbyCategory(RULES, Groups, Services, Context, PolicyName, PolicyID, category, scopelist, XLSlines, NSX_Config):
     Dict_DFW = {}
-    domain_id = 'default'
- #ruleslist = RULES.list(domain_id, PolicyID)
-    #nb = len(RULES['results'])
+    excluded = False
     print(" --> Getting rules of " + style.ORANGE + PolicyName + style.NORMAL + " from category: " + style.ORANGE + category + style.NORMAL)
     if isinstance(RULES, dict) and 'results' in RULES and RULES['result_count'] > 0: 
         for rule in RULES['results']:
-            srcgrouplist = GetListNameFromPath(rule['source_groups'])
-            dstgrouplist = GetListNameFromPath(rule['destination_groups'])
-            servicelist = GetListNameFromPath(rule['services'])
-            profilelist = GetListNameFromPath(rule['profiles'])
-            rulescopelist = GetListNameFromPath(rule['scope'])
+            if ('sources_excluded' in rule or 'destinations_excluded' in rule) and rule['sources_excluded'] is True or rule['destinations_excluded'] is True: excluded = True
+            srcgrouplist = GetListNameFromPath(rule['source_groups'], Groups, excluded)
+            dstgrouplist = GetListNameFromPath(rule['destination_groups'], Groups, excluded)
+            servicelist = GetListNameFromPath(rule['services'], Services)
+            profilelist = GetListNameFromPath(rule['profiles'], Context)
+            rulescopelist = GetListNameFromPath(rule['scope'], Groups)
 
             Dict_DFW['policy_name'] = PolicyName
             Dict_DFW['scope'] = scopelist
@@ -84,19 +89,27 @@ def SheetSecDFW(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     # connection to NSX
     SessionNSX = ConnectNSX(auth_list)
     policies_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/domains/default/security-policies', auth_list)
-    
+    # Get all groups - to get display name
+    domain_id = 'default'
+    # Connection for get Groups criteria - REST/API
+    groups_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/domains/' + domain_id + '/groups', auth_list)
+    # Get All Services
+    services_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/services', auth_list)
+    # Get all Contewxt Profile
+    context_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/context-profiles', auth_list)
+
     # Header of Excel and initialization of lines
     XLS_Lines = []
     TN_HEADER_ROW = ('Security Policy', 'Security Policy Applied to', 'Category','Rule Name', 'Rule ID','Source', 'Destination', 'Services', 'Profiles', 'Rule Applied to', 'Action', 'Direction', 'Disabled', 'IP Protocol', 'Logged')
     if isinstance(policies_json, dict) and 'results' in policies_json: 
         for policy in policies_json["results"]:
             # Check Applied to for policies
-            scopelist= GetListNameFromPath(policy['scope'])
+            scopelist= GetListNameFromPath(policy['scope'], groups_json)
             ####  Get RULES       ####
             domain_id = 'default'
             rules_url = '/policy/api/v1/infra/domains/' + domain_id + '/security-policies/' + policy['id'] + '/rules/'
             rules_json = GetAPI(SessionNSX[0],rules_url, auth_list)
-            PrintRulesbyCategory(rules_json, policy['display_name'],policy['id'],policy['category'], scopelist, XLS_Lines, NSX_Config)
+            PrintRulesbyCategory(rules_json, groups_json, services_json, context_json, policy['display_name'],policy['id'],policy['category'], scopelist, XLS_Lines, NSX_Config)
     else:
         XLS_Lines.append(['No results', "", "", "", "", "", "", "", "", "", "", "", "", ""])
      
