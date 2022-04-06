@@ -63,7 +63,12 @@ def SheetSegments(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
             if 'vlan' in segment: Dict_LS['vlan'] = segment['vlan']
             Dict_LS['tz_name'] = TZ_NAME
             Dict_LS['tz_type'] = TZ_Type
-            if 'replication_mode' in segment: Dict_LS['replication_mode'] = segment['replication_mode']
+            repmode = segment.get('replication_mode')
+            if repmode == None:
+                Dict_LS['replication_mode'] = 'None'
+            else: 
+                Dict_LS['replication_mode'] = segment['replication_mode']
+
             Dict_LS['status'] = segment['admin_state']
             NSX_Config['Segments'].append(Dict_LS)
             XLS_Lines.append([Dict_LS['segment_name'], Dict_LS['vni'], Dict_LS['vlan'], TZ_NAME, TZ_Type, Dict_LS['replication_mode'],segment['admin_state']])
