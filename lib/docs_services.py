@@ -75,9 +75,9 @@ def SheetNSXServices(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
                     Ports = ", ".join(svc['destination_ports'])
                     List_Ports.append(Ports)
                 elif "protocol_number" in svc:
-                    List_Proto.append(svc['protocol_number'])
+                    List_Proto.append(str(svc['protocol_number']))
                 elif "ether_type" in svc:
-                    List_Proto.append(svc['ether_type'])
+                    List_Proto.append(str(svc['ether_type']))
                 else:
                     List_Proto.append('IGMP')
 
