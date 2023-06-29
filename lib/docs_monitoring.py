@@ -29,16 +29,15 @@
 #                                                                                                                                                                                           #
 #############################################################################################################################################################################################
 from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
  
-def SheetMonitoring(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
+def SheetMonitoring(SessionNSX,WORKBOOK,TN_WS,NSX_Config = {}):
     NSX_Config['Nodes'] = []
     TN_HEADER_ROW = ('Name', 'Node Type', 'Type', 'MGT IP', 'Form Factor','SSH Status', 'SSH on boot', 'SNMP Status', 'SNMP on boot', 'SNMP Version','SNMP Servers', 'Syslog Status', 'Syslog on boot', 'Syslog Servers', 'NTP Servers', 'DNS Servers')
     XLS_Lines = []
  
-    SessionNSX = ConnectNSX(auth_list)
     # Get Edge nodes monitoring config
-    transport_node_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes', auth_list)
+    transport_node_json = GetAPI(SessionNSX,'/api/v1/transport-nodes')
     # Check if Transport Node present
     if isinstance(transport_node_json, dict) and 'results' in transport_node_json and transport_node_json['result_count'] > 0:
         for node in transport_node_json['results']:
@@ -73,14 +72,14 @@ def SheetMonitoring(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
                         Node['IP'] = node['node_deployment_info']['ip_addresses'][0]
  
                 # Get SSH informations
-                ssh_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/ssh', auth_list)
-                sshstatus_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/ssh/status', auth_list)
+                ssh_json = GetAPI(SessionNSX,'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/ssh')
+                sshstatus_json = GetAPI(SessionNSX,'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/ssh/status')
                 Node['SSH_Boot'] = ssh_json['service_properties']['start_on_boot']
                 Node['SSH_Status'] = sshstatus_json['runtime_state'].upper()
 
                 # Get SNMP Informations
-                snmp_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/snmp', auth_list)
-                snmpstatus_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/snmp/status', auth_list)
+                snmp_json = GetAPI(SessionNSX,'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/snmp')
+                snmpstatus_json = GetAPI(SessionNSX,'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/snmp/status')
                 if type(snmpstatus_json) is dict and 'runtime_state' in snmpstatus_json:
                     Node['SNMP_Status'] = snmpstatus_json['runtime_state'].upper()
                 if type(snmp_json) is dict and "service_properties" in snmp_json:
@@ -96,8 +95,8 @@ def SheetMonitoring(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
  
 
                 # Get Syslog Informations
-                syslog_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/syslog', auth_list)
-                syslogstatus_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/syslog/status', auth_list)
+                syslog_json = GetAPI(SessionNSX,'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/syslog')
+                syslogstatus_json = GetAPI(SessionNSX,'/api/v1/transport-nodes/' + Node['ID'] + '/node/services/syslog/status')
                 if type(syslogstatus_json) is dict and 'runtime_state' in syslogstatus_json:
                     Node['Syslog_Status'] = syslogstatus_json['runtime_state'].upper()
                 if type(syslog_json) is dict and "service_properties" in syslog_json:
@@ -127,16 +126,16 @@ def SheetMonitoring(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
  
 
     # Get NSX Managers monitoring config
-    ManagerInfos = GetAPI(SessionNSX[0],'/api/v1/cluster/status', auth_list)
-    Manager_SNMP_Config = GetAPI(SessionNSX[0],'/api/v1/node/services/snmp', auth_list)
-    Manager_SNMP_Status = GetAPI(SessionNSX[0],'/api/v1/node/services/snmp/status', auth_list)
-    Manager_Syslog_Config = GetAPI(SessionNSX[0],'/api/v1/node/services/syslog', auth_list)
-    Manager_Syslog_Status = GetAPI(SessionNSX[0],'/api/v1/node/services/syslog/status', auth_list)
-    Manager_Syslog_Servers = GetAPI(SessionNSX[0],'/api/v1/node/services/syslog/exporters', auth_list)
-    Manager_NTP_Config = GetAPI(SessionNSX[0],'/api/v1/node/services/ntp', auth_list)
-    Manager_SSH_Config = GetAPI(SessionNSX[0],'/api/v1/node/services/ssh', auth_list)
-    Manager_SSH_Status = GetAPI(SessionNSX[0],'/api/v1/node/services/ssh/status', auth_list)
-    Manager_DNS_Servers = GetAPI(SessionNSX[0],'/api/v1/node/network/name-servers', auth_list)
+    ManagerInfos = GetAPI(SessionNSX,'/api/v1/cluster/status')
+    Manager_SNMP_Config = GetAPI(SessionNSX,'/api/v1/node/services/snmp')
+    Manager_SNMP_Status = GetAPI(SessionNSX,'/api/v1/node/services/snmp/status')
+    Manager_Syslog_Config = GetAPI(SessionNSX,'/api/v1/node/services/syslog')
+    Manager_Syslog_Status = GetAPI(SessionNSX,'/api/v1/node/services/syslog/status')
+    Manager_Syslog_Servers = GetAPI(SessionNSX,'/api/v1/node/services/syslog/exporters')
+    Manager_NTP_Config = GetAPI(SessionNSX,'/api/v1/node/services/ntp')
+    Manager_SSH_Config = GetAPI(SessionNSX,'/api/v1/node/services/ssh')
+    Manager_SSH_Status = GetAPI(SessionNSX,'/api/v1/node/services/ssh/status')
+    Manager_DNS_Servers = GetAPI(SessionNSX,'/api/v1/node/network/name-servers')
  
     for member in ManagerInfos['detailed_cluster_status']['groups'][0]['members']:
         SNMP_Version = ''
@@ -188,6 +187,6 @@ def SheetMonitoring(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
         FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
         if len(XLS_Lines) > 0:
             ConditionnalFormat(TN_WS, 'F2:F' + str(len(XLS_Lines) + 1), 'RUNNING')
-            ConditionnalFormat(TN_WS, 'H2:F' + str(len(XLS_Lines) + 1), 'RUNNING')
-            ConditionnalFormat(TN_WS, 'L2:J' + str(len(XLS_Lines) + 1), 'RUNNING')
+            ConditionnalFormat(TN_WS, 'H2:H' + str(len(XLS_Lines) + 1), 'RUNNING')
+            ConditionnalFormat(TN_WS, 'L2:L' + str(len(XLS_Lines) + 1), 'RUNNING')
 

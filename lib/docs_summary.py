@@ -30,7 +30,7 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, PatternFill, Font,  ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 def GetEntity(json, tab):
     if 'entities' in json: 
@@ -39,19 +39,17 @@ def GetEntity(json, tab):
 
     return tab
 
-def SheetSummary(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
-    # Connection to NSX
-    SessionNSX = ConnectNSX(auth_list)
+def SheetSummary(SessionNSX,WORKBOOK,TN_WS, NSX_Config = {}):
     system_url = '/api/v1/ui-controller/system-aggregate-status'
     inventory_url = '/api/v1/ui-controller/inventory-aggregate-status'
     security_url = '/api/v1/ui-controller/security-aggregate-status'
     network_url = '/api/v1/ui-controller/networking-aggregate-status'
     fabric_url = '/api/v1/ui-controller/fabric-aggregate-status'
-    inventory_json = GetAPI(SessionNSX[0],inventory_url, auth_list)
-    security_json = GetAPI(SessionNSX[0],security_url, auth_list)
-    network_json = GetAPI(SessionNSX[0],network_url, auth_list)
-    fabric_json = GetAPI(SessionNSX[0],fabric_url, auth_list)
-    system_json = GetAPI(SessionNSX[0],system_url, auth_list)
+    inventory_json = GetAPI(SessionNSX,inventory_url)
+    security_json = GetAPI(SessionNSX,security_url)
+    network_json = GetAPI(SessionNSX,network_url)
+    fabric_json = GetAPI(SessionNSX,fabric_url)
+    system_json = GetAPI(SessionNSX,system_url)
 
     XLS_Lines = []
     TN_HEADER_ROW = (' ', 'Number', 'Alarms', 'Status')

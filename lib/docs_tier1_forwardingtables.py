@@ -30,20 +30,18 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 
-def SheetT1ForwardingTable(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+def SheetT1ForwardingTable(SessionNSX,WORKBOOK,TN_WS, NSX_Config = {}):
     NSX_Config['T1ForwardingTable'] = []
     Dict_T1 = {}
-    # Connect NSX
-    SessionNSX = ConnectNSX(auth_list)
     ########### GET Edge Clusters  ###########
     #edge_list_url = '/api/v1/search/query?query=resource_type:Edgenode'
-    #edge_list_json = GetAPI(SessionNSX[0],edge_list_url, auth_list)
+    #edge_list_json = GetAPI(SessionNSX,edge_list_url)
     ########### GET Tier-1 Gateways  ###########
     t1_url = '/policy/api/v1/infra/tier-1s'
-    t1_json = GetAPI(SessionNSX[0],t1_url, auth_list)
+    t1_json = GetAPI(SessionNSX,t1_url)
     ########### CREATE LIST OF TUPLES - EDGE-ID / EDGE NAME ###########
     #edge_list = []
     #if edge_list_json["result_count"] > 0:
@@ -61,7 +59,7 @@ def SheetT1ForwardingTable(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
         for T1 in t1_id_list:
             forwardingURL = t1_url + '/' + str(T1) + '/forwarding-table'
             # Get T1 State
-            t1_state_json = GetAPI(SessionNSX[0],t1_url + '/' + str(T1) + '/state', auth_list)
+            t1_state_json = GetAPI(SessionNSX,t1_url + '/' + str(T1) + '/state')
             nb_routes = 0
             EdgeID = None
             HAStatus = None
@@ -74,7 +72,7 @@ def SheetT1ForwardingTable(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
                             forwardingURL = t1_url + '/' + str(T1) + '/forwarding-table?edge_id=' + EdgeID
 
             # Get T1 forwardoing table
-            t1_routingtable_json = GetAPI(SessionNSX[0],forwardingURL, auth_list)
+            t1_routingtable_json = GetAPI(SessionNSX,forwardingURL)
             if isinstance(t1_routingtable_json, dict) and 'results' in t1_routingtable_json and t1_routingtable_json['result_count'] > 0:
                 for n in t1_routingtable_json["results"]:
                     # Get routes

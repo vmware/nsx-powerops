@@ -30,22 +30,21 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu,  pprint
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 
 
-def SheetRouterSum(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+def SheetRouterSum(SessionNSX,WORKBOOK,TN_WS, NSX_Config = {}):
     if 'LR' not in NSX_Config:
         NSX_Config['LR'] = []
     Dict_LR = {}
 
-    SessionNSX = ConnectNSX(auth_list)
    ########### GET Logical Routers  ###########
     lr_list_url = '/api/v1/logical-routers'
-    lr_list_json = GetAPI(SessionNSX[0],lr_list_url, auth_list)
+    lr_list_json = GetAPI(SessionNSX,lr_list_url)
     ########### GET Edge Clusters  ###########
     edge_list_url = '/api/v1/edge-clusters'
-    edge_list_json = GetAPI(SessionNSX[0],edge_list_url, auth_list)
+    edge_list_json = GetAPI(SessionNSX,edge_list_url)
     ########### CREATE LIST OF TUPLES - EDGE-ID / EDGE NAME ###########
     edge_list = []
     if edge_list_json['result_count'] > 0:

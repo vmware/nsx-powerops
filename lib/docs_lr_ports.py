@@ -30,31 +30,29 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 
-def SheetRouterPorts(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
+def SheetRouterPorts(SessionNSX,WORKBOOK,TN_WS,NSX_Config = {}):
     if 'LRPorts' not in NSX_Config:
         NSX_Config['LRPorts'] = []
     Dict_Ports = {}
-
-    SessionNSX = ConnectNSX(auth_list)
     ########### GET LogicalPortDownLink  ###########
     LRports_Down_url = '/api/v1/search/query?query=resource_type:LogicalRouterDownLinkPort'
-    LRports_Down_json = GetAPI(SessionNSX[0],LRports_Down_url, auth_list)
+    LRports_Down_json = GetAPI(SessionNSX,LRports_Down_url)
     ########### GET Logical Routers  ###########
     lr_ports_url = '/api/v1/search/query?query=resource_type:LogicalPort'
-    lr_ports_json = GetAPI(SessionNSX[0],lr_ports_url, auth_list)
+    lr_ports_json = GetAPI(SessionNSX,lr_ports_url)
     ########### GET Logical Routers  ###########
     lr_list_url = '/api/v1/logical-routers'
-    lr_list_json = GetAPI(SessionNSX[0],lr_list_url, auth_list)
+    lr_list_json = GetAPI(SessionNSX,lr_list_url)
     ########### CREATE LIST OF TUPLES - EDGE-ID / EDGE NAME ###########
     lswitch_list = []
     XLS_Lines = []
     TN_HEADER_ROW = ('LR Port Name', 'ID', 'Attachment Type', 'Logical Router Name', 'Attachment ID', 'Logical Switch ID', 'Logical Switch','Create User', 'Admin State', 'Status')
     ########### GET Logical-Switches  ###########
     lswitch_url = '/api/v1/logical-switches'
-    lswitch_json = GetAPI(SessionNSX[0],lswitch_url, auth_list)
+    lswitch_json = GetAPI(SessionNSX,lswitch_url)
 
     for i in lswitch_json["results"]:
         lswitch_list.append(tuple((i['id'],i['display_name'])))

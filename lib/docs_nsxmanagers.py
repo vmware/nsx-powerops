@@ -31,17 +31,16 @@
 import pathlib, lib.menu
 from typing import ClassVar
 from lib.excel import FillSheet, Workbook, PatternFill, Font,  ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetVersion, GetOutputFormat
+from lib.system import style, GetAPI, os, GetVersion, GetOutputFormat
 
 
-def SheetNSXManagerInfo(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+def SheetNSXManagerInfo(SessionNSX,WORKBOOK,TN_WS, NSX_Config = {}):
     Dict_NSXManager = {}     # Dict NSXManager initialization
     NSX_Config['NSXManager'] = Dict_NSXManager
  
-    SessionNSX = ConnectNSX(auth_list)
     ########### SECTION FOR REPORTING ON NSX-T MANAGER CLUSTER ###########
     nsxclstr_url = '/api/v1/cluster/status'
-    nsxclstr_json = GetAPI(SessionNSX[0],nsxclstr_url, auth_list)
+    nsxclstr_json = GetAPI(SessionNSX,nsxclstr_url)
     # Check online and offline nodes
     if 'online_nodes' in nsxclstr_json['mgmt_cluster_status']:
         online_nodes = str(len(nsxclstr_json['mgmt_cluster_status']['online_nodes']))
@@ -52,7 +51,7 @@ def SheetNSXManagerInfo(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     else:
         offline_nodes = "0"
     # check Version NSX-T
-    nsx_version = GetVersion(auth_list)
+    nsx_version = GetVersion(SessionNSX)
 
     NSX_Config['NSXManager']['Cluster_id'] = nsxclstr_json['cluster_id']
     NSX_Config['NSXManager']['Cluster_status'] = nsxclstr_json['mgmt_cluster_status']['status']

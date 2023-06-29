@@ -30,18 +30,15 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, datetime, GetOutputFormat
+from lib.system import style, GetAPI, os, datetime, GetOutputFormat
 
-def SheetAlarms(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+def SheetAlarms(SessionNSX,WORKBOOK,TN_WS, NSX_Config = {}):
     Dict_Alarm = {}     # Dict alarm initialization
     NSX_Config['Alarms'] = []
     # Connect NSX
-    SessionNSX = ConnectNSX(auth_list)
-    TN_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes', auth_list)
-    Edge_json = GetAPI(SessionNSX[0],'/api/v1/cluster/nodes', auth_list)
-    alarms_url = '/api/v1/alarms'
-    alarms_json = GetAPI(SessionNSX[0],alarms_url, auth_list)
-    nb = alarms_json['result_count']
+    TN_json = GetAPI(SessionNSX,'/api/v1/transport-nodes')
+    Edge_json = GetAPI(SessionNSX,'/api/v1/cluster/nodes')
+    alarms_json = GetAPI(SessionNSX,'/api/v1/alarms')
     node_dict = {}
     # Construct Dicts of Edge Node and Transport Node for Name from ID
     if TN_json['result_count'] > 0:

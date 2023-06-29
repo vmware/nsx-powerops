@@ -30,18 +30,17 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu,  pprint
 from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
-def SheetSegments(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
+def SheetSegments(SessionNSX,WORKBOOK,TN_WS,NSX_Config = {}):
     NSX_Config['Segments'] = []
     Dict_LS = {}
 
     # Connect to NSX
-    SessionNSX = ConnectNSX(auth_list)
     segments_url = '/api/v1/logical-switches'
-    segments_json = GetAPI(SessionNSX[0],segments_url, auth_list)
+    segments_json = GetAPI(SessionNSX,segments_url)
     tz_url = '/policy/api/v1/infra/sites/default/enforcement-points/default/transport-zones'
-    tz_json = GetAPI(SessionNSX[0],tz_url, auth_list)
+    tz_json = GetAPI(SessionNSX,tz_url)
     
     XLS_Lines = []
     TN_HEADER_ROW = ('Segments', 'VNI', 'VLAN', 'Transport Zone Name', 'Transport Zone Type', 'Replication Mode', 'Admin State')

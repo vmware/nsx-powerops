@@ -31,9 +31,8 @@
 from lib.system import style, GetAPI, ConnectNSX, os, GetYAMLDict
 
 ########### SECTION FOR REPORTING ON NSX-T MANAGER CLUSTER ###########
-def GetHealthNSXCluster(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-    nsxclstr_json = GetAPI(SessionNSX[0],'/api/v1/cluster/status', auth_list)
+def GetHealthNSXCluster(SessionNSX):
+    nsxclstr_json = GetAPI(SessionNSX,'/api/v1/cluster/status')
     
     print("\n========================================================================================================")
     if nsxclstr_json['mgmt_cluster_status']['status'] == 'STABLE': print('NSX-T Cluster Status:\t\t' + style.GREEN +  nsxclstr_json['mgmt_cluster_status']['status'] + style.NORMAL)
@@ -44,7 +43,7 @@ def GetHealthNSXCluster(auth_list):
     online_nodes = len(nsxclstr_json['mgmt_cluster_status']['online_nodes'])
 
     groups = nsxclstr_json['detailed_cluster_status']['groups']
-    nsxmgr_json = GetAPI(SessionNSX[0],'/api/v1/cluster', auth_list)
+    nsxmgr_json = GetAPI(SessionNSX,'/api/v1/cluster')
     base = nsxmgr_json["nodes"]
 
     for n in range(online_nodes):
@@ -57,9 +56,8 @@ def GetHealthNSXCluster(auth_list):
 
 
 ########### SECTION FOR REPORTING ON NSX-T Transport Node Status ###########
-def GetTNStatus(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-    hostnode_json = GetAPI(SessionNSX[0],'/api/v1/search/query?query=resource_type:Hostnode', auth_list)
+def GetTNStatus(SessionNSX):
+    hostnode_json = GetAPI(SessionNSX,'/api/v1/search/query?query=resource_type:Hostnode')
 
     hostnodes = (hostnode_json["result_count"])
     
@@ -86,9 +84,8 @@ def GetTNStatus(auth_list):
 
 
 ########### SECTION FOR REPORTING ON NSX-T Transport Nodes Tunnels ###########
-def GetTNTunnels(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-    transport_node_json = GetAPI(SessionNSX[0],'/api/v1/transport-nodes', auth_list)
+def GetTNTunnels(SessionNSX):
+    transport_node_json = GetAPI(SessionNSX,'/api/v1/transport-nodes')
     transport_nodes = (transport_node_json['results'])
     tnode_dict = {}
     
@@ -98,7 +95,7 @@ def GetTNTunnels(auth_list):
     for uuid in tnode_dict.items():
         try:
             tunnel_url = '/api/v1/transport-nodes/' + str(uuid[0]) + '/tunnels'
-            tunnel_json = GetAPI(SessionNSX[0],tunnel_url, auth_list)
+            tunnel_json = GetAPI(SessionNSX,tunnel_url)
             print('\nTransport Node: ' + style.ORANGE + uuid[1] + style.NORMAL)
             print('')
             x = (len(tunnel_json['tunnels']))
@@ -121,9 +118,7 @@ def GetTNTunnels(auth_list):
             print(style.RED + '**** No tunnels exist for this transport node ****\n' + style.NORMAL)
 
 
-def GetNSXSummary(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-
+def GetNSXSummary(SessionNSX):
     t0_gateway_url = '/policy/api/v1/infra/tier-0s'
     t1_gateway_url = '/policy/api/v1/infra/tier-1s'
     segment_url = '/policy/api/v1/infra/segments'
@@ -136,19 +131,19 @@ def GetNSXSummary(auth_list):
     edge_tn_url = '/api/v1/search/query?query=resource_type:Edgenode'
     host_tn_url = '/api/v1/search/query?query=resource_type:Hostnode'
     
-    deployed_json = GetAPI(SessionNSX[0],deployed_mgmt_nodes_url, auth_list)
+    deployed_json = GetAPI(SessionNSX,deployed_mgmt_nodes_url)
     deployed = len(deployed_json["nodes"])
-    online_nodes_json = GetAPI(SessionNSX[0],online_mgmt_nodes_url, auth_list)
+    online_nodes_json = GetAPI(SessionNSX,online_mgmt_nodes_url)
     online_nodes = len(online_nodes_json['mgmt_cluster_status']['online_nodes'])
-    edge_clstr_json = GetAPI(SessionNSX[0],edge_clstr_url, auth_list)
-    edge_tn_json = GetAPI(SessionNSX[0],edge_tn_url, auth_list)
-    host_tn_json = GetAPI(SessionNSX[0],host_tn_url, auth_list)
-    t0_gateway_json = GetAPI(SessionNSX[0],t0_gateway_url, auth_list)
-    t1_gateway_json = GetAPI(SessionNSX[0],t1_gateway_url, auth_list)
-    segment_json = GetAPI(SessionNSX[0],segment_url, auth_list)
-    groups_json = GetAPI(SessionNSX[0],groups_url, auth_list)
-    ctx_profiles_json = GetAPI(SessionNSX[0],ctx_profiles_url, auth_list)
-    services_json = GetAPI(SessionNSX[0],services_url, auth_list)
+    edge_clstr_json = GetAPI(SessionNSX,edge_clstr_url)
+    edge_tn_json = GetAPI(SessionNSX,edge_tn_url)
+    host_tn_json = GetAPI(SessionNSX,host_tn_url)
+    t0_gateway_json = GetAPI(SessionNSX,t0_gateway_url)
+    t1_gateway_json = GetAPI(SessionNSX,t1_gateway_url)
+    segment_json = GetAPI(SessionNSX,segment_url)
+    groups_json = GetAPI(SessionNSX,groups_url)
+    ctx_profiles_json = GetAPI(SessionNSX,ctx_profiles_url)
+    services_json = GetAPI(SessionNSX,services_url)
     #YAML_DICT = ReadYAMLCfgFile(YAML_CFG_FILE)
     YAML_DICT = GetYAMLDict()
 
@@ -167,9 +162,8 @@ def GetNSXSummary(auth_list):
     print('Services:\t\t' + style.ORANGE + str(services_json["result_count"]) + style.NORMAL)  
 
 ########### SECTION FOR REPORTING ON NSX-T Logical Router Summary ###########
-def GetLRSum(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-    lr_list_json = GetAPI(SessionNSX[0],'/api/v1/logical-routers', auth_list)
+def GetLRSum(SessionNSX):
+    lr_list_json = GetAPI(SessionNSX,'/api/v1/logical-routers')
     total_lrs = lr_list_json["result_count"]
     
     tier0s = 0
@@ -201,9 +195,8 @@ def GetLRSum(auth_list):
     print("\n========================================================================================================")
 
 ########### SECTION FOR REPORTING ON NSX-T Compute Manager Detail ###########
-def GetComputeDetail(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-    cmp_mgr_json = GetAPI(SessionNSX[0],'/api/v1/fabric/compute-managers', auth_list)
+def GetComputeDetail(SessionNSX):
+    cmp_mgr_json = GetAPI(SessionNSX,'/api/v1/fabric/compute-managers')
     cmp_managers = cmp_mgr_json["result_count"]
 
     print("\n========================================================================================================")
@@ -217,9 +210,8 @@ def GetComputeDetail(auth_list):
     print("\n========================================================================================================")
 
 ########### SECTION FOR REPORTING ON NSX-T Edge Cluster Detail ###########
-def GetEdgeCLDetail(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-    edgecluster_json = GetAPI(SessionNSX[0],'/api/v1/edge-clusters', auth_list)
+def GetEdgeCLDetail(SessionNSX):
+    edgecluster_json = GetAPI(SessionNSX,'/api/v1/edge-clusters')
     edgeclusters = (edgecluster_json["result_count"])
     
     print("\n========================================================================================================")
@@ -233,9 +225,8 @@ def GetEdgeCLDetail(auth_list):
     print("========================================================================================================")
 
 ########### SECTION FOR REPORTING ON NSX-T Edge Cluster Status ###########
-def GetEdgeStatus(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-    edgenode_json = GetAPI(SessionNSX[0],'/api/v1/search/query?query=resource_type:Edgenode', auth_list)
+def GetEdgeStatus(SessionNSX):
+    edgenode_json = GetAPI(SessionNSX,'/api/v1/search/query?query=resource_type:Edgenode')
     edgenodes = (edgenode_json["result_count"])
     
     print("\n========================================================================================================\n")
@@ -259,9 +250,8 @@ def GetEdgeStatus(auth_list):
 
 
 ########### SECTION FOR REPORTING ON NSX-T MANAGER CAPACITY NETWORKING ###########
-def GetNetworkUsage(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-    nsx_net_cap_json = GetAPI(SessionNSX[0],'/api/v1/capacity/usage?category=networking', auth_list)
+def GetNetworkUsage(SessionNSX):
+    nsx_net_cap_json = GetAPI(SessionNSX,'/api/v1/capacity/usage?category=networking')
     print("\n========================================================================================================")
     print('\n----------------------------------- NSX NETWORKING CAPACITY ---------------------------------')
     print('|  Name                                                | Current  | Max Supported | Usage % |')
@@ -276,9 +266,8 @@ def GetNetworkUsage(auth_list):
     print("\n========================================================================================================")
 
 ########### SECTION FOR REPORTING ON NSX-T MANAGER CAPACITY NETWORKING ###########
-def GetSecurityUsage(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-    nsx_sec_cap_json = GetAPI(SessionNSX[0],'/api/v1/capacity/usage?category=security', auth_list)
+def GetSecurityUsage(SessionNSX):
+    nsx_sec_cap_json = GetAPI(SessionNSX,'/api/v1/capacity/usage?category=security')
     print("\n========================================================================================================")
     print('\n------------------------------------ NSX SECURITY CAPACITY -----------------------------------')
     print('|  Name                                                 | Current  | Max Supported | Usage % |')
@@ -294,9 +283,8 @@ def GetSecurityUsage(auth_list):
     print("========================================================================================================")
 
 ########### SECTION FOR REPORTING ON NSX-T MANAGER CAPACITY NETWORKING ###########
-def GetInventoryUsage(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
-    nsx_inv_cap_json = GetAPI(SessionNSX[0],'/api/v1/capacity/usage?category=inventory', auth_list)
+def GetInventoryUsage(SessionNSX):
+    nsx_inv_cap_json = GetAPI(SessionNSX,'/api/v1/capacity/usage?category=inventory')
     print("\n========================================================================================================")
     print('\n------------------------------------ NSX INVENTORY CAPACITY -----------------------------------')
     print('|  Name                                                 | Current  | Max Supported | Usage %  |')
@@ -311,10 +299,9 @@ def GetInventoryUsage(auth_list):
     print("\n========================================================================================================")
 
 ########### SECTION FOR REPORTING ON BGP Sessions ###########
-def GetBGPSessions(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
+def GetBGPSessions(SessionNSX):
     t0_url = '/policy/api/v1/infra/tier-0s'
-    t0_json = GetAPI(SessionNSX[0],t0_url, auth_list)
+    t0_json = GetAPI(SessionNSX,t0_url)
 
     print("\n========================================================================================================")
     print('\n----------------------------------- NSX BGP Sessions ---------------------------------------------')
@@ -324,10 +311,10 @@ def GetBGPSessions(auth_list):
     if isinstance(t0_json, dict) and 'results' in t0_json and t0_json['result_count'] > 0: 
         for t0 in t0_json["results"]:
             t0_localeservice_url = "/policy/api/v1/infra/tier-0s/" + t0['display_name'] + "/locale-services/"
-            t0_localeservices_json = GetAPI(SessionNSX[0],t0_localeservice_url, auth_list)
+            t0_localeservices_json = GetAPI(SessionNSX,t0_localeservice_url)
             for t0_localeservice in t0_localeservices_json['results']:
                 bgpstatus_url = "/policy/api/v1/infra/tier-0s/" + t0['display_name'] + "/locale-services/" + t0_localeservice['id'] + "/bgp/neighbors/status"
-                bgpstatus_json = GetAPI(SessionNSX[0],bgpstatus_url, auth_list)
+                bgpstatus_json = GetAPI(SessionNSX,bgpstatus_url)
                 # BGP Sessions treatment
                 if isinstance(bgpstatus_json, dict) and 'results' in bgpstatus_json:
                     for session in bgpstatus_json['results']:
@@ -349,18 +336,17 @@ def GetBGPSessions(auth_list):
     print("\n========================================================================================================")
 
 ########### SECTION FOR REPORTING ON DFW rules statistics ###########
-def GetDFWRulesStats(auth_list):
+def GetDFWRulesStats(SessionNSX):
     # Get domain id
-    SessionNSX = ConnectNSX(auth_list)
     domains_url = '/policy/api/v1/infra/domains'
-    domains_json = GetAPI(SessionNSX[0],domains_url, auth_list)
+    domains_json = GetAPI(SessionNSX,domains_url)
     domain_name = 'default'
     if isinstance(domains_json, dict) and 'results' in domains_json and domains_json['result_count'] > 0:
         domain_name = domains_json['results'][0]['id']
 
     # Get all DFW policies
     dfw_url = '/policy/api/v1/infra/domains/default/security-policies'
-    dfw_json = GetAPI(SessionNSX[0],dfw_url, auth_list)
+    dfw_json = GetAPI(SessionNSX,dfw_url)
     if isinstance(dfw_json, dict) and 'results' in dfw_json and dfw_json['result_count'] > 0: 
         print("\n====================================================================================")
         print('\n------------------------------- DFW Rules Stats ------------------------------------')
@@ -375,7 +361,7 @@ def GetDFWRulesStats(auth_list):
             
             # Create Dict Rules Name & ID
             rules_url = '/policy/api/v1/infra/domains/default/security-policies' + '/' + policy_id + '/rules'
-            rules_json = GetAPI(SessionNSX[0],rules_url, auth_list)
+            rules_json = GetAPI(SessionNSX,rules_url)
             rule_dict = {}
             if isinstance(rules_json, dict) and 'results' in rules_json and rules_json['result_count'] > 0:
                 for rule in rules_json['results']:
@@ -383,7 +369,7 @@ def GetDFWRulesStats(auth_list):
             
             # For the current policies, Get Statistics for all rules
             rules_stats_url ='/policy/api/v1/infra/domains/default/security-policies' + "/" + policy_id + "/statistics"
-            rules_stats_url_json = GetAPI(SessionNSX[0],rules_stats_url, auth_list)
+            rules_stats_url_json = GetAPI(SessionNSX,rules_stats_url)
             if isinstance(rules_stats_url_json, dict) and 'results' in rules_stats_url_json and rules_stats_url_json['result_count'] > 0:
                 for stat_res in rules_stats_url_json['results']:
                     item = stat_res['statistics']['results']
@@ -399,10 +385,9 @@ def GetDFWRulesStats(auth_list):
 
 
 ########### SECTION FOR REPORTING ON DFW rules count per VNIC ###########
-def GetDFWRulesVNIC(auth_list):
-    SessionNSX = ConnectNSX(auth_list)
+def GetDFWRulesVNIC(SessionNSX):
     lp_url = '/api/v1/logical-ports'
-    lp_json = GetAPI(SessionNSX[0],lp_url, auth_list)
+    lp_json = GetAPI(SessionNSX,lp_url)
 
     tab = []
     if isinstance(lp_json, dict) and 'results' in lp_json and lp_json['result_count'] > 0: 
@@ -418,12 +403,12 @@ def GetDFWRulesVNIC(auth_list):
                 attach = lp['attachment']
                 if attach['attachment_type'] == 'VIF':
                     lp_id = attach['id']
-                    vm_id = GetVMidByLPid(auth_list, lp_id)
+                    vm_id = GetVMidByLPid(SessionNSX, lp_id)
                     if vm_id != '':
-                        vm_name = GetVMNamebyID(auth_list, vm_id)
+                        vm_name = GetVMNamebyID(SessionNSX, vm_id)
 
                     dfw_vnic_url = '/api/v1/firewall/sections?applied_tos=' + lp['internal_id'] + '&deep_search=true'
-                    dfw_vnic_json = GetAPI(SessionNSX[0],dfw_vnic_url, auth_list)
+                    dfw_vnic_json = GetAPI(SessionNSX,dfw_vnic_url)
                     tab.append([dfw_vnic_json['result_count'], lp_id,  '{:40.40}'.format(vm_name)])
     
     for i in tab:
@@ -432,19 +417,17 @@ def GetDFWRulesVNIC(auth_list):
     print('--------------------------------------------------------------------------------------------------')
     print("\n========================================================================================================")
 
-def GetVMNamebyID(auth_list, vm_id):
-    SessionNSX = ConnectNSX(auth_list)
+def GetVMNamebyID(SessionNSX, vm_id):
     vm_url = '/api/v1/fabric/virtual-machines?external_id=' + vm_id
-    vm_json = GetAPI(SessionNSX[0],vm_url, auth_list)
+    vm_json = GetAPI(SessionNSX,vm_url)
     if isinstance(vm_json, dict) and 'results' in vm_json and vm_json['result_count'] == 1:
         vm = vm_json['results']
         return str(vm[0]['display_name'])
     return ''
 
-def GetVMidByLPid(auth_list, lp_id):
-    SessionNSX = ConnectNSX(auth_list)
+def GetVMidByLPid(SessionNSX, lp_id):
     vif_url = '/api/v1/fabric/vifs?lport_attachment_id=' + lp_id
-    vif_json = GetAPI(SessionNSX[0],vif_url, auth_list)
+    vif_json = GetAPI(SessionNSX,vif_url)
     if isinstance(vif_json, dict) and 'results' in vif_json and vif_json['result_count'] == 1:
         vif = vif_json['results']
         return str(vif[0]['owner_vm_id'])

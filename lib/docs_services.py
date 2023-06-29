@@ -30,16 +30,15 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 
-def SheetNSXServices(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+def SheetNSXServices(SessionNSX,WORKBOOK,TN_WS, NSX_Config = {}):
     NSX_Config['Services'] = []
     Dict_Services = {}
     # Connection to NSX
-    SessionNSX = ConnectNSX(auth_list)
     services_url = '/policy/api/v1/infra/services'
-    services_json = GetAPI(SessionNSX[0],services_url, auth_list)
+    services_json = GetAPI(SessionNSX,services_url)
 
     XLS_Lines = []
     TN_HEADER_ROW = ('Services Name', 'Services Entries', 'Service Type', 'Port # / Additionnal Properties', 'Tags', 'Scope')

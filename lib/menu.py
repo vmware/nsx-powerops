@@ -68,7 +68,7 @@ class Menu:
         else:
             self.choices = {}
             
-def MainMenu(authlist,dest,menu_path,menu_mode):
+def MainMenu(SessionNSX,dest,menu_path,menu_mode):
     global XLS_Dest
     XLS_Dest = dest
     FabManager = Menu("","NSX-T Manager Info", None, SheetNSXManagerInfo, "NSX_Managers_Info")
@@ -138,7 +138,7 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
         xls_diff_temp_file = xls_diff_temp_file + "_TEMP" + ".xlsx"
         CopyFile(xls_diff_filename, xls_diff_temp_file)
         # If diff mode : build doc XLS
-        SetXLSDiffFile(authlist, xls_diff_temp_file)
+        SetXLSDiffFile(SessionNSX, xls_diff_temp_file)
         # delete temp diff file
         try:
             os.remove(xls_diff_temp_file)
@@ -173,17 +173,17 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
 #                else:
 #                    # Create one file
 #                    if 'Sheet' in current_menu.choices[inpt].func.__name__:
-#                        CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile, current_menu.choices[inpt].func)
-#                        #WB = CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile)
+#                        CreateXLSFile(SessionNSX,current_menu.choices[inpt].xlsfile, current_menu.choices[inpt].func)
+#                        #WB = CreateXLSFile(SessionNSX,current_menu.choices[inpt].xlsfile)
 #                        ## Creation of sheet
 #                        #TN_WS = WB[0].active
 #                        #TN_WS.title = current_menu.choices[inpt].xlsfile
-#                        #current_menu.choices[inpt].func(authlist,WB[0],TN_WS)
+#                        #current_menu.choices[inpt].func(SessionNSX,WB[0],TN_WS)
 #                        #WB[0].save(WB[1])
 #                        continue
 #                    # For Health and documentations set
 #                    else:
-#                        current_menu.choices[inpt].func(authlist)
+#                        current_menu.choices[inpt].func(SessionNSX)
 #                        continue
 #                
 #            current_menu = current_menu.choices[inpt]
@@ -197,17 +197,17 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
                     else:
                         # Create one file
                         if 'Sheet' in current_menu.choices[inpt].func.__name__:
-                            CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile, current_menu.choices[inpt].func)
-                            #WB = CreateXLSFile(authlist,current_menu.choices[inpt].xlsfile)
+                            CreateXLSFile(SessionNSX,current_menu.choices[inpt].xlsfile, current_menu.choices[inpt].func)
+                            #WB = CreateXLSFile(SessionNSX,current_menu.choices[inpt].xlsfile)
                             ## Creation of sheet
                             #TN_WS = WB[0].active
                             #TN_WS.title = current_menu.choices[inpt].xlsfile
-                            #current_menu.choices[inpt].func(authlist,WB[0],TN_WS)
+                            #current_menu.choices[inpt].func(SessionNSX,WB[0],TN_WS)
                             #WB[0].save(WB[1])
                             continue
                         # For Health and documentations set
                         else:
-                            current_menu.choices[inpt].func(authlist)
+                            current_menu.choices[inpt].func(SessionNSX)
                             continue
                     
                 current_menu = current_menu.choices[inpt]
