@@ -30,6 +30,7 @@
 #############################################################################################################################################################################################
 from lib.docs_summary import SheetSummary
 from lib.docs_alarms import SheetAlarms
+from lib.docs_monitoring import SheetMonitoring
 from lib.docs_groups import SheetSecGrp
 from lib.docs_securitypolicies import SheetSecPol
 from lib.docs_securitypolicies_and_rules import SheetSecDFW
@@ -96,6 +97,8 @@ def DocsSetOne(auth_list):
             SheetSecDFW(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
             print('Generating NSX-T Alarms sheet')
             SheetAlarms(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            print('Generating NSX-T Monitoring sheet')
+            SheetMonitoring(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
             print("\nDocumentation set took %s seconds to complete\n" % (time.time() - start_time))
             WORKBOOK[1].close()
         else:
@@ -151,6 +154,9 @@ def DocsSetOne(auth_list):
             print('Generating NSX-T Alarms sheet')
             TN_WS = WORKBOOK[0].create_sheet("Alarms")
             SheetAlarms(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
+            print('Generating NSX-T Monitoring sheet')
+            TN_WS = WORKBOOK[0].create_sheet("Alarms")
+            SheetMonitoring(auth_list,WORKBOOK[0],TN_WS, NSX_Config)
             print("\nDocumentation set took %s seconds to complete\n" % (time.time() - start_time))
             WORKBOOK[0].save(WORKBOOK[1])
 
@@ -175,6 +181,7 @@ def DocsSetMultiple(auth_list):
     CreateXLSFile(auth_list,"Tier_1_Forwarding_Tables",SheetT1ForwardingTable)
     
     CreateXLSFile(auth_list,"Alarms",SheetAlarms)
+    CreateXLSFile(auth_list,"Alarms",SheetMonitoring)
 
     print("\nDocumentation set took %s seconds to complete\n" % (time.time() - start_time))
     

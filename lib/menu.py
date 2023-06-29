@@ -30,6 +30,7 @@
 from lib.health import GetBGPSessions, GetHealthNSXCluster, GetNSXSummary, GetTNTunnels, GetTNStatus, GetComputeDetail,\
     GetEdgeCLDetail, GetEdgeStatus, GetLRSum, GetNetworkUsage, GetSecurityUsage, GetInventoryUsage, GetDFWRulesVNIC, GetDFWRulesStats
 from lib.docs_alarms import SheetAlarms
+from lib.docs_monitoring import SheetMonitoring
 from lib.docs_groups import SheetSecGrp
 from lib.docs_securitypolicies import SheetSecPol
 from lib.docs_securitypolicies_and_rules import SheetSecDFW
@@ -92,6 +93,7 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
     SecPrev = Menu("","Return to previous menu", None, 'Back')
 
     MonAlarm = Menu("", "Export Alarms", None, SheetAlarms,"Alarms")
+    MonConfig = Menu("", "Monitoring Config", None, SheetMonitoring, "Monitoring")
     MonPrev = Menu("", "Return to previous menu", None, 'Back')
 
     DocSetOneFile = Menu("","One file (appended results for JSON, YAML format) and one Excel file with one tab per menu. Not supported for CSV.", None, DocsSetOne)
@@ -101,7 +103,7 @@ def MainMenu(authlist,dest,menu_path,menu_mode):
     DocFab = Menu("\nNSX-T Fabric Documents", "NSX-T Fabric Options", [FabManager, FabNodes, FabTZ, FabServices, FabTunnles, FabPrev])
     DocVNS = Menu("\nVirtual Networking Documents", "Virtual Networking Options", [VNSSegment,VNSRouterSum,VNSRouterPort,VNST1Segment,VNST1RoutingSessions, VNST0,VNST1Tables,VNSPrev])
     DocSecu = Menu("\nSecurity Documents", "Security Options" ,[SecGrp, SecPol, SecDFW, SecPrev])
-    DocMon = Menu("\nMonitoring & Alarm Documents", "Monitoring & Alarm Options" ,[MonAlarm, MonPrev])
+    DocMon = Menu("\nMonitoring & Alarm Documents", "Monitoring & Alarm Options" ,[MonAlarm, MonConfig, MonPrev])
     DocSet = Menu("\nNSX Document Set", "Create documentation set", [DocSetOneFile,DocSetMultiple,DocSetPrev])
     DocPrev = Menu("", "Return to main menu", None, 'Back')
 

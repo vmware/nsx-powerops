@@ -1,0 +1,9 @@
+PyYAML==6.0
+requests==2.27.1
+urllib3==1.26.9
+wcwidth==0.2.5
+yml==0.0.1
+netaddr==0.8.0
+openpyxl==3.0.9
+pprint36==3.9.0.2
+openpyxl==3.0.9

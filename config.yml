@@ -3,9 +3,9 @@
 # -------------------------------------------------------------------------------
 
 # MANDATORY
-CERT_PATH: /home/powerops/cert
-NSX_MGR_IP: "a.b.c.d" 
-OUTPUT_PATH: '/home/powerops/powerops_documentation/'
+CERT_PATH: '../PowerOps-Cert/'
+NSX_MGR_IP: "10.215.66.53" 
+OUTPUT_PATH: '../PowerOps-Docs/'
 PREFIX_FOLDER: 'POps_doc_'
 
 # OPTIONAL

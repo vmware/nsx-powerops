@@ -251,6 +251,7 @@ def ConnectNSX(auth_list):
     if auth_list[2] == 'AUTH':
         session = requests.session()
         session.verify = False
+        session.auth = (auth_list[0], auth_list[1])
         #connector = connect.get_requests_connector(session=session, msg_protocol='rest', url='https://' + YAML_DICT['NSX_MGR_IP'])
         #security_context = create_user_password_security_context(auth_list[0], auth_list[1])
         #connector.set_security_context(security_context)
