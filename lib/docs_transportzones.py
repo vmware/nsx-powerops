@@ -30,21 +30,18 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu, pprint
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 
 
-def SheetTZ(auth_list,WORKBOOK,TN_WS, NSX_Config ={} ):
-    SessionNSX = ConnectNSX(auth_list)
+def SheetTZ(SessionNSX,WORKBOOK,TN_WS, NSX_Config ={} ):
     NSX_Config['TZ'] = []
     node_url = '/api/v1/node'
-    node_result = GetAPI(SessionNSX[0],node_url, auth_list)
+    node_result = GetAPI(SessionNSX,node_url)
     node_version = node_result["product_version"]
     node_v = node_version[0:3]
-    # Connect NSX
-    SessionNSX = ConnectNSX(auth_list)
     transport_zone_url = '/api/v1/transport-zones'
-    transport_zone_json = GetAPI(SessionNSX[0],transport_zone_url, auth_list)
+    transport_zone_json = GetAPI(SessionNSX,transport_zone_url)
     # Error message for 3.2
     error_msg = 'Not present in ' + node_v + ' API Call'
 

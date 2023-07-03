@@ -30,49 +30,51 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 
-def SheetT0RoutingTable(auth_list,WORKBOOK,TN_WS, NSX_Config ={} ):
+def SheetT0RoutingTable(SessionNSX,WORKBOOK,TN_WS, NSX_Config ={} ):
     NSX_Config['T0RoutingTable'] = []
     Dict_T0 = {}
+    TN_HEADER_ROW = ('T0','Edge Node Path','Route Type', 'Network', 'Admin Distance', 'Next Hop', 'LR Component ID', 'LR Component Type')
+    XLS_Lines = []
 
-    SessionNSX = ConnectNSX(auth_list)
     ########### GET Tier-0 Gateways  ###########
     t0_url = '/policy/api/v1/infra/tier-0s'
-    t0_json = GetAPI(SessionNSX[0],t0_url, auth_list)
+    t0_json = GetAPI(SessionNSX,t0_url)
+    if int(t0_json['result_count']) > 0:
+        t0_id_list = []
+        for i in t0_json["results"]:
+            t0_id_list.append(i['display_name'])
 
-    t0_id_list = []
-    for i in t0_json["results"]:
-        t0_id_list.append(i['display_name'])
+        for T0 in t0_id_list:
+            nb_routes = 0
+            t0_routingtable_json = GetAPI(SessionNSX,t0_url + '/' + str(T0) + '/routing-table')
+            if isinstance(t0_routingtable_json, dict) and 'results' in t0_routingtable_json and t0_routingtable_json['result_count'] > 0: 
+                for n in t0_routingtable_json["results"]:
+                    nb_routes = len(n["route_entries"])
+                    # get routes
+                    for entry in n['route_entries']:
+                        Dict_T0['edge'] = n['edge_node']
+                        Dict_T0['T0_name'] = T0
+                        Dict_T0['route_type'] = entry['route_type']
+                        Dict_T0['network'] = entry['network']
+                        Dict_T0['ad'] = entry['admin_distance']
+                        Dict_T0['next_hop'] = entry['next_hop']
+                        Dict_T0['lr_id']= entry['lr_component_id']
+                        Dict_T0['lr_type'] = entry['lr_component_type']
+                        NSX_Config['T0RoutingTable'].append(Dict_T0)
+                        XLS_Lines.append([T0, n['edge_node'], entry['route_type'], entry['network'],entry['admin_distance'], entry['next_hop'],entry['lr_component_id'],entry['lr_component_type']])
+            
+            elif not t0_routingtable_json:
+                XLS_Lines.append([T0,"No Routing table found","","","","","",""])        
+            else:
+                XLS_Lines.append([T0," T1 not deployed on Edge Cluster. DR Only","","","","","",""])
+            
+            print(" --> Get forwarding tables of " + style.ORANGE + T0 + style.NORMAL + " Router: " + style.ORANGE + str(nb_routes) + style.NORMAL + " route(s)")
+    else:
+        XLS_Lines.append(["No T0 router","","","","","","",""])        
 
-    XLS_Lines = []
-    TN_HEADER_ROW = ('T0','Edge Node Path','Route Type', 'Network', 'Admin Distance', 'Next Hop', 'LR Component ID', 'LR Component Type')
-    for T0 in t0_id_list:
-        nb_routes = 0
-        t0_routingtable_json = GetAPI(SessionNSX[0],t0_url + '/' + str(T0) + '/routing-table', auth_list)
-        if isinstance(t0_routingtable_json, dict) and 'results' in t0_routingtable_json and t0_routingtable_json['result_count'] > 0: 
-            for n in t0_routingtable_json["results"]:
-                nb_routes = len(n["route_entries"])
-                # get routes
-                for entry in n['route_entries']:
-                    Dict_T0['edge'] = n['edge_node']
-                    Dict_T0['T0_name'] = T0
-                    Dict_T0['route_type'] = entry['route_type']
-                    Dict_T0['network'] = entry['network']
-                    Dict_T0['ad'] = entry['admin_distance']
-                    Dict_T0['next_hop'] = entry['next_hop']
-                    Dict_T0['lr_id']= entry['lr_component_id']
-                    Dict_T0['lr_type'] = entry['lr_component_type']
-                    NSX_Config['T0RoutingTable'].append(Dict_T0)
-                    XLS_Lines.append([T0, n['edge_node'], entry['route_type'], entry['network'],entry['admin_distance'], entry['next_hop'],entry['lr_component_id'],entry['lr_component_type']])
-        
-        elif not t0_routingtable_json:
-            XLS_Lines.append([T0,"No Routing table found","","","","","",""])        
-        else:
-            XLS_Lines.append([T0," T1 not deployed on Edge Cluster. DR Only","","","","","",""])
-        
-        print(" --> Get forwarding tables of " + style.ORANGE + T0 + style.NORMAL + " Router: " + style.ORANGE + str(nb_routes) + style.NORMAL + " route(s)")
 
     if GetOutputFormat() == 'CSV':
         CSV = WORKBOOK

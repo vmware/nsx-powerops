@@ -1,0 +1,7 @@
+PyYAML
+requests
+urllib3
+wcwidth
+netaddr
+openpyxl
+pprint36

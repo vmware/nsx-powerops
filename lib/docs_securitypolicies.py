@@ -30,15 +30,13 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, FillSheetCSV, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 
-def SheetSecPol(auth_list, WORKBOOK,TN_WS, NSX_Config = {}):
+def SheetSecPol(SessionNSX, WORKBOOK,TN_WS, NSX_Config = {}):
     NSX_Config['Policies'] = []
     Dict_Policies = {}
-    # connection to NSX
-    SessionNSX = ConnectNSX(auth_list)
-    policies_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/domains/default/security-policies', auth_list)
+    policies_json = GetAPI(SessionNSX,'/policy/api/v1/infra/domains/default/security-policies')
     # Header of Excel and initialization of lines
     XLS_Lines = []
     TN_HEADER_ROW = ('Security Policy ID', 'Security Policy Name', 'NSX Policy Path','Sequence Number', 'Category', 'is Stateful')

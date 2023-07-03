@@ -30,7 +30,7 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu,  pprint
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 def GetListNameFromPath(LIST, JSONPath= {}, excluded=False):
     # Get a list with path as element, and return a list with only the last element of the path
@@ -84,19 +84,17 @@ def PrintRulesbyCategory(RULES, Groups, Services, Context, PolicyName, PolicyID,
             NSX_Config['DFW'].append(Dict_DFW)
             XLSlines.append([PolicyName,", ".join(scopelist),category,Dict_DFW['display_name'], Dict_DFW['rule_id'], "\n".join(srcgrouplist), "\n".join(dstgrouplist), "\n".join(servicelist), "\n".join(profilelist), "\n".join(rulescopelist), str(Dict_DFW['action']), str(Dict_DFW['direction']), str(Dict_DFW['state']), str(Dict_DFW['ip_protocol']), str(Dict_DFW['logged'])])
 
-def SheetSecDFW(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+def SheetSecDFW(SessionNSX,WORKBOOK,TN_WS, NSX_Config = {}):
     NSX_Config['DFW'] = []
-    # connection to NSX
-    SessionNSX = ConnectNSX(auth_list)
-    policies_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/domains/default/security-policies', auth_list)
+    policies_json = GetAPI(SessionNSX,'/policy/api/v1/infra/domains/default/security-policies')
     # Get all groups - to get display name
     domain_id = 'default'
     # Connection for get Groups criteria - REST/API
-    groups_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/domains/' + domain_id + '/groups', auth_list)
+    groups_json = GetAPI(SessionNSX,'/policy/api/v1/infra/domains/' + domain_id + '/groups')
     # Get All Services
-    services_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/services', auth_list)
+    services_json = GetAPI(SessionNSX,'/policy/api/v1/infra/services')
     # Get all Contewxt Profile
-    context_json = GetAPI(SessionNSX[0],'/policy/api/v1/infra/context-profiles', auth_list)
+    context_json = GetAPI(SessionNSX,'/policy/api/v1/infra/context-profiles')
 
     # Header of Excel and initialization of lines
     XLS_Lines = []
@@ -108,7 +106,7 @@ def SheetSecDFW(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
             ####  Get RULES       ####
             domain_id = 'default'
             rules_url = '/policy/api/v1/infra/domains/' + domain_id + '/security-policies/' + policy['id'] + '/rules/'
-            rules_json = GetAPI(SessionNSX[0],rules_url, auth_list)
+            rules_json = GetAPI(SessionNSX,rules_url)
             PrintRulesbyCategory(rules_json, groups_json, services_json, context_json, policy['display_name'],policy['id'],policy['category'], scopelist, XLS_Lines, NSX_Config)
     else:
         XLS_Lines.append(['No results', "", "", "", "", "", "", "", "", "", "", "", "", ""])

@@ -18,7 +18,7 @@ import json
 import yaml
 
 
-def CreateXLSFile(auth_list,XLS_Files,SheetFunction = None):
+def CreateXLSFile(SessionNSX,XLS_Files,SheetFunction = None):
 	# Creation of CSV files
 	if GetOutputFormat() == 'CSV':
 		now = datetime.datetime.now()
@@ -33,7 +33,7 @@ def CreateXLSFile(auth_list,XLS_Files,SheetFunction = None):
 			WORKBOOK = Workbook()
 			if SheetFunction != None:
 				TN_WS = WORKBOOK.active
-				SheetFunction(auth_list,csv.writer(file),TN_WS)
+				SheetFunction(SessionNSX,csv.writer(file),TN_WS)
 			return [csv.writer(file), OUTPUT_CSV]
 
 	elif GetOutputFormat() == 'JSON':
@@ -48,7 +48,7 @@ def CreateXLSFile(auth_list,XLS_Files,SheetFunction = None):
 		WORKBOOK = Workbook()
 		if SheetFunction != None:
 			TN_WS = WORKBOOK.active
-			SheetFunction(auth_list,OUTPUT_JSON,TN_WS)
+			SheetFunction(SessionNSX,OUTPUT_JSON,TN_WS)
 		return [OUTPUT_JSON, WORKBOOK]
 	
 	elif GetOutputFormat() == 'YAML':
@@ -63,7 +63,7 @@ def CreateXLSFile(auth_list,XLS_Files,SheetFunction = None):
 		WORKBOOK = Workbook()
 		if SheetFunction != None:
 			TN_WS = WORKBOOK.active
-			SheetFunction(auth_list,OUTPUT_YAML,TN_WS)
+			SheetFunction(SessionNSX,OUTPUT_YAML,TN_WS)
 		return [OUTPUT_YAML, WORKBOOK]
 	
 	else:	
@@ -81,7 +81,7 @@ def CreateXLSFile(auth_list,XLS_Files,SheetFunction = None):
 		if SheetFunction != None:
 			TN_WS = WORKBOOK.active
 			TN_WS.title = XLS_Files
-			SheetFunction(auth_list,WORKBOOK,TN_WS)
+			SheetFunction(SessionNSX,WORKBOOK,TN_WS)
 			WORKBOOK.save(OUTPUT_XLS)
 
 		return [WORKBOOK, OUTPUT_XLS]

@@ -30,17 +30,16 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, datetime, GetOutputFormat
+from lib.system import style, GetAPI, os, datetime, GetOutputFormat
 
 
-def SheetFabDiscoveredNodes(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+def SheetFabDiscoveredNodes(SessionNSX,WORKBOOK,TN_WS, NSX_Config = {}):
 
     Dict_DiscoveredNodes = {}     # Dict Discovered nodes initialization
     NSX_Config['DiscoveredNodes'] = []
     # Connect to NSX
-    SessionNSX = ConnectNSX(auth_list)
     discovered_nodes_url = '/api/v1/fabric/discovered-nodes'
-    discovered_nodes_json = GetAPI(SessionNSX[0],discovered_nodes_url, auth_list)
+    discovered_nodes_json = GetAPI(SessionNSX,discovered_nodes_url)
     # Construct Line
     TN_HEADER_ROW = ('Display name', 'OS Type', 'OS Version', 'Node Type', 'Hostname', 'Full Name', 'Management IP', 'Domain name', 'DNS', 'UUID', 'Powerstate', 'In Maintenance Mode', 'Build', 'Vendor', 'Model', 'Serial Number', 'Connection State', 'Licensed Product Name', 'Licensed Product Version', 'Mgmt Server IP', 'Lockdown Mode', 'DAS Host State')
     XLS_Lines = []

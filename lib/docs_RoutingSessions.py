@@ -30,17 +30,16 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, ConditionnalFormat, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 
-def SheetBGPSession(auth_list,WORKBOOK,TN_WS, NSX_Config ={} ):
+def SheetBGPSession(SessionNSX,WORKBOOK,TN_WS, NSX_Config ={} ):
     NSX_Config['T0Sessions'] = []
     Dict_Sessions = {}
 
-    SessionNSX = ConnectNSX(auth_list)
     ########### GET Tier-0 Gateways  ###########
     t0_url = '/policy/api/v1/infra/tier-0s'
-    t0_json = GetAPI(SessionNSX[0],t0_url, auth_list)
+    t0_json = GetAPI(SessionNSX,t0_url)
 
     XLS_Lines = []
     TN_HEADER_ROW = ('T0','BGP status','ECMP','Inter-SR','Source IP address','Local AS','Neighbor IP address', 'Remote AS', 'Total IN Prefixes', 'Total OUT prefixes', 'Session Status')
@@ -51,9 +50,9 @@ def SheetBGPSession(auth_list,WORKBOOK,TN_WS, NSX_Config ={} ):
             localservice = "default"
             bgpstatus_url = "/policy/api/v1/infra/tier-0s/" + t0['display_name'] + "/locale-services/" + localservice + "/bgp/neighbors/status"
             bgpconfig_url = "/policy/api/v1/infra/tier-0s/" + t0['display_name'] + "/locale-services/" + localservice + "/bgp"
-            #t0_localservice = GetAPI(SessionNSX[0],localservice_url, auth_list)
-            bgpstatus_json = GetAPI(SessionNSX[0],bgpstatus_url, auth_list)
-            bgpconfig_json = GetAPI(SessionNSX[0],bgpconfig_url, auth_list)
+            #t0_localservice = GetAPI(SessionNSX,localservice_url)
+            bgpstatus_json = GetAPI(SessionNSX,bgpstatus_url)
+            bgpconfig_json = GetAPI(SessionNSX,bgpconfig_url)
             Dict_Sessions['T0_name'] = t0['display_name']
             # BGP Sessions treatment
             if isinstance(bgpstatus_json, dict) and 'results' in bgpstatus_json: 

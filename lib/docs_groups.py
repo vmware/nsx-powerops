@@ -30,11 +30,11 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 
 
-def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
+def SheetSecGrp(SessionNSX,WORKBOOK,TN_WS, NSX_Config = {}):
     NSX_Config['Groups'] = []
     Dict_Groups = {}
 
@@ -42,8 +42,7 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
     # Connection for get Groups criteria - REST/API
     Groups_list_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups'
     
-    SessionNSX = ConnectNSX(auth_list)
-    Groups_list_json = GetAPI(SessionNSX[0],Groups_list_url, auth_list)
+    Groups_list_json = GetAPI(SessionNSX,Groups_list_url)
 
     XLS_Lines = []
     TN_HEADER_ROW = ('Group Name', 'Tags', 'Scope', 'Criteria Type', 'Criteria', 'IP addresses', 'Virtual Machines', 'Segments', 'Segments Ports')
@@ -72,18 +71,18 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
                 print('skipping group without expression')
                 continue
             for nbcriteria in group['expression']:
-                criteria = GetCriteria(SessionNSX[0], auth_list, nbcriteria)
+                criteria = GetCriteria(SessionNSX, nbcriteria)
 
             # Create IP Address List for each group
             IPs_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups/' + group['id'] + '/members/ip-addresses'
-            IPs_json = GetAPI(SessionNSX[0],IPs_url, auth_list)
+            IPs_json = GetAPI(SessionNSX,IPs_url)
             IP = ""
             if isinstance(IPs_json, dict) and 'results' in IPs_json and 'result_count' in IPs_json and IPs_json['result_count'] > 0:
                 IP = ', '.join(IPs_json['results'])
 
             # Create Virtual Machine List for each group
             VMs_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups/' + group['id'] + '/members/virtual-machines'
-            VMs_json = GetAPI(SessionNSX[0],VMs_url, auth_list)
+            VMs_json = GetAPI(SessionNSX,VMs_url)
             VM = ""
             VMList =[]
             if isinstance(VMs_json, dict) and 'results' in VMs_json and 'result_count' in VMs_json  and VMs_json['result_count'] > 0:
@@ -93,7 +92,7 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
 
             # Create Segment List for each group
             Segs_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups/' + group['id'] + '/members/segments'
-            Segs_json = GetAPI(SessionNSX[0],Segs_url, auth_list)
+            Segs_json = GetAPI(SessionNSX,Segs_url)
             Segment = ""
             SegList = []
             if isinstance(Segs_json, dict) and 'results' in Segs_json and 'result_count' in Segs_json and Segs_json['result_count'] > 0:
@@ -103,7 +102,7 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
 
             # Create Segment Port/vNIC List for each group
             Seg_Ports_url = '/policy/api/v1/infra/domains/' + domain_id + '/groups/' + group['id'] + '/members/segment-ports'
-            Seg_Ports_json = GetAPI(SessionNSX[0],Seg_Ports_url, auth_list)
+            Seg_Ports_json = GetAPI(SessionNSX,Seg_Ports_url)
             SegPort = ""
             SegPortList = []
             if isinstance(Seg_Ports_json, dict) and 'results' in Seg_Ports_json and 'result_count' in Seg_Ports_json and Seg_Ports_json['result_count'] > 0:
@@ -138,7 +137,7 @@ def SheetSecGrp(auth_list,WORKBOOK,TN_WS, NSX_Config = {}):
         FillSheet(WORKBOOK,TN_WS.title,TN_HEADER_ROW,XLS_Lines,"0072BA")
 
 
-def GetCriteria(SESSION, auth_list, DictExpression):
+def GetCriteria(SessionNSX, DictExpression):
     ListReturn = []
     TypeCriteriaList = []
     criteria = ""
@@ -163,12 +162,12 @@ def GetCriteria(SESSION, auth_list, DictExpression):
     # Path Expression Group
     if DictExpression['resource_type'] == 'PathExpression':
         for path in DictExpression['paths']:
-            Group = GetAPI(SESSION,"/policy/api/v1" + path, auth_list)
+            Group = GetAPI(SessionNSX,"/policy/api/v1" + path)
             criteria = criteria + Group['resource_type'] + ': ' + Group['display_name'] + '\n'
     # Nested Group - recursive function
     if DictExpression['resource_type'] == 'NestedExpression':
         for expression in DictExpression['expressions']:
-            criteria = criteria + GetCriteria(SESSION, auth_list, expression)[0]
+            criteria = criteria + GetCriteria(SessionNSX, expression)[0]
     # Mac address Group
     if DictExpression['resource_type'] == 'MACAddressExpression': criteria = criteria + 'MAC: ' + ','.join(DictExpression['mac_addresses'])
     # IP address Group

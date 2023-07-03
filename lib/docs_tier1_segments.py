@@ -30,16 +30,15 @@
 #############################################################################################################################################################################################
 import pathlib, lib.menu
 from lib.excel import FillSheet, Workbook, FillSheetCSV, FillSheetJSON, FillSheetYAML
-from lib.system import style, GetAPI, ConnectNSX, os, GetOutputFormat
+from lib.system import style, GetAPI, os, GetOutputFormat
 
 
-def SheetT1Segments(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
+def SheetT1Segments(SessionNSX,WORKBOOK,TN_WS,NSX_Config = {}):
     NSX_Config['T1Segments'] = []
     Dict_Segments = {}
     # Connect to NSX
-    SessionNSX = ConnectNSX(auth_list)
     t1_url = '/policy/api/v1/infra/tier-1s'
-    t1_json = GetAPI(SessionNSX[0],t1_url, auth_list)
+    t1_json = GetAPI(SessionNSX,t1_url)
 
     XLS_Lines = []
     TN_HEADER_ROW = ('Tier1 Segment Name', 'Tier1 Segment ID', 'Segment Gateway', 'Segment Network', 'Tier1 Router Name', 'Tier1 Router ID')
@@ -47,7 +46,7 @@ def SheetT1Segments(auth_list,WORKBOOK,TN_WS,NSX_Config = {}):
     if isinstance(t1_json, dict) and 'results' in t1_json and t1_json['result_count'] > 0: 
         for i in t1_json["results"]:
             t1_segment_url = '/policy/api/v1/search?query=resource_type:Segment&&dsl=segment where connectivity path=' + str(i['path']) + ''
-            t1_segment_json = GetAPI(SessionNSX[0],t1_segment_url, auth_list)
+            t1_segment_json = GetAPI(SessionNSX,t1_segment_url)
 
             for n in t1_segment_json["results"]:
                 Dict_Segments['id'] = n['id']

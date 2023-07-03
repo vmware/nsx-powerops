@@ -43,29 +43,20 @@ For the UI Version of NSX-T PowerOps, please go to: https://github.com/vmware/ns
 
 If you prefer a manual installation, you will need to prepare an environment (for example an 'NSX-T PowerOps' Virtual Machine) with the following:
 
-1. Python 3.x (3.8 preference)
-2. Python Module 'xlwt'
-3. VMware NSX-T Python SDK
-4. Git
-5. Access to NSX Manager API with Read Privileges
-6. Correct Directory Structure
+1. Python 3.x (3.8 or higher)
+2. Git
+3. Access to NSX Manager API with Read Privileges
+4. Correct Directory Structure
 
 Example installation using Ubuntu 20.04:
 
 1. Create Ubuntu PowerOps Virtual Machine:
     * Set IP address, Hostname, DNS, etc...
-    * Ubuntu 20.04 comes wityh Python 3.8.6 pre-installed
-2. Install 'xlwt':
-    * pip3 install xlwt
-3. Download and install the NSX-T SDK for Python:
-    * Download the VMware NSX-T Data Center Automation SDK 3.0.0 for Python from https://code.vmware.com/web/sdk/3.0/nsx-t-python
-        * Download all files and copy to VM
-    * Install the SDK .whl files using pip3
-        * Example: 'python3.8 -m pip install vapi_runtime-2.14.0-py2.py3-none-any.whl' 
-4. Install Git
+    * Ubuntu 20.04 comes with Python 3.8.6 pre-installed
+2. Install Git
     * sudo apt-get install git
-5. Create a 'powerops' user (by default scripts refer to 'powerops' user)
-6. Create the following directories under /home/powerops:
+3. Create a 'powerops' user (by default scripts refer to 'powerops' user)
+4. Create the following directories under /home/powerops:
     * cert (/home/powerops/cert)
     * powerops_documentation (/home/powerops/powerops_documentation)
 
@@ -82,9 +73,12 @@ To run NSX-T PowerOps:
 1. From /home/powerops git clone the repo (following will clone the master branch of NSX-T PowerOps):
     * `git clone https://github.com/vmware/nsx-powerops.git`
 
-2. Modify the config.yml with all the relevant information (NSX IP or FQDN, cert path, output folder for XLS files)
+2. Install all python modules used by powerops:
+    * pip3 install -r requirements.txt
+
+3. Modify the config.yml with all the relevant information (NSX IP or FQDN, cert path, output folder for XLS files)
     
-3. Source 'run_powerops' from /home/powerops/nsx-powerops (source ./run_powerops) 
+4. Source 'run_powerops' from /home/powerops/nsx-powerops (source ./run_powerops) 
 
 ### Contributing
 The NSX-PowerOps project team welcomes contributions from the community. Before you start working with NSX-PowerOps, please read our [Developer Certificate of Origin](https://cla.vmware.com/dco). All contributions to this repository must be signed as described on that page. Your signature certifies that you wrote the patch or have the right to pass it on as an open-source patch. For more detailed information, refer to the [Contribution Guidelines](CONTRIBUTING.md).
